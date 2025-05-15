@@ -1,88 +1,70 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import styles from "./Navbar.module.css";
+import { useState } from "react"
+import Link from "next/link"
+import Image from "next/image"
+import { Menu } from "lucide-react"
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
-  const path = usePathname();
-
-  const links = [
-    { href: "/team", label: "Team" },
-    { href: "/log-in", label: "Log in" },
-  ];
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
-    <nav className="bg-black shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link href="/">
-          <span className="text-2xl font-bold">Anthropos City</span>
+    <nav className="bg-black border-b border-gray">
+      <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+        <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
+          <span className="self-center text-2xl font-semibold whitespace-nowrap">Anthropos City</span>
         </Link>
-
-        {/* desktop links */}
-        <div className="hidden md:flex space-x-6">
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`hover:text-blue-600 ${
-                path === href ? styles.activeLink : ""
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-
-        {/* hamburger button */}
-        <button
-          className="md:hidden p-2 focus:outline-none"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <div className="flex md:order-2 space-x-3 md:space-x-0">
+          <button
+            type="button"
+            className=" flex items-center justify-center gap-2 text-black bg-main/90 hover:bg-main font-medium rounded-lg px-4 py-2 text-center"
           >
-            {open ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            ) : (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 8h16M4 16h16"
-              />
-            )}
-          </svg>
-        </button>
-      </div>
-
-      {/* mobile menu */}
-      {open && (
-        <div className="md:hidden bg-white px-4 pb-4 space-y-2">
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`block py-2 hover:bg-gray-100 rounded ${
-                path === href ? styles.activeLink : ""
-              }`}
-              onClick={() => setOpen(false)}
-            >
-              {label}
-            </Link>
-          ))}
+            Log In
+            <Image src="" alt="Logo" width={24} height={24} className="bg-black w-6 h-6 object-contain" />
+          </button>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            type="button"
+            className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-dim_smoke rounded-lg md:hidden hover:bg-white/10"
+            aria-controls="navbar-cta"
+            aria-expanded={isMenuOpen}
+          >
+            <span className="sr-only">Open main menu</span>
+            <Menu className="w-8 h-8" aria-hidden="true" />
+          </button>
         </div>
-      )}
+        <div
+          className={`items-center justify-between ${isMenuOpen ? "block" : "hidden"} w-full md:flex md:w-auto md:order-1`}
+          id="navbar-cta"
+        >
+          <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray rounded-lg bg-foreground md:bg-transparent md:space-x-4 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 ">
+            <li>
+              <Link
+                href="/about"
+                className=" block py-2 px-3 md:px-3 md:px-2 text-dim_smoke rounded-sm hover:bg-white/10 md:hover:text-smoke"
+              >
+                About
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/services"
+                className=" block py-2 px-3 md:px-3 md:px-2 text-dim_smoke rounded-sm hover:bg-white/10 md:hover:text-smoke"
+              >
+                Services
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/contact"
+                className=" block py-2 px-3 md:px-3 md:px-2 text-dim_smoke rounded-sm hover:bg-white/10 md:hover:text-smoke"
+              >
+                Contact
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </div>
     </nav>
-  );
+  )
 }

@@ -10,30 +10,16 @@ export default function Home() {
   return (
     <main className="flex flex-col items-center justify-start min-h-screen p-6 md:p-24 bg-background">
       {/* Banner */}
-      <section className="w-full max-w-[1120px] flex flex-col items-center gap-6">
-        {/* Visitor count row */}
-        <div className="flex items-center gap-3">
-          <span className="text-[#E6E6E6] text-lg font-sans font-medium">
-            Visitors since launch:
-          </span>
-          <span className="text-main text-lg font-sans font-semibold">
-            {count}
-          </span>
+      <div className="self-stretch inline-flex flex-col justify-start items-center gap-3">
+        <div className="inline-flex justify-center items-center gap-3">
+          <div className="justify-start text-neutral-200 text-xl font-medium font-sans">Visitors since launch:</div>
+          <div className="justify-start text-main text-xl font-semibold font-sans">100000</div>
         </div>
-
-        {/* Title + logo row */}
-        <div className="flex flex-wrap items-center gap-3 justify-center">
-          <h1 className="text-[#E6E6E6] text-5xl md:text-[64px] font-mono font-extrabold tracking-[1.92px]">
-            ANTHROPOS CITY
-          </h1>
-          <Image
-            src=""
-            width={72}
-            height={72}
-            alt="Anthropos City logo"
-          />
+        <div className="self-stretch inline-flex justify-center items-center gap-3 flex-wrap content-center">
+          <div className="justify-start text-neutral-200 text-6xl font-extrabold font-['Monument_Extended'] tracking-widest">ANTHROPOS CITY</div>
+          <img className="w-16 h-16" src="https://placehold.co/72x72" />
         </div>
-      </section>
+      </div>
 
       {/* Top cards */}
       <section className="w-full max-w-[1120px] flex flex-col lg:flex-row items-start lg:items-center gap-6 mt-12">

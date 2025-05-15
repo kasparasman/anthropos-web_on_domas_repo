@@ -8,19 +8,18 @@ module.exports = {
     './components/**/*.{js,ts,jsx,tsx}',
     './styles/**/*.{css}'
   ],
-    safelist: [
-    'bg-red-500',
-    'flex', 'items-center', 'justify-center',
-    'text-white', 'text-3xl',
-    // add any other classes you know you use
-  ],
+    
 
   theme: {
     extend: {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
-        main:       'var(--Main)',
+        main:       'var(--main)',
+        smoke:      'var(--smoke)',
+        dim_smoke:  'var(--dim_smoke)',
+        gray:      'var(--gray)',
+
       },
       fontFamily: {
       sans: ['var(--font-geist-sans)', 'Montserrat', defaultTheme.fontFamily.sans],
