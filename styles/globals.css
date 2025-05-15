@@ -1,0 +1,93 @@
+/* styles/globals.css */
+@config "../tailwind.config.js";
+@import "tailwindcss";
+
+@layer base {
+  /* 1. Reset box-sizing and font smoothing */
+  *, ::before, ::after {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 2. Remove default margins on headings and paragraphs */
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 3. Base body styles */
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+    line-height: 1.5;
+  }
+
+  /* 4. Semantic element defaults */
+  p {
+    @apply mb-4 text-base;
+  }
+  a {
+    @apply text-main underline-offset-2 hover:underline;
+  }
+  button {
+    @apply px-4 py-2 bg-main text-white rounded-md cursor-pointer;
+  }
+
+  /* 5. Headings typography */
+  h1 {
+    @apply text-4xl md:text-5xl font-bold;
+  }
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+
+  /* 6. Utility for images to be responsive */
+  img, svg {
+    @apply max-w-full h-auto;
+  }
+
+  /* 7. Optional: custom font-face if self-hosting */
+  @font-face {
+    font-family: "Monument Extended";
+    src: url("/fonts/MonumentExtended.woff2") format("woff2");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+  }
+}
+
+/* Your custom CSS variables */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --Main:       #FED48A;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --Main:       #FED48A;
+  }
+}
+
+/* Any additional global overrides */
+blockquote {
+  @apply border-l-4 border-main pl-4 italic;
+}
+
+/* At the very bottom, you can add component or utility layers if needed */
+/*
+@layer components {
+  .custom-btn {
+    @apply bg-main text-white font-semibold py-2 px-4 rounded;
+  }
+}
+
+@layer utilities {
+  .content-auto {
+    content-visibility: auto;
+  }
+}
+*/
