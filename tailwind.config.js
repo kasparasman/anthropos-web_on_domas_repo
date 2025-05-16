@@ -1,35 +1,31 @@
 // tailwind.config.js
-/** @type {import('tailwindcss').Config} */
 const defaultTheme = require('tailwindcss/defaultTheme');
 
 module.exports = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx}',       // <-- note the **/*
+    './pages/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
-    './styles/**/*.{css}'
+    './src/**/*.{js,ts,jsx,tsx}',
   ],
-    safelist: [
-    'bg-red-500',
-    'flex', 'items-center', 'justify-center',
-    'text-white', 'text-3xl',
-    // add any other classes you know you use
-  ],
-
   theme: {
     extend: {
       colors: {
-        background: 'var(--background)',
+        background: 'var(--background)',   // your light/dark CSS vars
         foreground: 'var(--foreground)',
         main:       'var(--Main)',
       },
       fontFamily: {
-      sans: ['var(--font-geist-sans)', 'Montserrat', defaultTheme.fontFamily.sans],
-      mono: ['var(--font-geist-mono)', 'Monument Extended', defaultTheme.fontFamily.mono],
-      inter: ['Inter', defaultTheme.fontFamily.sans],
-      }
-    }
+        sans:  ['var(--font-geist-sans)', 'Montserrat', ...defaultTheme.fontFamily.sans],
+        mono:  ['var(--font-geist-mono)', 'Monument Extended', ...defaultTheme.fontFamily.mono],
+        inter: ['Inter', ...defaultTheme.fontFamily.sans],
+      },
+      spacing: {
+        // add any custom spacings you repeatedly used
+      },
+      screens: {
+        // add any custom breakpoints if needed
+      },
+    },
   },
-  plugins: [
-    // any Tailwind plugins (e.g. require('@tailwindcss/forms'))
-  ]
+  plugins: [],
 };

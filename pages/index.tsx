@@ -4,14 +4,13 @@ import VisitorCount from '../components/VisitorCount'
 import React from 'react'
 
 export default function Home() {
-  // You can swap this out for <VisitorCount /> if you want live fetching
+  // replace with <VisitorCount /> for live data if you like
   const count = 123
 
   return (
     <main className="flex flex-col items-center justify-start min-h-screen p-6 md:p-24 bg-background">
       {/* Banner */}
       <section className="w-full max-w-[1120px] flex flex-col items-center gap-6">
-        {/* Visitor count row */}
         <div className="flex items-center gap-3">
           <span className="text-[#E6E6E6] text-lg font-sans font-medium">
             Visitors since launch:
@@ -20,10 +19,8 @@ export default function Home() {
             {count}
           </span>
         </div>
-
-        {/* Title + logo row */}
         <div className="flex flex-wrap items-center gap-3 justify-center">
-          <h1 className="text-[#E6E6E6] text-5xl md:text-[64px] font-mono font-extrabold tracking-[1.92px]">
+          <h1 className="text-[#E6E6E6]">
             ANTHROPOS CITY
           </h1>
           <Image
@@ -35,7 +32,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Top cards */}
+      {/* Top Cards */}
       <section className="w-full max-w-[1120px] flex flex-col lg:flex-row items-start lg:items-center gap-6 mt-12">
         {/* Left info card */}
         <div className="flex-shrink-0 w-full lg:w-auto bg-foreground border border-main rounded-xl p-6 flex flex-col items-center gap-6">
@@ -45,7 +42,6 @@ export default function Home() {
             height={96}
             alt="Icon"
           />
-
           {[
             ['Price', '$0.00000003'],
             ['Volume 24h', '$594'],
@@ -61,7 +57,6 @@ export default function Home() {
               </span>
             </div>
           ))}
-
           <button className="mt-4 px-4 py-2 bg-main text-foreground rounded-md font-sans font-semibold">
             BUY NOW
           </button>
@@ -71,7 +66,7 @@ export default function Home() {
         <div className="flex-1 bg-foreground border border-main rounded-xl p-6 flex flex-col lg:flex-row gap-4">
           <div className="flex-1 bg-zinc-300 rounded-md min-h-[200px]" />
           <div className="flex-1 flex flex-col gap-4">
-            {[1, 2, 3].map((_, i) => (
+            {[1,2,3].map((_, i) => (
               <div
                 key={i}
                 className="w-full h-36 bg-stone-800 rounded-xl border border-amber-200"
@@ -84,13 +79,16 @@ export default function Home() {
       {/* City Assets */}
       <section className="w-full max-w-[1120px] flex flex-col items-center gap-10 mt-16">
         <div className="flex items-baseline gap-3">
-          <h2 className="text-3xl font-inter font-bold text-main">City Assets</h2>
+          <h2 className="text-3xl font-inter font-bold text-main">
+            City Assets
+          </h2>
           <span className="text-3xl font-inter font-bold text-main">0</span>
-          <span className="text-3xl font-inter font-bold text-foreground">/100</span>
+          <span className="text-3xl font-inter font-bold text-foreground">
+            /100
+          </span>
         </div>
-
         <div className="w-full h-48 flex gap-5 overflow-x-auto pb-2">
-          {Array.from({ length: 5 }).map((_, idx) => (
+          {Array.from({length:5}).map((_, idx) => (
             <div
               key={idx}
               className="w-64 bg-foreground border border-stone-800 rounded-xl p-4 flex flex-col gap-3"
