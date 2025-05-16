@@ -43,7 +43,7 @@ export default function Navbar() {
                 href="/about"
                 className=" block py-2 px-3 md:px-3 md:px-2 text-dim_smoke rounded-sm hover:bg-white/10 md:hover:text-smoke"
               >
-                About
+                About2
               </Link>
             </li>
             <li>
