@@ -68,7 +68,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const topics: Topic[] = raw.map((t: Topic) => ({
     id:            t.id,
     title:         t.title,
-    videoUrl:      t.videoUrl,
+    videoUrl:      t.videoUrl ?? null,   // ← null-coalesce
     likes:         t.likes.length,
     likedByUser:   userId ? t.likes.some((l) => l.user_id === userId) : false,
   }))
@@ -77,14 +77,14 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const assets: Asset[] = [
     {
       id: 'zinzino',
-      logoUrl: 'https://placehold.co/36x36',
+      logoUrl: '',
       name: 'Zinzino',
       totalInvestment: 1562,
       tokenCount: 7_777_777_777,
     },
     {
       id: 'alphacorp',
-      logoUrl: 'https://placehold.co/36x36',
+      logoUrl: '',
       name: 'AlphaCorp',
       totalInvestment: 2300,
       tokenCount: 4_200_000_000,
