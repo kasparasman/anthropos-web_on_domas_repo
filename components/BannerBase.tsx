@@ -11,7 +11,7 @@ export interface BannerBaseProps {
 export default function BannerBase({
   visitorCount,
   title = 'ANTHROPOS CITY',
-  logoUrl = 'https://placehold.co/72x72',
+  logoUrl = '',
 }: BannerBaseProps) {
   return (
     <section className="w-full max-w-[1120px] flex flex-col items-center gap-6">
