@@ -4,7 +4,7 @@ import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
-import Header from '../components/Header'
+import Navbar from '../components/Navbar'
 
 // Load Google fonts and assign to CSS variables
 const geistSans = Geist({
@@ -31,7 +31,7 @@ export default function MyApp({
 
       <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {/* Persistent site header */}
-        <Header />
+        <Navbar />
 
         {/* Page content */}
         <Component {...pageProps} />
