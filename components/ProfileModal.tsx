@@ -3,8 +3,8 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import Image from 'next/image'
-import { signOut } from 'next-auth/react'
 import { X } from 'lucide-react'
+import { useAuthSync } from '../hooks/useFirebaseNextAuth'
 
 interface ProfileModalProps {
   open: boolean
@@ -21,6 +21,10 @@ export default function ProfileModal({
   nickname,
   email,
 }: ProfileModalProps) {
+  /* signOutFirebase logs out of Firebase;
+     AuthProvider will then call next-auth signOut */
+  const { signOutFirebase } = useAuthSync()
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -51,7 +55,10 @@ export default function ProfileModal({
 
           {/* Footer */}
           <button
-            onClick={() => signOut()}
+            onClick={async () => {
+              await signOutFirebase()      // <- logout both layers
+              onOpenChange(false)          // close modal
+            }}
             className="self-center px-4 py-2 bg-main text-background rounded-md"
           >
             Sign out

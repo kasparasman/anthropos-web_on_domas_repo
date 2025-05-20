@@ -1,32 +1,16 @@
-// components/ProfileButton.tsx
 'use client'
 
 import { useState } from 'react'
-import { useSession, signIn } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import ProfileModal from './ProfileModal'
 
 export default function ProfileButton() {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
   const [open, setOpen] = useState(false)
 
-  /* ---------------- unauthenticated ---------------- */
-  if (status === 'loading') {
-    return <div className="w-9 h-9 rounded-full bg-zinc-700 animate-pulse" />
-  }
+  if (!session?.user) return null               // rendered only when logged-in
 
-  if (!session?.user) {
-    return (
-      <button
-        onClick={() => signIn()}
-        className="px-3 py-1 bg-main text-background rounded-md text-sm"
-      >
-        Sign in
-      </button>
-    )
-  }
-
-  /* ---------------- authenticated ---------------- */
   const { image, nickname, email } = session.user as {
     image?: string | null
     nickname?: string | null
@@ -49,7 +33,7 @@ export default function ProfileButton() {
         />
       </button>
 
-      {/* Modal */}
+      {/* Profile modal */}
       <ProfileModal
         open={open}
         onOpenChange={setOpen}

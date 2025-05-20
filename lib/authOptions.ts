@@ -8,11 +8,7 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   providers: [
     CredentialsProvider({
-      name: 'Email / Password',
-      credentials: {
-        email:    { label: 'Email',    type: 'text',     placeholder: 'you@example.com' },
-        password: { label: 'Password', type: 'password' }
-      },
+      credentials: { idToken: { type: 'text' } },
       authorize
     })
   ],
