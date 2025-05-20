@@ -65,10 +65,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     },
   })
 
-  const topics: Topic[] = raw.map((t: Topic) => ({
+  const topics: Topic[] = raw.map((t) => ({
     id:            t.id,
     title:         t.title,
-    videoUrl:      t.videoUrl ?? null,   // ← null-coalesce
+    videoUrl:      t.video_url ?? null,
     likes:         t.likes.length,
     likedByUser:   userId ? t.likes.some((l) => l.user_id === userId) : false,
   }))
