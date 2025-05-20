@@ -1,0 +1,63 @@
+// components/ProfileModal.tsx
+'use client'
+
+import * as Dialog from '@radix-ui/react-dialog'
+import Image from 'next/image'
+import { signOut } from 'next-auth/react'
+import { X } from 'lucide-react'
+
+interface ProfileModalProps {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  avatarUrl: string | null | undefined
+  nickname: string | null | undefined
+  email: string | null | undefined
+}
+
+export default function ProfileModal({
+  open,
+  onOpenChange,
+  avatarUrl,
+  nickname,
+  email,
+}: ProfileModalProps) {
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 w-11/12 max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-foreground border border-main p-6 flex flex-col gap-6 focus:outline-none">
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-main">Your Account</h2>
+            <Dialog.Close asChild>
+              <button>
+                <X size={20} />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          {/* Avatar + info */}
+          <div className="flex flex-col items-center gap-3">
+            <Image
+              src={avatarUrl ?? '/default-avatar.png'}
+              width={96}
+              height={96}
+              alt="avatar"
+              className="rounded-full object-cover"
+            />
+            <div className="text-xl font-bold">{nickname ?? email}</div>
+            <div className="text-sm text-zinc-400">{email}</div>
+          </div>
+
+          {/* Footer */}
+          <button
+            onClick={() => signOut()}
+            className="self-center px-4 py-2 bg-main text-background rounded-md"
+          >
+            Sign out
+          </button>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  )
+}
