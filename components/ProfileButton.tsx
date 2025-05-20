@@ -41,7 +41,7 @@ export default function ProfileButton() {
         className="rounded-full w-9 h-9 overflow-hidden border border-main"
       >
         <Image
-          src={image ?? '/default-avatar.svg'}
+          src={image ?? '/default-avatar.png'}
           alt="profile avatar"
           width={36}
           height={36}
