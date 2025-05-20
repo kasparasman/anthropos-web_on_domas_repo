@@ -30,41 +30,62 @@ export default function TopicItem({
   /*  Render                                                        */
   /* -------------------------------------------------------------- */
   return (
-    <div className="flex items-center gap-3">
-      {/* Topic button ------------------------------------------------ */}
-      
-      <button
-        onClick={() => onSelect(topic.id)}
-        className={`flex-1 text-left p-3 rounded transition-colors ${
-          isSelected
-            ? 'bg-main text-background'
-            : 'bg-stone-800 text-foreground hover:bg-stone-700'
-        }`}
-      >
-        {topic.title}
-      </button>
-      <button
-        onClick={() => onOpenTopic(topic)}
-        className="p-2 rounded hover:bg-stone-700"
-        title="Open topic"
-      >
-        <Eye size={18} />
-      </button>
-
-      {/* Like button ------------------------------------------------- */}
-      <button
-        onClick={toggleLike}
-        disabled={loading || likedByMe}
-        className="flex items-center gap-1 text-sm disabled:cursor-not-allowed"
-      >
-        <Heart
-          size={18}
-          className={
-            likedByMe ? 'fill-main stroke-main' : 'stroke-foreground hover:stroke-main'
-          }
+    <div
+      onClick={() => onSelect(topic.id)}
+      className={`
+        relative flex flex-row p-3 rounded-xl transition-colors h-36 gap-3
+        ${isSelected
+          ? 'border-1 border-main bg-main text-black'
+          : 'border border-stone-700 bg-stone-800 text-foreground hover:bg-stone-700'}
+      `}
+    >
+      <div className="">
+        <img
+          src={topic.imageUrl}
+          alt={topic.title}
+          className="aspect-square h-full rounded-lg object-cover"
         />
-        {count}
-      </button>
+
+      </div>
+      {/* Top bar: title + actions */}
+      <div className="flex flex-col items-start justify-between">
+        <h3 className="text-lg font-semibold">{topic.title}</h3>
+        {/* Paragraph */}
+        <p className="mt-3 leading-relaxed">
+          {topic.paragraph}
+        </p>
+      </div>
+      {/* Absolute likes + open chat button */}
+      <div className="absolute bottom-0 right-0 flex items-center gap-2">
+          <button
+            onClick={e => {
+              e.stopPropagation()
+              toggleLike()
+            }}
+            disabled={loading || likedByMe}
+            className="flex items-center gap-1 text-sm disabled:cursor-not-allowed"
+          >
+            <Heart
+              size={18}
+              className={
+                likedByMe
+                  ? 'fill-main stroke-black'
+                  : 'stroke-foreground hover:stroke-main'
+              }
+            />
+            {count}
+          </button>
+          <button
+            onClick={e => {
+              e.stopPropagation()
+              onOpenTopic(topic)
+            }}
+            className=" px-4 py-1 rounded bg-yellow-500 text-black hover:bg-yellow-600"
+          >
+            open chat
+          </button>
+
+        </div>
     </div>
   )
 }
