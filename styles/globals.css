@@ -1,39 +1,15 @@
 /* styles/globals.css */
-
-/* 1. Tell Tailwind where your JS config lives */
 @config "../tailwind.config.js";
-
-/* 2. Pull in Tailwind’s CSS-first entrypoint */
 @import "tailwindcss";
 
-/* 3. Base layer: vars, resets, and global @apply rules */
 @layer base {
-<<<<<<< HEAD
   /* 1. Reset & smoothing */
-=======
-  /* 3a. CSS variables for theming */
-  :root {
-    --background: #000000;
-    --foreground: #101010;
-    --main:       #FED48A;
-    --smoke:      #E6E6E6;
-    --dim_smoke:  #B3B3B3;
-    --gray:       #333333;
-
-  }
-  body {
-    @apply text-smoke;      /* every element that inherits color will now be smoke */
-  }
-
-  /* 3b. Normalize box-model & font smoothing */
->>>>>>> origin/feature/frontend
   *, ::before, ::after {
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-<<<<<<< HEAD
   /* 2. Remove default margins */
   h1, h2, h3, h4, h5, h6, p {
     margin: 0;
@@ -87,21 +63,3 @@
 
 /* Any extra global overrides (e.g. blockquote) */
 blockquote { @apply border-l-4 border-main pl-4 italic; }
-=======
-
-  @font-face{font-family:monument extended;font-style:normal;font-weight:400;src:local('Monument Extended'),
-    url(https://fonts.cdnfonts.com/s/19595/MonumentExtended-Regular.woff) format('woff')}
-  @font-face{font-family:monument extended;font-style:normal;font-weight:800;src:local('Monument Extended'),
-    url(https://fonts.cdnfonts.com/s/19595/MonumentExtended-Ultrabold.woff) format('woff')}
-}
-
-
-/* 5. Utilities layer: custom helpers if needed */
-/*
-@layer utilities {
-  .content-auto {
-    content-visibility: auto;
-  }
-}
-*/
->>>>>>> origin/feature/frontend

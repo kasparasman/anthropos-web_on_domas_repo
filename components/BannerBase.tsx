@@ -14,30 +14,23 @@ export default function BannerBase({
   logoUrl = '',
 }: BannerBaseProps) {
   return (
-    <section className="w-full flex flex-col items-center sm: gap-2 md:gap-3">
+    <section className="w-full max-w-[1120px] flex flex-col items-center gap-6">
       {/* Visitor count row */}
-      <div className="flex items-center gap-1 md:gap-2">
-        <span className="text-smoke sm:text-xl font-sans font-medium">
+      <div className="flex items-center gap-3">
+        <span className="text-[#E6E6E6] text-lg font-sans font-medium">
           Visitors since launch:
         </span>
-        <span className="text-main sm:text-xl font-sans font-medium">
+        <span className="text-main text-lg font-sans font-semibold">
           {visitorCount}
         </span>
       </div>
 
       {/* Title + logo row */}
-      <div className="flex flex-wrap items-center md:gap-3 gap-2 justify-center">
-        <h1 className="text-smoke lg:text-6xl md:text-5xl text-3xl font-u font-extrabold tracking-wide">
+      <div className="flex flex-wrap items-center gap-3 justify-center">
+        <h1 className="text-[#E6E6E6] text-5xl md:text-[64px] font-mono font-extrabold tracking-[1.92px]">
           {title}
         </h1>
-        <div className="relative lg:w-[72px] lg:h-[72px] md:w-14 md:h-14 w-9 h-9">
-          <Image
-          src={logoUrl}
-          alt={`${title} logo`}
-          fill
-          className="object-cover"
-          />
-        </div>
+        <Image src={logoUrl} width={72} height={72} alt={`${title} logo`} />
       </div>
     </section>
   )
