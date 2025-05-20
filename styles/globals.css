@@ -13,6 +13,7 @@
     --background: #000000;
     --foreground: #101010;
     --main:       #FED48A;
+    --secondary:  #282114;
     --smoke:      #E6E6E6;
     --dim_smoke:  #B3B3B3;
     --gray:       #333333;
@@ -34,6 +35,26 @@
     url(https://fonts.cdnfonts.com/s/19595/MonumentExtended-Regular.woff) format('woff')}
   @font-face{font-family:monument extended;font-style:normal;font-weight:800;src:local('Monument Extended'),
     url(https://fonts.cdnfonts.com/s/19595/MonumentExtended-Ultrabold.woff) format('woff')}
+  
+  
+  /* apply to any element with .scrollbar-custom */
+  .scrollbar-custom {
+    padding-right: 4px;
+  }
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 3px;
+    height: 8px;
+  }
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background-color: #5a5a5a;
+    border-radius: 8px;
+  }
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background-color: #767676;
+  }
 }
 
 

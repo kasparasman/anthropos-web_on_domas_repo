@@ -18,7 +18,7 @@ export default function AssetCarousel({
   assets,
   loop = true,
   autoplay = false,
-  speed = 3000,
+  speed = 1000,
   onSelectAsset,
 }: AssetCarouselProps) {
   /* Embla setup */
@@ -38,7 +38,7 @@ export default function AssetCarousel({
 
   return (
     <div className="w-full overflow-hidden" ref={emblaRef}>
-      <div className="flex gap-5">
+      <div className="flex">
         {/* duplicate for seamless loop */}
         {[...assets, ...assets].map((a, i) => (
           <div key={`${a.id}-${i}`} onClick={() => onSelectAsset?.(a.id)}>
