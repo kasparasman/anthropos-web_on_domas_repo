@@ -33,13 +33,13 @@ export default function TopicItem({
     <div
       onClick={() => onSelect(topic.id)}
       className={`
-        relative flex flex-row p-3 rounded-xl transition-colors h-36 gap-3
+        relative flex flex-row p-3 rounded-xl transition-colors h-[150px] gap-3 overflow-hidden mb-4
         ${isSelected
-          ? 'border-1 border-main bg-main text-black'
-          : 'border border-stone-700 bg-stone-800 text-foreground hover:bg-stone-700'}
+          ? ' bg-secondary border border-main text-smoke'
+          : ' border border-gray bg-stone-800 text-dim_smoke '}
       `}
     >
-      <div className="">
+      <div className="aspect-square h-full">
         <img
           src={topic.imageUrl}
           alt={topic.title}
@@ -47,43 +47,49 @@ export default function TopicItem({
         />
 
       </div>
-      {/* Top bar: title + actions */}
-      <div className="flex flex-col items-start justify-between">
-        <h3 className="text-lg font-semibold">{topic.title}</h3>
+      {/* Content */}
+      <div className=" relative flex flex-col items-start h-full overflow-hidden">
+        <div className={`absolute bottom-0 left-0 h-[50px] w-full
+        ${isSelected
+          ? ' bg-gradient-to-t from-secondary to-transparent'
+          : ' bg-gradient-to-t from-stone-800 to-transparent '}`} />
+        <h3 className="text-xl font-semibold">{topic.title}</h3>
         {/* Paragraph */}
-        <p className="mt-3 leading-relaxed">
+        <p className="mt-2 leading-relaxed">
           {topic.paragraph}
         </p>
       </div>
       {/* Absolute likes + open chat button */}
-      <div className="absolute bottom-0 right-0 flex items-center gap-2">
-          <button
+      <div className="absolute bottom-[-1px] right-[-1px] flex items-center gap-2 pl-5">
+            {/* 
+            <button
             onClick={e => {
               e.stopPropagation()
               toggleLike()
             }}
             disabled={loading || likedByMe}
             className="flex items-center gap-1 text-sm disabled:cursor-not-allowed"
-          >
+            >
             <Heart
               size={18}
               className={
-                likedByMe
-                  ? 'fill-main stroke-black'
-                  : 'stroke-foreground hover:stroke-main'
+              likedByMe
+                ? ' stroke-smoke'
+                : 'stroke-foreground hover:stroke-main'
               }
             />
             {count}
-          </button>
-          <button
+            </button>
+            */}
+            <button
             onClick={e => {
               e.stopPropagation()
               onOpenTopic(topic)
             }}
-            className=" px-4 py-1 rounded bg-yellow-500 text-black hover:bg-yellow-600"
-          >
-            open chat
-          </button>
+            className="px-4 py-1 uppercase text-sm font-semibold rounded-tl-[32px] rounded-br-xl bg-main text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]"
+            >
+            open topic
+            </button>
 
         </div>
     </div>

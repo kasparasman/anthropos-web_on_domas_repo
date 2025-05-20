@@ -15,6 +15,7 @@ module.exports = {
         foreground: 'var(--foreground)',
         main:       'var(--Main)',
         main:       'var(--main)',
+        secondary:  'var(--secondary)',
         smoke:      'var(--smoke)',
         dim_smoke:  'var(--dim_smoke)',
         gray:       'var(--gray)',

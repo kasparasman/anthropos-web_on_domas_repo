@@ -16,12 +16,14 @@ export default function StatsSection({ data }: StatsSectionProps) {
   ]
 
   return (
-    <div className=" border rounded-2xl border-main py-4 px-5 flex flex-col justify-between ">
-      <img src="/logo.png" alt="ACT Logo" width={100} height={100} className="flex-shrink-0" />
+    <div className="border rounded-2xl border-main py-4 px-5 flex flex-col justify-between">
+      <img src="/ACT.png" alt="ACT Logo" width={100} height={100} className="mx-auto flex-shrink-0 " />
       {cards.map(({ label, value }) => (
-        <StatsCard key={label} label={label} value={value} />
+      <StatsCard key={label} label={label} value={value} />
       ))}
-      <button className="w-full bg-main text-black rounded-lg px-4 py-3 font-sans font-semibold">
+      <button
+        className="w-full bg-main text-black rounded-lg px-4 py-3 font-sans font-semibold transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]"
+      >
         BUY NOW
       </button>
     </div>
