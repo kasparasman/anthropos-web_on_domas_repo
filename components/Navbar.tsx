@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import styles from './Navbar.module.css'
 import ProfileButton from '../components/ProfileButton'
 
 export default function Navbar() {
@@ -20,7 +19,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-black border-b border-gray">
-      <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+      <div className="relative max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
           <span className="self-center text-2xl font-semibold whitespace-nowrap">
@@ -52,18 +51,18 @@ export default function Navbar() {
           className={`items-center justify-between ${isMenuOpen ? 'block' : 'hidden'} w-full md:flex md:w-auto md:order-1`}
           id="navbar-cta"
         >
-          <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray rounded-lg bg-foreground md:bg-transparent md:space-x-4 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
+            <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray rounded-lg bg-foreground md:bg-transparent md:space-x-4 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:absolute md:left-1/2 md:-translate-x-1/2">
             {links.map(({ href, label }) => (
               <li key={href}>
-                <Link
-                  href={href}
-                  className={`block py-2 px-3 md:px-2 text-dim_smoke rounded-sm hover:bg-white/10 md:hover:text-smoke ${
-                    path === href ? styles.activeLink : ''
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {label}
-                </Link>
+              <Link
+                href={href}
+                className={`block py-2 px-3 md:px-2 text-dim_smoke rounded-sm hover:bg-white/10 md:hover:text-smoke ${
+                path === href ? styles.activeLink : ''
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {label}
+              </Link>
               </li>
             ))}
 
@@ -71,7 +70,7 @@ export default function Navbar() {
             <li className="md:hidden">
               <ProfileButton />
             </li>
-          </ul>
+            </ul>
         </div>
       </div>
     </nav>

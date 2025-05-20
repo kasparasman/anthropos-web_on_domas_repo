@@ -11,16 +11,16 @@ export interface BannerBaseProps {
 export default function BannerBase({
   visitorCount,
   title = 'ANTHROPOS CITY',
-  logoUrl = '',
+  logoUrl = '/qr.png',
 }: BannerBaseProps) {
   return (
     <section className="w-full flex flex-col items-center sm: gap-2 md:gap-3">
       {/* Visitor count row */}
       <div className="flex items-center gap-1 md:gap-2">
-        <span className="text-smoke sm:text-xl font-sans font-medium">
+        <span className="text-smoke sm:text-xl font-sans font-normal">
           Visitors since launch:
         </span>
-        <span className="text-main sm:text-xl font-sans font-medium">
+        <span className="text-main sm:text-xl font-sans font-normal">
           {visitorCount}
         </span>
       </div>
