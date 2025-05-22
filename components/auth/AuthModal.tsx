@@ -1,91 +1,157 @@
-// components/auth/AuthModal.tsx
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { Dialog } from '@headlessui/react'
+import { signIn } from 'next-auth/react'
 import { signInClient, registerClient } from '../../lib/firebase-client'
+import { uploadAvatar } from '../../lib/uploadAvatar'
 
-interface AuthModalProps {
-  open: boolean
-  onClose: () => void
-  onSignInSuccess?: () => void
-  onSignUpSuccess?: () => void
-}
+interface AuthModalProps { open: boolean; onClose: () => void }
 
-export default function AuthModal({
-  open,
-  onClose,
-  onSignInSuccess,
-  onSignUpSuccess
-}: AuthModalProps) {
+export default function AuthModal({ open, onClose }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
+
+  /* basic fields */
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  /* avatar flow */
+  const [file, setFile] = useState<File | null>(null)
+  const [origUrl, setOrigUrl] = useState<string | null>(null)
+  const [tmpAvatarUrl, setTmpAvatarUrl] = useState<string | null>(null)
+  const [nickname, setNickname] = useState<string>('')
+
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const cancelRef = useRef<HTMLButtonElement>(null)
+
+  /* body scroll lock */
+  useEffect(() => {
+    if (open) {
+      const prev = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = prev }
+    }
+  }, [open])
 
   if (!open) return null
 
+  /* ------- avatar + nickname generation handler ------- */
+  async function handleGenerate() {
+    if (!file) return
+    setLoading(true); setError(null)
+    try {
+      /* 1.  direct PUT to R2 /tmp/original */
+      const orig = await uploadAvatar(file)
+      setOrigUrl(orig)
+
+      /* 2.  call our avatar-gen route (LightX) */
+      const { tmpAvatarUrl } = await fetch('/api/avatar-gen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceUrl: orig }),
+      }).then(r => r.json())
+      setTmpAvatarUrl(tmpAvatarUrl)
+
+      /* 3.  get nickname */
+      const { nickname } = await fetch('/api/nickname', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: tmpAvatarUrl }),
+      }).then(r => r.json())
+      setNickname(nickname)
+    } catch (e: any) {
+      setError(e.message || 'Generation failed')
+    } finally { setLoading(false) }
+  }
+
+  /* ------- submit (sign in / register) ---------------- */
+  async function submit() {
+    setError(null); setLoading(true)
+    try {
+      if (mode === 'register') {
+        const cred = await registerClient(email, password)
+        const idToken = await cred.user.getIdToken()
+        await signIn('credentials', {
+          idToken,
+          tmpUrl: tmpAvatarUrl ?? '',
+          nickname,
+          redirect: false,
+        })
+      } else {
+        await signInClient(email, password)
+      }
+      onClose()
+    } catch (e: any) {
+      setError(e.message)
+    } finally { setLoading(false) }
+  }
+
+  /* --------------------------- UI --------------------------- */
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-      <div className="bg-white p-6 rounded shadow-lg w-80">
-        <h2 className="text-xl mb-4">
-          {mode === 'login' ? 'Sign In' : 'Register'}
-        </h2>
-        
-        {error && (
-          <p className="mb-2 text-red-500 text-sm">{error}</p>
-        )}
-        
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="w-full mb-2 px-2 py-1 border rounded"
-        />
-        
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="w-full mb-4 px-2 py-1 border rounded"
-        />
-        
-        <button
-          onClick={async () => {
-            setError(null)
-            try {
-              if (mode === 'register') {
-                await registerClient(email, password)
-                onSignUpSuccess?.()
-              } else {
-                await signInClient(email, password)
-                onSignInSuccess?.()
-              }
-              onClose()
-            } catch (err: any) {
-              setError(err.message)
-            }
-          }}
-          className="w-full mb-2 px-2 py-1 bg-blue-600 text-white rounded"
-        >
-          {mode === 'login' ? 'Sign In' : 'Register'}
-        </button>
-        
-        <button
-          onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-          className="w-full text-sm text-blue-600"
-        >
-          {mode === 'login' ? 'Need an account? Register' : 'Have an account? Sign In'}
-        </button>
-        
-        <button
-          onClick={onClose}
-          className="w-full mt-2 px-2 py-1 text-center text-gray-700"
-        >
-          Cancel
-        </button>
+    <Dialog as={Fragment} open={open}
+            onClose={loading ? () => {} : onClose}
+            initialFocus={cancelRef}>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/60" onClick={onClose} />
+        <div onClick={e=>e.stopPropagation()}
+             className="relative z-10 w-80 rounded bg-white p-6 shadow-lg">
+          <h2 className="mb-4 text-center text-xl font-semibold">
+            {mode === 'login' ? 'Sign In' : 'Register'}
+          </h2>
+
+          {error && <p className="mb-2 text-sm text-red-500">{error}</p>}
+
+          {mode === 'register' && (
+            <>
+              <input type="file" accept="image/*"
+                     onChange={(e)=>setFile(e.target.files?.[0]||null)}
+                     className="mb-2 w-full text-sm"/>
+
+              <button
+                disabled={!file || loading}
+                onClick={handleGenerate}
+                className="mb-2 w-full rounded bg-amber-500 py-1 text-white disabled:opacity-60">
+                {loading ? 'Generating…' : 'Generate Avatar & Nickname'}
+              </button>
+
+              {tmpAvatarUrl && (
+                <img src={tmpAvatarUrl} alt="avatar"
+                     className="mx-auto mb-2 h-24 w-24 rounded-full object-cover"/>
+              )}
+
+              <input readOnly
+                     value={nickname}
+                     placeholder="Nickname"
+                     className="mb-4 w-full rounded border bg-gray-100 px-2 py-1"/>
+            </>
+          )}
+
+          <input type="email" placeholder="Email" value={email}
+                 onChange={e=>setEmail(e.target.value)}
+                 className="mb-2 w-full rounded border px-2 py-1"/>
+          <input type="password" placeholder="Password" value={password}
+                 onChange={e=>setPassword(e.target.value)}
+                 className="mb-4 w-full rounded border px-2 py-1"/>
+
+          <button disabled={loading || (mode==='register' && !tmpAvatarUrl)}
+                  onClick={submit}
+                  className="mb-2 w-full rounded bg-blue-600 py-1 text-white disabled:opacity-60">
+            {loading ? 'Processing…' : (mode==='login' ? 'Sign In' : 'Register')}
+          </button>
+
+          <button disabled={loading}
+                  onClick={()=>setMode(m=>m==='login'?'register':'login')}
+                  className="w-full text-sm text-blue-600 disabled:opacity-60">
+            {mode==='login'?'Need an account? Register':'Have an account? Sign In'}
+          </button>
+
+          <button ref={cancelRef} onClick={onClose}
+                  className="mt-2 w-full px-2 py-1 text-center text-gray-700">
+            Cancel
+          </button>
+        </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

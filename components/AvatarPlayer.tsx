@@ -9,7 +9,7 @@ export default function AvatarPlayer({ videoUrl }: { videoUrl: string | null }) 
     const src = videoUrl ?? ''   // empty string = nothing to play
 
     return (
-    <div className="w-full h-96 bg-black rounded-xl overflow-hidden">
+      <div className="w-[40%] h-96 bg-black rounded-xl overflow-hidden">
       <video
         key={src}                 // reset player on change
         src={src}

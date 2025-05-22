@@ -1,30 +1,42 @@
-// lib/auth/credentials.ts
+/* lib/auth/credentials.ts --------------------------------------- */
 import { verifyIdToken } from '../firebase-admin'
 import { prisma } from '@/lib/prisma'
+import { promoteAvatar } from '../promoteAvatar'
 
-/**
- * Credentials provider now expects a single field:  idToken
- * (set in hooks/useFirebaseNextAuth → signIn('credentials', { idToken }))
- */
+type Creds = {
+  idToken:  string
+  tmpUrl?:  string   // present only during registration
+  nickname?: string  // present only during registration
+}
+
 export async function authorize(
-  credentials: Record<'idToken', string> | undefined,
+  credentials: Creds | undefined,
 ): Promise<{ id: string; name: string; email: string; image?: string } | null> {
   if (!credentials?.idToken) return null
 
   try {
-    /* 1 ▶ Verify the Firebase ID token on the server */
+    /* 1 ◀ verify Firebase JWT */
     const decoded = await verifyIdToken(credentials.idToken)
-    const { uid, email = '', name = '', picture } = decoded
+    const { uid, email = '' } = decoded
 
-    /* 2 ▶ Upsert (or fetch) your local profile row */
+    /* 2 ◀ if tmpUrl present, move avatar to avatars/<uid>.png */
+    let avatarUrl: string | null = null
+    if (credentials.tmpUrl) {
+      avatarUrl = await promoteAvatar(credentials.tmpUrl, uid)
+    }
+
+    /* 3 ◀ upsert profile row */
     const profile = await prisma.profiles.upsert({
       where:  { id: uid },
-      update: {},
+      update: {
+        ...(avatarUrl && { avatar_url: avatarUrl }),
+        ...(credentials.nickname && { nickname: credentials.nickname }),
+      },
       create: {
         id:    uid,
         email,
-        nickname: name || email.split('@')[0],
-        avatar_url: picture ?? null,
+        nickname: credentials.nickname || email.split('@')[0],
+        avatar_url: avatarUrl,
       },
       select: {
         id: true,
@@ -34,7 +46,7 @@ export async function authorize(
       },
     })
 
-    /* 3 ▶ Return the user object Next-Auth expects */
+    /* 4 ◀ return user for Next-Auth session */
     return {
       id:    profile.id,
       name:  profile.nickname,
@@ -42,7 +54,7 @@ export async function authorize(
       image: profile.avatar_url ?? undefined,
     }
   } catch (err) {
-    console.error('authorize(): token verification failed', err)
+    console.error('authorize():', err)
     return null
   }
 }
