@@ -12,6 +12,7 @@ export default function Banner(props: BannerProps) {
     return (
       <div className="w-full flex justify-center py-12">
         <span className="text-base font-sans text-zinc-400">Loading…</span>
+
       </div>
     )
   }

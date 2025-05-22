@@ -6,7 +6,6 @@ import { Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 
-import styles from './Navbar.module.css'
 import ProfileButton from '../components/ProfileButton'
 import AuthButton     from './auth/AuthButton'
 

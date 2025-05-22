@@ -56,7 +56,7 @@ export default function TopicItem({
         <h3 className="text-xl font-semibold">{topic.title}</h3>
         {/* Paragraph */}
         <p className="mt-2 leading-relaxed">
-          {topic.paragraph}
+          {topic.body}
         </p>
       </div>
       {/* Absolute likes + open chat button */}
