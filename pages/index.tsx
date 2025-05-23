@@ -70,24 +70,27 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const session = await getServerSession(ctx.req, ctx.res, authOptions)
   const userId = session?.user?.id ?? null
 
-  const raw = await prisma.topics.findMany({
-    orderBy: { date: 'desc' },
+  const raw = await prisma.topic.findMany({  // Changed: topic instead of topics
+    orderBy: { createdAt: 'desc' },         // Changed: createdAt instead of date
     select: {
       id: true,
       title: true,
-      video_url: true,
-      likes: { select: { user_id: true } },
+      body: true,           // Added
+      createdAt: true,      // Added  
+      videoUrl: true,                       // Changed: videoUrl instead of video_url
+      topicLikes: { select: { userId: true } }, // Changed: topicLikes instead of likes
     },
   })
-
+  
   const topics: Topic[] = raw.map((t) => ({
-    id:            t.id,
-    title:         t.title,
-    videoUrl:      t.video_url ?? null,
-    likes:         t.likes.length,
-    likedByUser:   userId ? t.likes.some((l) => l.user_id === userId) : false,
+    id: t.id,
+    title: t.title,
+    body: t.body,           // Added
+    createdAt: t.createdAt.toISOString(), // Convert Date to ISO string
+    videoUrl: t.videoUrl,
+    likes: t.topicLikes.length,
+    likedByUser: userId ? t.topicLikes.some((l) => l.userId === userId) : false,
   }))
-
   /* 3) Assets --------------------------------------------------------- */
   // your real data or mock
   const assets: Asset[] = [

@@ -13,8 +13,8 @@ export default function CommentList({ comments, loading }: Props) {
     <ul className="space-y-3">
       {comments.map((c) => (
         <li key={c.id} className="border border-stone-800 rounded p-3">
-          <p className="text-sm text-zinc-400">{new Date(c.created_at).toLocaleString()}</p>
-          <p>{c.content}</p>
+          <p className="text-sm text-zinc-400">{new Date(c.createdAt).toLocaleString()}</p>
+          <p>{c.body}</p>
         </li>
       ))}
     </ul>

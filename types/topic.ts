@@ -1,8 +1,10 @@
 // types/topic.ts
 export interface Topic {
-  id: number
+  id: string           // Changed: now UUID string instead of number
   title: string
-  videoUrl: string | null   // Changed from video_url to videoUrl
-  likes: number            // Changed from array to number
-  likedByUser: boolean
+  body: string
+  videoUrl: string
+  createdAt: Date | string  // Accept both Date object and ISO string
+  likes: number       // Added: to match how we use it
+  likedByUser: boolean // Added: to match how we use it
 }

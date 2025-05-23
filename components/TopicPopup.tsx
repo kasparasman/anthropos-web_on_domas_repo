@@ -16,7 +16,11 @@ interface TopicPopupProps {
 }
 
 export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProps) {
-  const { comments, loading, addComment } = useComments(topic.id)
+  const {
+    comments, addComment,
+    warn, clearWarn,
+    loading, error
+  } = useComments(topic.id)
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -40,8 +44,13 @@ export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProp
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Comments</h3>
             <CommentList comments={comments} loading={loading} />
-            <CommentForm topicId={topic.id} onAdd={addComment} />
-          </div>
+            <CommentForm
+        topicId={topic.id}
+        onAdd={addComment}
+        warn={warn}
+        clearWarn={clearWarn}
+      />          
+      </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

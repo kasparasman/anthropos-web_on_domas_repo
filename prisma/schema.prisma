@@ -7,47 +7,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model comments {
-  id         Int       @id @default(autoincrement())
-  topic_id   Int
-  author_id  String
-  content    String
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  profiles   profiles  @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  topics     topics    @relation(fields: [topic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+/// ─────────────────────────────────────────────────────────────────────────────
+///   USER PROFILE
+/// ─────────────────────────────────────────────────────────────────────────────
+model Profile {
+  id         String      @id
+  email      String      @unique
+  nickname   String      @unique
+  warnings   Int         @default(0)
+  banned     Boolean     @default(false)
+  avatarUrl  String?
+  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
+  rekFaceId  String?
+  comments   Comment[]
+  modLogs    ModLog[]
+  topicLikes TopicLike[]
 
-  @@index([topic_id, created_at(sort: Desc)])
+  @@map("profiles")
 }
 
-model likes {
-  id         Int       @id @default(autoincrement())
-  topic_id   Int
-  user_id    String
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  topics     topics    @relation(fields: [topic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  profiles   profiles  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([topic_id, user_id])
-  @@index([topic_id])
-}
-
-model profiles {
-  id         String     @id @default(dbgenerated("gen_random_uuid()"))
-  email      String     @unique
-  nickname   String     @unique
-  avatar_url String?
-  created_at DateTime?  @default(now()) @db.Timestamptz(6)
-  comments   comments[]
-  likes      likes[]
-}
-
-model topics {
-  id         Int        @id @default(autoincrement())
-  date       DateTime   @unique @db.Date
+/// ─────────────────────────────────────────────────────────────────────────────
+///   TOPICS
+/// ─────────────────────────────────────────────────────────────────────────────
+model Topic {
+  id         String      @id
   title      String
-  video_url  String?           // ← make it optional
-  created_at DateTime?  @default(now()) @db.Timestamptz(6)
-  body       String?
-  comments   comments[]
-  likes      likes[]
+  body       String
+  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
+  videoUrl   String
+  comments   Comment[]
+  topicLikes TopicLike[]
+
+  @@map("topics")
+}
+
+/// ─────────────────────────────────────────────────────────────────────────────
+///   COMMENTS  (threaded via parentId ⇄ replies)
+/// ─────────────────────────────────────────────────────────────────────────────
+model Comment {
+  id        String    @id
+  body      String
+  authorId  String
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  parentId  String?
+  topicId   String
+  author    Profile   @relation(fields: [authorId], references: [id])
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  topic     Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  modLogs   ModLog[]
+
+  @@index([topicId, createdAt(sort: Desc)])
+  @@map("comments")
+}
+
+/// ─────────────────────────────────────────────────────────────────────────────
+///   TOPIC LIKES  (composite-PK: one like per user per topic)
+/// ─────────────────────────────────────────────────────────────────────────────
+model TopicLike {
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  topicId   String
+  userId    String
+  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  user      Profile  @relation(fields: [userId], references: [id])
+
+  @@id([userId, topicId])
+  @@index([topicId])
+  @@map("topic_likes")
+}
+
+/// ─────────────────────────────────────────────────────────────────────────────
+///   MODERATION LOGS  (every warning / ban event)
+/// ─────────────────────────────────────────────────────────────────────────────
+model ModLog {
+  id        Int      @id @default(autoincrement())
+  score     String
+  commentId String?
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  userId    String
+  action    Int      @default(0)
+  comment   Comment? @relation(fields: [commentId], references: [id])
+  user      Profile  @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("mod_logs")
 }
