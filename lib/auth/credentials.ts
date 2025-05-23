@@ -18,6 +18,15 @@ export async function authorize(
     /* 1 ◀ verify Firebase JWT */
     const decoded = await verifyIdToken(credentials.idToken)
     const { uid, email = '' } = decoded
+    /* 2 ▸  BAN CHECK — email is unique in your schema */
+    const existing = await prisma.profile.findUnique({
+      where: { email },
+      select:{ banned:true }
+    })
+    if (existing?.banned) {
+      // throw so Next-Auth can surface a custom error string
+      throw new Error('ACCOUNT_BANNED')
+    }
 
     /* 2 ◀ if tmpUrl present, move avatar to avatars/<uid>.png */
     let avatarUrl: string | null = null
@@ -26,23 +35,23 @@ export async function authorize(
     }
 
     /* 3 ◀ upsert profile row */
-    const profile = await prisma.profiles.upsert({
+    const profile = await prisma.profile.upsert({
       where:  { id: uid },
       update: {
-        ...(avatarUrl && { avatar_url: avatarUrl }),
+        ...(avatarUrl && { avatarUrl }),
         ...(credentials.nickname && { nickname: credentials.nickname }),
       },
       create: {
         id:    uid,
         email,
         nickname: credentials.nickname || email.split('@')[0],
-        avatar_url: avatarUrl,
+        avatarUrl,
       },
       select: {
         id: true,
         email: true,
         nickname: true,
-        avatar_url: true,
+        avatarUrl: true,
       },
     })
 
@@ -51,9 +60,11 @@ export async function authorize(
       id:    profile.id,
       name:  profile.nickname,
       email: profile.email,
-      image: profile.avatar_url ?? undefined,
+      image: profile.avatarUrl ?? undefined,
     }
-  } catch (err) {
+  } catch (err: any) {
+    // Let a specific error propagate, everything else becomes null
+    if (err.message === 'ACCOUNT_BANNED') throw err
     console.error('authorize():', err)
     return null
   }

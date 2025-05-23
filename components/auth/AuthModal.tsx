@@ -67,26 +67,50 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
   /* ------- submit (sign in / register) ---------------- */
   async function submit() {
-    setError(null); setLoading(true)
     try {
+      setLoading(true)
+      setError(null)
+    
       if (mode === 'register') {
-        const cred = await registerClient(email, password)
+        const cred    = await registerClient(email, password)
         const idToken = await cred.user.getIdToken()
-        await signIn('credentials', {
+    
+        const result  = await signIn('credentials', {
           idToken,
-          tmpUrl: tmpAvatarUrl ?? '',
+          tmpUrl:   tmpAvatarUrl ?? '',
           nickname,
           redirect: false,
         })
-      } else {
-        await signInClient(email, password)
+    
+        if (result?.error === 'AccountBanned' || result?.error === 'ACCOUNT_BANNED') {
+          setError('This account has been permanently suspended.')
+          return
+        }
+        if (result?.error) throw new Error(result.error)
+    
+      } else {                           // ────── LOGIN ──────
+        const cred    = await signInClient(email, password)   // firebase
+        const idToken = await cred.user.getIdToken()
+    
+        const result  = await signIn('credentials', {
+          idToken,
+          redirect: false,
+        })
+    
+        if (result?.error === 'AccountBanned' || result?.error === 'ACCOUNT_BANNED') {
+          setError('This account has been permanently suspended.')
+          return
+        }
+        if (result?.error) throw new Error(result.error)
       }
-      onClose()
+    
+      onClose()                                   // success
     } catch (e: any) {
-      setError(e.message)
-    } finally { setLoading(false) }
+      setError(e.message || 'Authentication failed')
+    } finally {
+      setLoading(false)
+    }
   }
-
   /* --------------------------- UI --------------------------- */
   return (
     <Dialog as={Fragment} open={open}

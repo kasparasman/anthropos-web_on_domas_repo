@@ -8,19 +8,19 @@ type LikeResponse = { count: number; likedByMe: boolean }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions)
-  const topicId = parseInt(req.query.id as string, 10)
+  const topicId = req.query.id as string  // Changed: now using string UUID
   console.log('👍 [likes] session in API:', session)
 
   // GET /api/topics/[id]/likes
   if (req.method === 'GET') {
-      const count = await prisma.likes.count({
-      where: { topic_id: topicId }
+    const count = await prisma.topicLike.count({  // Changed: topicLike instead of likes
+      where: { topicId }                         // Changed: field name
     })
     const likedByMe = session?.user?.id
-      ? (await prisma.likes.findFirst({
+      ? (await prisma.topicLike.findFirst({
           where: {
-            topic_id: topicId,
-            user_id: session.user.id
+            topicId,
+            userId: session.user.id              // Changed: userId instead of user_id
           }
         })) !== null
       : false
@@ -35,31 +35,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const userId = session.user.id
 
     // Check existing like
-    const existingLike = await prisma.likes.findFirst({
+    const existingLike = await prisma.topicLike.findFirst({
       where: {
-        topic_id: topicId,
-        user_id: userId
+        topicId,
+        userId
       }
     })
 
     if (existingLike) {
       // Remove like
-      await prisma.likes.delete({
-        where: { id: existingLike.id }
+      await prisma.topicLike.delete({
+        where: {
+          userId_topicId: {        // Changed: using composite key
+            userId,
+            topicId
+          }
+        }
       })
     } else {
       // Add like
-      await prisma.likes.create({
+      await prisma.topicLike.create({
         data: {
-          topic_id: topicId,
-          user_id: userId
+          userId,
+          topicId
         }
       })
     }
 
     // Fetch updated count
-    const newCount = await prisma.likes.count({
-      where: { topic_id: topicId }
+    const newCount = await prisma.topicLike.count({
+      where: { topicId }
     })
     const likedByMe = existingLike == null
 
