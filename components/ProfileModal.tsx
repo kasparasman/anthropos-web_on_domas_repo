@@ -43,7 +43,7 @@ export default function ProfileModal({
           {/* Avatar + info */}
           <div className="flex flex-col items-center gap-3">
             <Image
-              src={avatarUrl ?? '/default-avatar.png'}
+              src={avatarUrl ?? '/default-avatar.svg'}
               width={96}
               height={96}
               alt="avatar"

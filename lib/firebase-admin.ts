@@ -10,6 +10,11 @@ if (!admin.apps.length) {
     }),
   });
 }
-export {admin}
+
+export { admin }
+
 export const verifyIdToken = (token: string) =>
   admin.auth().verifyIdToken(token);
+
+export const deleteFirebaseUser = (uid: string) => 
+  admin.auth().deleteUser(uid);

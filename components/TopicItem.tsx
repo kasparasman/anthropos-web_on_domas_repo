@@ -24,14 +24,14 @@ export default function TopicItem({
   /* -------------------------------------------------------------- */
   /*  Likes hook – start with SSR data for instant paint            */
   /* -------------------------------------------------------------- */
-  const { count, likedByMe, loading, toggleLike } = useLikes(topic.id)
+  const { count, likedByMe, loading, toggleLike } = useLikes(Number(topic.id))
 
   /* -------------------------------------------------------------- */
   /*  Render                                                        */
   /* -------------------------------------------------------------- */
   return (
     <div
-      onClick={() => onSelect(topic.id)}
+      onClick={() => onSelect(Number(topic.id))}
       className={`
         relative flex flex-row p-3 rounded-xl transition-colors h-[150px] gap-3 overflow-hidden mb-4
         ${isSelected
@@ -41,7 +41,6 @@ export default function TopicItem({
     >
       <div className="aspect-square h-full">
         <img
-          src={topic.imageUrl}
           alt={topic.title}
           className="aspect-square h-full rounded-lg object-cover"
         />
