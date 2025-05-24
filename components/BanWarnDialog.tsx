@@ -17,10 +17,23 @@ export default function BanWarnDialog({
         onClose()                     // clear the warn state in parent
       }
     
+    // Overlay click handler: only allow closing if not banned
+    const handleOverlayClick = () => {
+      if (!banned) {
+        onClose()
+      }
+      // If banned, do nothing
+    }
 
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div className="bg-stone-800 p-8 rounded-lg w-full max-w-md border-2 border-red-500">
+      <div
+        className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+        onClick={handleOverlayClick}
+      >
+        <div
+          className="bg-stone-800 p-8 rounded-lg w-full max-w-md border-2 border-red-500"
+          onClick={e => e.stopPropagation()} // Prevent overlay click from closing
+        >
           <h2 className={`text-2xl font-bold mb-6 ${banned ? 'text-red-500' : 'text-yellow-500'}`}>
             {banned ? "⚠️ Account Banned" : "⚠️ Content Warning"}
           </h2>
