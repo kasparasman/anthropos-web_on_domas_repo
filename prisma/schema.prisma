@@ -11,7 +11,7 @@ datasource db {
 ///   USER PROFILE
 /// ─────────────────────────────────────────────────────────────────────────────
 model Profile {
-  id         String      @id
+  id         String      @id @default(uuid())
   email      String      @unique
   nickname   String      @unique
   warnings   Int         @default(0)

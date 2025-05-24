@@ -21,6 +21,6 @@ person in this profile image: ${avatarUrl}. Respond with the nickname only.`,
   })
 
   res.status(200).json({
-    nickname: completion.choices[0].message.content.trim().replace(/[^a-z0-9_-]/gi, ''),
+    nickname: completion.choices[0].message?.content?.trim().replace(/[^a-z0-9_-]/gi, '') ?? '',
   })
 }

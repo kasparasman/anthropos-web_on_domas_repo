@@ -18,9 +18,9 @@ export default async function handler(
 
   // GET /api/profile
   if (req.method === 'GET') {
-    const profile = await prisma.profiles.findUnique({
+    const profile = await prisma.profile.findUnique({
       where: { id: uid },
-      select: { id: true, email: true, nickname: true, avatar_url: true }
+      select: { id: true, email: true, nickname: true, avatarUrl: true }
     })
     if (!profile) {
       return res.status(404).json({ error: 'Profile not found' } as ErrorResponse)
@@ -30,25 +30,25 @@ export default async function handler(
 
   // POST /api/profile
   if (req.method === 'POST') {
-    const { nickname, avatar_url } = req.body as {
+    const { nickname, avatarUrl } = req.body as {
       nickname: string
-      avatar_url?: string | null
+      avatarUrl?: string | null
     }
     if (typeof nickname !== 'string') {
       return res.status(400).json({ error: 'Invalid nickname' } as ErrorResponse)
     }
 
-    const upserted = await prisma.profiles.upsert({
+    const upserted = await prisma.profile.upsert({
       where: { id: uid },
       create: {
         id: uid,
         email: session.user.email ?? '',
         nickname,
-        avatar_url: avatar_url ?? null
+        avatarUrl: avatarUrl ?? null
       },
       update: {
         nickname,
-        avatar_url: avatar_url ?? null
+        avatarUrl: avatarUrl ?? null
       }
     })
 

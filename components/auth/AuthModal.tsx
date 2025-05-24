@@ -19,6 +19,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [origUrl, setOrigUrl] = useState<string | null>(null)
   const [tmpAvatarUrl, setTmpAvatarUrl] = useState<string | null>(null)
+  const [tmpFaceUrl, setTmpFaceUrl] = useState<string | null>(null)
   const [nickname, setNickname] = useState<string>('')
 
   const [error, setError] = useState<string | null>(null)
@@ -44,22 +45,45 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       /* 1.  direct PUT to R2 /tmp/original */
       const orig = await uploadAvatar(file)
       setOrigUrl(orig)
+      setTmpFaceUrl(orig)
 
-      /* 2.  call our avatar-gen route (LightX) */
-      const { tmpAvatarUrl } = await fetch('/api/avatar-gen', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceUrl: orig }),
-      }).then(r => r.json())
-      setTmpAvatarUrl(tmpAvatarUrl)
+      // 🚀 DEV BYPASS: Skip expensive LightX calls during rekognition development
+      const isDev = process.env.NODE_ENV === 'development'
+      const skipAvatarGen = process.env.NEXT_PUBLIC_SKIP_AVATAR_GEN === 'true'
+      
+      if (isDev && skipAvatarGen) {
+        console.log('[AuthModal] 🚀 DEV MODE: Skipping avatar generation and nickname API calls')
+        
+        // Use original image as "generated" avatar for dev
+        setTmpAvatarUrl(orig)
+        
+        // Use a simple dev nickname
+        const devNickname = `dev_${email.split('@')[0]}_${Date.now().toString().slice(-4)}`
+        setNickname(devNickname)
+        
+        console.log('[AuthModal] 🚀 DEV MODE: Using dev avatar and nickname:', { 
+          avatar: orig, 
+          nickname: devNickname 
+        })
+      } else {
+        console.log('[AuthModal] Production mode: Running full avatar generation')
+        
+        /* 2.  call our avatar-gen route (LightX) */
+        const { tmpAvatarUrl } = await fetch('/api/avatar-gen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourceUrl: orig }),
+        }).then(r => r.json())
+        setTmpAvatarUrl(tmpAvatarUrl)
 
-      /* 3.  get nickname */
-      const { nickname } = await fetch('/api/nickname', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ avatarUrl: tmpAvatarUrl }),
-      }).then(r => r.json())
-      setNickname(nickname)
+        /* 3.  get nickname */
+        const { nickname } = await fetch('/api/nickname', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatarUrl: tmpAvatarUrl }),
+        }).then(r => r.json())
+        setNickname(nickname)
+      }
     } catch (e: any) {
       setError(e.message || 'Generation failed')
     } finally { setLoading(false) }
@@ -72,23 +96,88 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       setError(null)
     
       if (mode === 'register') {
-        const cred    = await registerClient(email, password)
-        const idToken = await cred.user.getIdToken()
-    
-        const result  = await signIn('credentials', {
+        console.log('[AuthModal] Starting registration flow')
+        
+        // STEP 1: Check face duplicate BEFORE creating Firebase user
+        if (tmpFaceUrl) {
+          console.log('[AuthModal] Checking face duplicate before user creation')
+          try {
+            const faceCheckResponse = await fetch('/api/check-face-duplicate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                imageUrl: tmpFaceUrl,
+                email: email 
+              }),
+            })
+            
+            const faceCheckResult = await faceCheckResponse.json()
+            
+            if (!faceCheckResponse.ok) {
+              if (faceCheckResult.error === 'FACE_DUPLICATE') {
+                setError('This face already exists in our system. If you believe this is an error, contact support.')
+                return
+              }
+              throw new Error(faceCheckResult.error || 'Face check failed')
+            }
+            
+            console.log('[AuthModal] Face check passed - no duplicates found')
+          } catch (faceError: any) {
+            console.error('[AuthModal] Face check failed:', faceError.message)
+            setError(faceError.message || 'Face verification failed')
+            return
+          }
+        }
+        
+        // STEP 2: Only now create Firebase user (face check passed)
+        console.log('[AuthModal] Creating Firebase user (face check passed)')
+        const cred = await registerClient(email, password)
+        const firebaseUser = cred.user
+        console.log('[AuthModal] Firebase user created:', firebaseUser.uid)
+        
+        const idToken = await firebaseUser.getIdToken()
+        console.log('[AuthModal] Got Firebase ID token')
+
+        // STEP 3: Create profile (we know face is unique)
+        const result = await signIn('credentials', {
           idToken,
-          tmpUrl:   tmpAvatarUrl ?? '',
+          tmpAvatarUrl: tmpAvatarUrl ?? '',
+          tmpFaceUrl: tmpFaceUrl ?? '',  // Still pass this for final indexing
           nickname,
           redirect: false,
         })
-    
+        
+        console.log('[AuthModal] signIn result:', result)
+        
+        // Handle other possible errors (not face duplicate)
         if (result?.error === 'AccountBanned' || result?.error === 'ACCOUNT_BANNED') {
+          console.log('[AuthModal] Account banned')
           setError('This account has been permanently suspended.')
           return
         }
-        if (result?.error) throw new Error(result.error)
+        if (result?.error === 'EMAIL_ALREADY_IN_USE') {
+          console.log('[AuthModal] Email already in use')
+          setError('This email is already registered. Please use a different email or try logging in.')
+          return
+        }
+        if (result?.error === 'NICKNAME_ALREADY_IN_USE') {
+          console.log('[AuthModal] Nickname already in use')
+          setError('This nickname is already taken. Please choose a different one.')
+          return
+        }
+        if (result?.error) {
+          console.log('[AuthModal] Other error:', result.error)
+          throw new Error(result.error)
+        }
+        
+        // Success!
+        if (!result?.error) {
+          console.log('[AuthModal] Registration successful!')
+          onClose()
+        }
     
       } else {                           // ────── LOGIN ──────
+        console.log('[AuthModal] Starting login flow')
         const cred    = await signInClient(email, password)   // firebase
         const idToken = await cred.user.getIdToken()
     
@@ -102,10 +191,15 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           return
         }
         if (result?.error) throw new Error(result.error)
+        
+        // Only close modal if no errors
+        if (!result?.error) {
+          onClose()
+        }
       }
     
-      onClose()                                   // success
     } catch (e: any) {
+      console.error('[AuthModal] Submit error:', e.message)
       setError(e.message || 'Authentication failed')
     } finally {
       setLoading(false)

@@ -20,7 +20,8 @@ export const authOptions: NextAuthOptions = {
       name: 'Firebase',
       credentials: {
         idToken:  { label: 'ID token',  type: 'text' },
-        tmpUrl:   { label: 'Temp URL', type: 'text' },     // optional
+        tmpAvatarUrl:  { label: 'Temp Avatar URL', type: 'text' },     // optional
+        tmpFaceUrl:   { label: 'Temp Face URL', type: 'text' },     // optional
         nickname: { label: 'Nickname', type: 'text' },     // optional
       },
       authorize,
