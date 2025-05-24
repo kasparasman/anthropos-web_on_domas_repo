@@ -54,6 +54,15 @@ export async function authorize(
       })
       if (existingByNickname && existingByNickname.id !== uid) {
         console.log('[Auth] Nickname conflict:', credentials.nickname)
+        
+        // 🔧 NEW: Clean up Firebase user before throwing error
+        try {
+          await deleteFirebaseUser(uid)
+          console.log('[Auth] Deleted Firebase user after nickname conflict:', uid)
+        } catch (deleteError) {
+          console.error('[Auth] Failed to delete Firebase user after nickname conflict:', deleteError)
+        }
+        
         throw new Error('NICKNAME_ALREADY_IN_USE')
       }
     } else {

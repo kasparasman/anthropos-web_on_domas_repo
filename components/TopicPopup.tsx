@@ -8,6 +8,8 @@ import useComments from '../hooks/useComments'
 import CommentList from './CommentList'
 import CommentForm from './CommentForm'
 import TopicBody from './TopicBody'
+import { signOut } from 'next-auth/react'
+import { useRouter } from 'next/router'
 
 interface TopicPopupProps {
   topic: TopicWithBody        // supplied by parent (RightPanel)
@@ -21,9 +23,19 @@ export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProp
     warn, clearWarn,
     loading, error
   } = useComments(topic.id)
+  const router = useRouter();
+
+  const handleClose = async () => {
+    if (warn) {
+      await signOut({ redirect: false });
+      window.location.reload();
+      return; // Don't call onClose, just redirect
+    }
+    onOpenChange(false);
+  };
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={handleClose}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 w-11/12 max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-foreground border border-main p-6 flex flex-col gap-6 max-h-[85vh] overflow-y-auto">

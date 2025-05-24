@@ -5,6 +5,7 @@ import {
   CreateCollectionCommand,
   Image,
 } from '@aws-sdk/client-rekognition'
+import sharp from 'sharp'
 
 const rek = new RekognitionClient({
   region: process.env.AWS_REGION,
@@ -26,8 +27,76 @@ async function ensureCollection() {
 }
 
 async function urlToImage(url: string): Promise<Image> {
-  return {
-    Bytes: new Uint8Array(await (await fetch(url)).arrayBuffer())
+  console.log('[FaceCheck] Fetching image from URL:', url)
+  
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+    }
+    
+    // Check content type
+    const contentType = response.headers.get('content-type')
+    console.log('[FaceCheck] Image content type:', contentType)
+    
+    // Accept various image formats and convert them if needed
+    const isImageType = contentType && contentType.startsWith('image/')
+    if (!isImageType) {
+      throw new Error(`Invalid content type: ${contentType}. Expected an image format.`)
+    }
+    
+    const arrayBuffer = await response.arrayBuffer()
+    console.log('[FaceCheck] Image size:', arrayBuffer.byteLength, 'bytes')
+    
+    // Check minimum size (empty or too small images)
+    if (arrayBuffer.byteLength < 100) {
+      throw new Error(`Image too small: ${arrayBuffer.byteLength} bytes`)
+    }
+    
+    // Check maximum size (15MB limit before conversion, Rekognition allows 5MB)
+    if (arrayBuffer.byteLength > 15 * 1024 * 1024) {
+      throw new Error(`Image too large: ${arrayBuffer.byteLength} bytes. Max 15MB allowed.`)
+    }
+    
+    const inputBuffer = Buffer.from(arrayBuffer)
+    
+    // Convert image to JPEG format for Rekognition compatibility
+    console.log('[FaceCheck] Converting image to JPEG format for Rekognition...')
+    
+    let convertedBuffer: Buffer
+    try {
+      convertedBuffer = await sharp(inputBuffer)
+        .jpeg({ 
+          quality: 90,           // High quality to preserve face details
+          progressive: false,    // Non-progressive for faster processing
+          mozjpeg: true         // Use mozjpeg for better compression
+        })
+        .resize({
+          width: 2048,          // Limit max dimensions for Rekognition
+          height: 2048,
+          fit: 'inside',        // Maintain aspect ratio
+          withoutEnlargement: true  // Don't upscale small images
+        })
+        .toBuffer()
+      
+      console.log('[FaceCheck] Image converted successfully. New size:', convertedBuffer.byteLength, 'bytes')
+      
+      // Final size check after conversion
+      if (convertedBuffer.byteLength > 5 * 1024 * 1024) {
+        throw new Error(`Converted image still too large: ${convertedBuffer.byteLength} bytes. Max 5MB for Rekognition.`)
+      }
+      
+    } catch (sharpError: any) {
+      console.error('[FaceCheck] Sharp conversion failed:', sharpError)
+      throw new Error(`Image conversion failed: ${sharpError.message}`)
+    }
+    
+    console.log('[FaceCheck] Image successfully prepared for Rekognition')
+    
+    return { Bytes: new Uint8Array(convertedBuffer) }
+  } catch (error: any) {
+    console.error('[FaceCheck] urlToImage failed:', error)
+    throw new Error(`Image processing failed: ${error.message}`)
   }
 }
 
