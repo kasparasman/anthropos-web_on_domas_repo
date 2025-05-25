@@ -143,47 +143,71 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={onClose} />
         <div
           onClick={e => e.stopPropagation()}
-          className={`relative z-10 rounded-xl bg-black py-8 px-12 border border-main ${
-            mode === 'register' ? 'w-220' : 'w-120'
+          className={`flex flex-col gap-4 relative z-10 rounded-xl bg-black py-8 px-12 border border-main gap ${
+            mode === 'register' ? 'w-220 gap-10' : 'w-120'
           }`}
         >
           <h2 className="mb-6 text-center text-3xl font-semibold">
-            {mode === 'login' ? 'Log in to your account' : 'Register'}
+            {mode === 'login' ? 'Log in to your account' : 'Register to Anthropos City'}
           </h2>
 
           {error && <p className="mb-2 text-sm text-red-500">{error}</p>}
         
 
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
-          />
+          
           {/* switching code */}
+          {mode === 'login' && (
+            <>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
+              />
+            </>
+          )}
+          
+          {/* avatar generation section */}
+
           {mode === 'register' && (
             <>
+              <div className="flex flex-row gap-3">
+                <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
+                />
+              </div>
               <div className="flex justify-between gap-8">
                 {/* --- Upload + Gender --- */}
                 <div className="flex flex-col items-center">
                   <div className="mb-3 flex gap-2">
                     <button
-                      className={`rounded-full px-5 py-1 font-semibold border-2 ${gender === 'male' ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black border-white text-white'
+                      className={`rounded-full px-5 py-1 font-semibold border-2 ${gender === 'male' ? 'bg-main text-black border-main' : 'bg-black border-white text-white'
                         }`}
                       onClick={() => setGender('male')}
                     >
                       Male
                     </button>
                     <button
-                      className={`rounded-full px-5 py-1 font-semibold border-2 ${gender === 'female' ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-black border-white text-white'
+                      className={`rounded-full px-5 py-1 font-semibold border-2 ${gender === 'female' ? 'bg-main text-black border-main' : 'bg-black border-white text-white'
                         }`}
                       onClick={() => setGender('female')}
                     >
@@ -191,7 +215,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                     </button>
                   </div>
                   <label
-                    className="flex h-28 w-28 cursor-pointer items-center justify-center rounded-lg border-2 border-dim_smoke bg-neutral-900 mb-3"
+                    className="flex h-36 w-36 cursor-pointer items-center justify-center rounded-lg border-2 border-dim_smoke bg-neutral-900 mb-3"
                   >
                     <input
                       type="file"
@@ -204,7 +228,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                   <button
                     disabled={!file || loading}
                     onClick={handleGenerate}
-                    className="w-full rounded bg-yellow-400 py-2 font-semibold text-black disabled:opacity-60"
+                    className="w-full rounded bg-main py-2 font-semibold text-black disabled:opacity-60"
                   >
                     {loading ? 'Generating…' : 'Generate Avatar'}
                   </button>
@@ -218,7 +242,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       <div
                         key={i}
                         onClick={() => setSelectedStyle(i)}
-                        className={`flex flex-col items-center cursor-pointer rounded-lg border-2 transition-all ${selectedStyle === i ? 'border-yellow-400' : 'border-transparent'
+                        className={`flex flex-col items-center cursor-pointer rounded-lg border-2 transition-all ${selectedStyle === i ? 'border-main' : 'border-transparent'
                           }`}
                       >
                         <img
@@ -234,24 +258,26 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               </div>
             </>
           )}
-          <button
-            disabled={loading}
-            onClick={submit}
-            className="mb-2 w-full rounded-md bg-main py-2 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)] "
-          >
-            {loading ? 'Processing…' : 'REGISTER'}
-          </button>
-          
-          <button disabled={loading}
-                  onClick={()=>setMode(m=>m==='login'?'register':'login')}
-                  className="w-full text-sm text-main disabled:opacity-60 hover:underline">
-            {mode==='login'?'Need an account? Register':'Have an account? Sign In'}
-          </button>
+          <div>
+            <button
+              disabled={loading}
+              onClick={submit}
+              className="mb-2 w-full rounded-md bg-main py-2 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)] "
+            >
+              {loading ? 'Processing…' : 'REGISTER'}
+            </button>
+            
+            <button disabled={loading}
+                    onClick={()=>setMode(m=>m==='login'?'register':'login')}
+                    className="w-full text-sm text-main disabled:opacity-60 hover:underline">
+              {mode==='login'?'Need an account? Register':'Have an account? Sign In'}
+            </button>
 
-          <button ref={cancelRef} onClick={onClose}
-                  className="mt-2 w-full px-2 py-1 text-center text-dim_smoke">
-            Cancel
-          </button>
+            <button ref={cancelRef} onClick={onClose}
+                    className="mt-2 w-full px-2 py-1 text-center text-dim_smoke">
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </Dialog>
