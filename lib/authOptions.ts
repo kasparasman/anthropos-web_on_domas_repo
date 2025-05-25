@@ -30,6 +30,16 @@ export const authOptions: NextAuthOptions = {
 
   /* ─────── Callbacks ─────── */
   callbacks: {
+
+    async signIn({ user }) {
+      // user.id should be the Firebase UID, which matches Profile.id
+      const profile = await prisma.profile.findUnique({ where: { id: user.id } });
+      if (!profile || profile.banned) {
+        return false; // Block sign-in if banned
+      }
+      return true;
+    },
+
     /** runs on *every* request carrying a JWT cookie */
     async jwt({ token, user }) {
       const t = token as AppToken         // type helper

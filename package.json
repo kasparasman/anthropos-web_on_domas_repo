@@ -2,6 +2,7 @@
   "name": "merged-app",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -92,6 +93,7 @@
     "postcss": "^8.5.3",
     "prisma": "^6.8.2",
     "tailwindcss": "^4.1.6",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

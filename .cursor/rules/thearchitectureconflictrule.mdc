@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+General Instruction
+Before making any code changes—whether in response to an open-ended question or a strict command—always fully understand your applications architecture and execution flow.
+
+Practical Workflow
+
+Load & Digest High-Level Architecture
+
+Read [architecture.md](mdc:architecture.md) (or its equivalent) in its entirety.
+
+Build a mental (or in-memory) model of tr modules, data flows, and responsibilities.
+
+Map Feature to High-Level Design
+
+Identify which top-level components the new request touches.
+
+Sketch (mentally or on paper) how this feature fits into existing modules and data flows—without yet diving into implementation details.
+
+Validate Logical Consistency
+
+Ensure that the proposed feature aligns with the systems design principles (e.g., separation of concerns, single responsibility, existing API contracts).
+
+If you spot any architectural mismatch, flag it and propose adjustments at the same level before proceeding.
+
+Drill Down Layer by Layer
+
+Component Level: Locate the specific classes, functions, or services affected.
+
+Interface Level: Define or extend public APIs, data schemas, or event contracts.
+
+Implementation Level: Write or modify the internal logic, ensuring each change respects the higher-level design decisions.
+
+End-to-End Integration
+
+After updating individual components, revisit the high-level flow to confirm that the new feature seamlessly traverses all layers.
+
+Add or update tests (unit, integration, end-to-end) to verify correctness at every boundary.
+
+Key Principles
+
+Top-Down First: Always start at the most abstract layer before moving deeper.
+
+Architectural Respect: Never override or bypass established modules without conscious, documented justification.
+
+Iterative Validation: At each layer, pause to ensure consistency with earlier decisions.
+
+Use this guideline for every incoming request to keep your code changes coherent, maintainable, and aligned with the overall system design.
+
+
+
+
+
+
+
+
+
