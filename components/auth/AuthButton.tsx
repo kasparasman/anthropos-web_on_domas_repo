@@ -26,7 +26,7 @@ export default function AuthButton() {
         onClick={() => setOpen(true)}
         className="px-4 py-1 bg-main text-background rounded"
       >
-        Sign in / Sign up
+        Log in / Sign up
       </button>
 
       <AuthModal open={open} onClose={() => setOpen(false)} />

@@ -33,10 +33,10 @@ export default function Home({
 }: HomeProps) {
   return (
     <main className="flex flex-col items-center bg-background p-4 md:p-6">
-      <div className="max-w-5xl space-y-10">
+      <div className="max-w-5xl w-full space-y-10">
         <Banner />
 
-        <div className="flex flex-col md:flex-row gap-6 w-full">
+        <div className="flex flex-col lg:flex-row gap-6 w-full flex-grow">
           <StatsSection data={dexData} />
           <RightPanel topics={topics} />
         </div>
