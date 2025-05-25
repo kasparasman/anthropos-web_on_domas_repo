@@ -32,7 +32,7 @@ export default function ProfileModal({
         <Dialog.Content className="fixed left-1/2 top-1/2 w-11/12 max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-foreground border border-main p-6 flex flex-col gap-6 focus:outline-none">
           {/* Header */}
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-main">Your Account</h2>
+            <h2 className="text-2xl font-semibold text-smoke">Your Account</h2>
             <Dialog.Close asChild>
               <button>
                 <X size={20} />
@@ -44,13 +44,13 @@ export default function ProfileModal({
           <div className="flex flex-col items-center gap-3">
             <Image
               src={avatarUrl ?? '/default-avatar.png'}
-              width={96}
-              height={96}
+              width={1080}
+              height={1080}
               alt="avatar"
-              className="rounded-full object-cover"
+              className="rounded-xl object-cover h-60 w-60"
             />
-            <div className="text-xl font-bold">{nickname ?? email}</div>
-            <div className="text-sm text-zinc-400">{email}</div>
+            <div className="text-2xl font-bold">{nickname ?? email}</div>
+            <div className=" text-dim_smoke">{email}</div>
           </div>
 
           {/* Footer */}
@@ -59,7 +59,7 @@ export default function ProfileModal({
               await signOutFirebase()      // <- logout both layers
               onOpenChange(false)          // close modal
             }}
-            className="self-center px-4 py-2 bg-main text-background rounded-md"
+            className="self-center px-4 py-2 bg-main text-black font-semibold uppercase rounded-md"
           >
             Sign out
           </button>
