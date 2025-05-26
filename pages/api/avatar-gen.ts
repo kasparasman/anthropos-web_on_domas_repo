@@ -1,89 +1,123 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { OpenAI } from 'openai'
+//import sharp from 'sharp' // deprecated
+import { File } from 'node:buffer'
 import { uploadFromUrlToTmp } from '../../lib/uploadFromUrlToTmp'
-import { File } from 'node:buffer'   // Node 18/20 polyfill for browser File
 
-/* ─── OpenAI client ────────────────────────────────────── */
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+const STYLE_URL = process.env.STYLE_REF_URL!
 
-/* ─── helper: Buffer → File ─────────────────────────────── */
-async function fetchAsFile(url: string, name: string, mime: string): Promise<File> {
-  const arrayBuffer = await fetch(url).then(r => r.arrayBuffer())
-  return new File([new Uint8Array(arrayBuffer)], name, { type: mime })
+const PROMPT = `
+Create a digital portrait avatar for the Anthropos City passport. 
+- The result must have a strong facial resemblance to the person, but the entire image—including the face—should be rendered in a unified, digital brush/AI art style, not photo-realistic. 
+- Frontal, head-and-shoulders view, gentle confidence, direct eye contact. 
+- Eliminate highly detailed facial nuances: the face should clearly represent the person, but as a digitalized, computer-generated avatar, not an exact photographic copy.
+- Art style is enhanced-reality: crisp, vibrant, digital brushwork, with bright, balanced, warmly optimistic lighting.
+- Background: soft gradient glow, subtle urban/digital city silhouettes, light geometric patterns suggesting connectivity and limitless potential.
+- Eyes should be bright, engaged, natural, and symmetric—avoid distortion, cross-eyed, or cartoonish effects.
+- Clothing is modern-casual, unbranded, clean, and presentable, with a subtle motif or accessory representing the Limitless Lifestyle (bold, black, minimalist shaka hand sign logo (call me gesture, thumb and pinky extended, three fingers curled in, geometric filled icon) on the left chest, the thumb should be pointing upwards, the pinky - right).
+- The composition should be harmonious: make the head slightly smaller than the original if needed, with balanced proportions. 
+- The overall feel is progressive, inclusive, and aspirational—a passport photo for a city of limitless human growth.
+- Most importantly: do not exaggerate, warp, or distort the facial features. No uncanny valley. The result should look like a realistic avatar, not a caricature or cartoon.
+`.trim();
+
+// Helper: fetch image as buffer
+async function fetchBuf(url: string) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Fetch failed: ${url}`)
+  return Buffer.from(await res.arrayBuffer())
+}
+/* deprecated
+
+ Helper: pick GPT canvas size
+function pickCanvas(w: number, h: number) {
+  const ratio = w / h
+  if (ratio > 1.2)            return { w: 1536, h: 1024, sizeStr: "1536x1024" } // landscape
+  if (ratio < 0.8)            return { w: 1024, h: 1536, sizeStr: "1024x1536" } // portrait
+  return { w: 1024, h: 1024, sizeStr: "1024x1024" }                             // square
+}
+*/
+// Helper: pad/crop to GPT canvas 
+/* deprecated
+async function padToCanvas(buf: Buffer) {
+  const meta = await sharp(buf).metadata()
+  const canvas = pickCanvas(meta.width!, meta.height!)
+  const padded = await sharp(buf)
+    .resize(canvas.w, canvas.h, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 1 } })
+    .jpeg({ quality: 90 })
+    .toBuffer()
+  return { padded, canvas }
+}
+*/
+// Helper: convert buffer to File for OpenAI
+function bufToFile(buf: Buffer, name: string, mime: string) {
+  return new File([new Uint8Array(buf)], name, { type: mime })
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end()
+  if (req.method !== 'POST') return res.status(405).end();
 
-  console.log('🎨 [avatar-gen] Starting generation with body:', req.body)
-
-  // Validate environment variables
-  if (!process.env.OPENAI_API_KEY || !process.env.STYLE_REF_URL) {
-    console.error('❌ [avatar-gen] Missing required env vars')
-    return res.status(500).json({ error: 'Server configuration error' })
-  }
-
-  const { sourceUrl } = req.body
-  if (!sourceUrl) {
-    console.error('❌ [avatar-gen] Missing sourceUrl in request body')
-    return res.status(400).json({ error: 'sourceUrl is required' })
-  }
+  const { sourceUrl } = req.body;
+  if (!sourceUrl) return res.status(400).json({ error: 'sourceUrl is required' });
 
   try {
-    console.log('📡 [avatar-gen] Preparing files for GPT Image generation')
+    // 1. Download selfie
+    const selfieRaw = await fetchBuf(sourceUrl);
+    const selfieFile = bufToFile(selfieRaw, 'selfie.jpg', 'image/jpeg');
 
-    /* 1. prepare Uploadables (selfie FIRST, style SECOND) */
-    const [selfieFile, styleFile] = await Promise.all([
-      fetchAsFile(sourceUrl, 'selfie.jpg', 'image/jpeg'),
-      fetchAsFile(process.env.STYLE_REF_URL, 'style.png', 'image/png'),
-    ])
+    // 2. Download style reference
+    const styleBuf = await fetchBuf(STYLE_URL);
+    const styleFile = bufToFile(styleBuf, 'style.png', 'image/png');
 
-    console.log('📤 [avatar-gen] Files prepared:', {
-      selfieSize: selfieFile.size,
-      styleSize: styleFile.size
-    })
+    // --- NEW STEP: Analyze selfie with GPT-4o vision to extract traits ---
+    const visionRsp = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: [{
+        role: 'user',
+          content: [
+            { type: 'input_text', text: 'Analyze the person in this image and output ONLY a JSON object with these keys: faceShape, eyeColor, skinTone, hairColor, hairStyle, upperBodyClothing, accessories, distinctiveFeatures.' },
+            { type: 'input_image', 
+              "image_url": sourceUrl,
+                "detail": 'auto'
+              
+            },
+          ],
+        },
+      ],
+    });
 
-    /* 2. GPT-Image-1 edit WITHOUT MASK */
-    const rsp = await openai.images.edit({
+    let traitsJson = '{}';
+    try {
+      traitsJson = visionRsp.output_text.trim() ?? '{}';
+      // if the model wrapped JSON in markdown, strip it
+      const match = traitsJson.match(/\{[\s\S]*\}/);
+      if (match) traitsJson = match[0];
+    } catch {}
+
+    // Merge traits into final prompt
+    const enrichedPrompt = `Here are the subject's traits: ${traitsJson}.\n\n` + PROMPT;
+
+    // 3. OpenAI GPT-Image edit (let size default to auto)
+    const edit = await openai.images.edit({
       model: 'gpt-image-1',
       image: [selfieFile, styleFile],
-      size: '1024x1024',
-      output_format: 'jpeg',          // ✅ Correct parameter name
-      prompt:
-        'Create a stylised avatar. Preserve **all facial proportions, skin tone, ' +
-        'eye shape, and hairline exactly**. Change only background, lighting, and ' +
-        'color palette to match the reference style.',
-    })
+      prompt: enrichedPrompt,
+      // size: 'auto' // Omit or set explicitly
+    });
 
-    if (!rsp.data?.[0]?.b64_json) {
-      throw new Error('No image data in response')
+    if (!edit.data?.[0]?.b64_json) {
+      throw new Error('No image data in response');
     }
 
-    console.log('📥 [avatar-gen] Got GPT Image response, converting to buffer')
-
-    /* 3. Convert base64 to buffer */
-    const imageBuffer = Buffer.from(rsp.data[0].b64_json, 'base64')
-
-    /* 4. Upload to our R2 tmp/ folder */
-    console.log('📤 [avatar-gen] Uploading to R2 tmp folder')
+    // 4. Upload to R2 (unchanged)
     const tmpAvatarUrl = await uploadFromUrlToTmp(
-      'data:image/jpeg;base64,' + rsp.data[0].b64_json,
+      'data:image/jpeg;base64,' + edit.data[0].b64_json,
       'jpg'
-    )
+    );
 
-    console.log('✅ [avatar-gen] Success:', { tmpAvatarUrl })
-    res.status(200).json({ tmpAvatarUrl })
-
+    return res.status(200).json({ tmpAvatarUrl });
   } catch (err: any) {
-    const errorDetails = {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status,
-    }
-    console.error('❌ [avatar-gen] Error:', errorDetails)
-    res.status(500).json({
-      error: 'Avatar generation failed',
-      details: errorDetails
-    })
+    console.error('❌ [avatar-gen] Error:', err);
+    res.status(500).json({ error: 'Avatar generation failed', details: err.message });
   }
 }
