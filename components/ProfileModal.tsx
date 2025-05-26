@@ -43,15 +43,9 @@ export default function ProfileModal({
           {/* Avatar + info */}
           <div className="flex flex-col items-center gap-3">
             <Image
-<<<<<<< HEAD
-              src={avatarUrl ?? '/default-avatar.svg'}
-              width={96}
-              height={96}
-=======
               src={avatarUrl ?? '/default-avatar.png'}
               width={1080}
               height={1080}
->>>>>>> origin/feature/frontend
               alt="avatar"
               className="rounded-xl object-cover h-60 w-60"
             />

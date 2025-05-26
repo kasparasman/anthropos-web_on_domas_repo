@@ -57,7 +57,7 @@ function bufToFile(buf: Buffer, name: string, mime: string) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { sourceUrl } = req.body;
+  const { sourceUrl, styleRef } = req.body;
   if (!sourceUrl) return res.status(400).json({ error: 'sourceUrl is required' });
 
   try {
@@ -65,8 +65,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const selfieRaw = await fetchBuf(sourceUrl);
     const selfieFile = bufToFile(selfieRaw, 'selfie.jpg', 'image/jpeg');
 
-    // 2. Download style reference
-    const styleBuf = await fetchBuf(STYLE_URL);
+    // 2. Download style reference (use provided styleRef or default)
+    const styleUrl = styleRef || STYLE_URL;
+    const styleBuf = await fetchBuf(styleUrl);
     const styleFile = bufToFile(styleBuf, 'style.png', 'image/png');
 
     // --- NEW STEP: Analyze selfie with GPT-4o vision to extract traits ---
