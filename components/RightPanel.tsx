@@ -10,7 +10,7 @@ interface RightPanelProps {
 }
 
 export default function RightPanel({ topics }: RightPanelProps) {
-  const [selectedId, setSelectedId] = useState<number>(topics[0]?.id ?? '')
+  const [selectedId, setSelectedId] = useState<string>(topics[0]?.id ?? '')
   const [popupTopic, setPopupTopic] = useState<TopicWithBody | null>(null)
 
   const current = topics.find((t) => t.id === selectedId)

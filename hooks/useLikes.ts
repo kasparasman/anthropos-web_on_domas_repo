@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 
 type LikeResponse = { count: number; likedByMe: boolean }
 
-export default function useLikes(topicId: number) {
+export default function useLikes(topicId: string) {
   const { data: session } = useSession()
 
   const { data, error, mutate } = useSWR<LikeResponse>(

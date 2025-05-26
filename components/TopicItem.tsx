@@ -8,12 +8,9 @@ import { TopicWithBody } from '../types/topic-popup'
 interface TopicItemProps {
   topic: Topic
   isSelected: boolean
-  onSelect: (id: number) => void
+  onSelect: (id: string) => void
   onOpenTopic: (t: Topic) => void
-
 }
-
-
 
 export default function TopicItem({
   topic,
@@ -24,14 +21,14 @@ export default function TopicItem({
   /* -------------------------------------------------------------- */
   /*  Likes hook – start with SSR data for instant paint            */
   /* -------------------------------------------------------------- */
-  const { count, likedByMe, loading, toggleLike } = useLikes(Number(topic.id))
+  const { count, likedByMe, loading, toggleLike } = useLikes(topic.id)
 
   /* -------------------------------------------------------------- */
   /*  Render                                                        */
   /* -------------------------------------------------------------- */
   return (
     <div
-      onClick={() => onSelect(Number(topic.id))}
+      onClick={() => onSelect(topic.id)}
       className={`
         relative flex flex-row p-3 rounded-xl transition-colors h-[150px] gap-3 overflow-hidden mb-4
         ${isSelected
