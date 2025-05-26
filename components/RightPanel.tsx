@@ -16,26 +16,26 @@ export default function RightPanel({ topics }: RightPanelProps) {
   const current = topics.find((t) => t.id === selectedId)
 
   return (
-    <section className=" bg-black flex flex-col lg:flex-row gap-4 rounded-2xl border border-main px-5 py-4 w-full">
+    <section className="bg-black flex flex-col lg:flex-row gap-4 rounded-2xl border border-main px-5 py-4 w-full">
       {/* Left side: avatar video */}
       <AvatarPlayer videoUrl={current?.videoUrl ?? ''} />
 
       {/* Right side: topic list */}
-      <TopicList
-        topics={topics}
-        selectedId={selectedId}
-        onSelect={(id) => setSelectedId(id)}
-        onOpenTopic={(topic) => setPopupTopic(topic)}   // new
-
-      />
+      <div className="w-full lg:max-w-[60%]">
+        <TopicList
+          topics={topics}
+          selectedId={selectedId}
+          onSelect={(id) => setSelectedId(id)}
+          onOpenTopic={(topic) => setPopupTopic(topic)}   // new
+        />
+      </div>
       {popupTopic && (
-  <TopicPopup
-    topic={popupTopic}
-    open={!!popupTopic}
-    onOpenChange={(o) => !o && setPopupTopic(null)}
-  />
-)}
-
+        <TopicPopup
+          topic={popupTopic}
+          open={!!popupTopic}
+          onOpenChange={(o) => !o && setPopupTopic(null)}
+        />
+      )}
     </section>
   )
 }
