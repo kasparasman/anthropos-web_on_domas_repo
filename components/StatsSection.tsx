@@ -12,7 +12,7 @@ export default function StatsSection({ data }: StatsSectionProps) {
     { label: 'Price', value: data.price },
     { label: 'Volume 24h', value: data.volume24h },
     { label: 'Variation 24h', value: data.variation24h },
-    { label: 'Market Cap', value: data.mcap }, // this is intentionally set like mcap, its correct
+    { label: 'Market Cap', value: data.mcap ?? 0 },
   ]
 
   return (
