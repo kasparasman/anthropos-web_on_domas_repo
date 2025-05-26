@@ -11,8 +11,8 @@ export default function StatsSection({ data }: StatsSectionProps) {
   const cards: { label: string; value: number | string }[] = [
     { label: 'Price', value: data.price },
     { label: 'Volume 24h', value: data.volume24h },
-    { label: 'Variation 24h', value: `${data.variation24h}` },
-    { label: 'Market Cap', value: data.marketCap },
+    { label: 'Variation 24h', value: data.variation24h },
+    { label: 'Market Cap', value: data.mcap }, // this is intentionally set like mcap, its correct
   ]
 
   return (
