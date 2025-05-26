@@ -81,13 +81,19 @@ export default function TopicItem({
             </button>
             */}
             <button
-            onClick={e => {
-              e.stopPropagation()
-              onOpenTopic(topic)
-            }}
-            className="px-4 py-1 uppercase text-sm font-semibold rounded-tl-[32px] rounded-br-xl bg-main text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]"
+              onClick={e => {
+                e.stopPropagation()
+                onOpenTopic(topic)
+              }}
+              className={`
+                px-4 py-1 uppercase text-sm font-semibold rounded-tl-[32px] rounded-br-xl transition-all duration-200
+                ${isSelected 
+                  ? 'bg-main text-black hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]'
+                  : 'bg-dim_smoke text-black'
+                }
+              `}
             >
-            open topic
+              open topic
             </button>
 
         </div>

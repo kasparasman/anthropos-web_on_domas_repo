@@ -32,11 +32,31 @@ export default function Home({
   maxAssets,
 }: HomeProps) {
   return (
-    <main className="flex flex-col items-center bg-background p-4 md:p-6">
-      <div className="max-w-5xl space-y-10">
+    <main className=" realtive flex flex-col items-center p-4 md:p-6">
+      {/* Background */}
+      <img
+        src="/background.png"
+        alt="background"
+        className="z-[-3] bg-black fixed inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
+      />
+      <div className=" flex justify-between items-bottom z-[-2] absolute overflow-hidden inset-0 bg-black/50 pointer-events-none">
+        <img
+          src="/BurjKalifa.png"
+          alt="background"
+          className="hidden lg:block ml-[-100px] object-cover opacity-100 pointer-events-none"
+        />
+        <img
+          src="/Building2.png"
+          alt="background"
+          className="hidden lg:block mr-[-600px] object-cover opacity-100 pointer-events-none"
+        />
+        <img src="/people.png" alt="people" className=" absolute z-[1] bottom-[-40px] object-cover opacity-100 pointer-events-none "></img>
+
+      </div>
+      <div className="max-w-5xl w-full space-y-10">
         <Banner />
 
-        <div className="flex flex-col md:flex-row gap-6 w-full">
+        <div className="flex flex-col lg:flex-row gap-6 w-full flex-grow">
           <StatsSection data={dexData} />
           <RightPanel topics={topics} />
         </div>
@@ -46,6 +66,7 @@ export default function Home({
 
         <AssetCarousel assets={assets} loop autoplay speed={2000} />
       </div>
+      
     </main>
   )
 }
