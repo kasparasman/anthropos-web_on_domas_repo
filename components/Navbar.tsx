@@ -74,7 +74,7 @@ export default function Navbar() {
             ))}
 
             {/* Mobile auth/avatar */}
-            <li className="md:hidden">
+            <li className="md:hidden ml-3">
               {session?.user ? <ProfileButton /> : <AuthButton />}
             </li>
             </ul>

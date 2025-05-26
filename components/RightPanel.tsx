@@ -16,7 +16,7 @@ export default function RightPanel({ topics }: RightPanelProps) {
   const current = topics.find((t) => t.id === selectedId)
 
   return (
-    <section className="flex flex-col lg:flex-row gap-4 rounded-2xl border border-main px-5 py-4 w-full">
+    <section className=" bg-black flex flex-col lg:flex-row gap-4 rounded-2xl border border-main px-5 py-4 w-full">
       {/* Left side: avatar video */}
       <AvatarPlayer videoUrl={current?.videoUrl ?? ''} />
 

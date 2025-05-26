@@ -40,8 +40,8 @@ export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProp
         <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 w-11/12 max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-foreground border border-main p-6 flex flex-col gap-6 max-h-[85vh] overflow-y-auto">
           {/* Header */}
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-main">{topic.title}</h2>
+          <div className="flex justify-between items-start">
+            <h2 className="text-2xl sm:text-3xl font-bold text-smoke">{topic.title}</h2>
             <Dialog.Close asChild>
               <button>
                 <X size={22} />
@@ -51,10 +51,11 @@ export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProp
 
           {/* Body */}
           <TopicBody body={topic.body} />
+          <img src={topic.imageUrl} alt="Topic Image" className="w-full h-50"></img>
 
           {/* Comments */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Comments</h3>
+            <h3 className="text-xl text-smoke font-semibold">Comments</h3>
             <CommentList comments={comments} loading={loading} />
             <CommentForm
         topicId={topic.id}

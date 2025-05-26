@@ -13,7 +13,7 @@ interface TopicListProps {
 
 export default function TopicList({ topics, selectedId, onSelect, onOpenTopic }: TopicListProps) {
   return (
-    <div className="flex-1 h-120 gap-4 overflow-y-auto scrollbar-custom">
+    <div className=" lg:h-120 h-80 gap-4 overflow-y-auto scrollbar-custom ">
       {topics.map((t) => (
         <TopicItem
           key={t.id}
