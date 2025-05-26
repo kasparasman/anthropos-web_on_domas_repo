@@ -39,7 +39,7 @@ export default function Home({
         alt="background"
         className="z-[-3] bg-black fixed inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
       />
-      <div className=" flex justify-between items-bottom z-[-2] absolute overflow-hidden inset-0 bg-black/50 pointer-events-none">
+      <div className=" flex justify-between fixed items-bottom z-[-2] absolute overflow-hidden inset-0 bg-black/50 pointer-events-none">
         <img
           src="/BurjKalifa.png"
           alt="background"
