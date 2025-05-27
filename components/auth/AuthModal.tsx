@@ -5,6 +5,7 @@ import { Dialog } from '@headlessui/react'
 import { signIn, signOut } from 'next-auth/react'
 import { signInClient, registerClient } from '../../lib/firebase-client'
 import { uploadAvatar } from '../../lib/uploadAvatar'
+import Image from 'next/image'
 
 interface AuthModalProps { open: boolean; onClose: () => void }
 
@@ -34,12 +35,12 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   // Cloudflare R2 URLs for style references
   const maleStyles = [
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Classic" },
-    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2026%2C%202025%2C%2009_13_57%20PM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2026%2C%202025%2C%2009_13_57%20PM.png", label: "reative" },
-    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Casual" },
-    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Hipster" },
-    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Elegant" },
-    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Adventurer" },
-    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Artist" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2026%2C%202025%2C%2009_13_57%20PM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2026%2C%202025%2C%2009_13_57%20PM.png", label: "Creative" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_21_29%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_21_29%20AM.png", label: "Reader" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_02%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_02%20AM.png", label: "Sportsman" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_14%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_14%20AM.png", label: "CyberMan" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_31%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_31%20AM.png", label: "The Lead" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_27_58%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_27_58%20AM.png", label: "Socialist" },
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Techie" }
   ];
   
@@ -431,10 +432,15 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                         className={`flex flex-col items-center cursor-pointer rounded-lg border-2 transition-all ${selectedStyle === i ? 'border-main' : 'border-transparent'
                           }`}
                       >
-                        <img
+                        <Image
                           src={style.img}
                           alt={style.label}
-                          className="h-30 w-30 rounded-lg object-cover mb-1"
+                          width={480}
+                          height={480}
+                          className="rounded-lg mb-1 object-cover w-30 h-30"
+                          style={{ objectFit: 'cover', width: 120, height: 120 }}
+                          sizes="120px"
+                          priority={selectedStyle === i}
                         />
                         <span className="text-xs text-white">{style.label}</span>
                       </div>

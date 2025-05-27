@@ -37,6 +37,7 @@ model Topic {
   body       String
   createdAt  DateTime    @default(now()) @db.Timestamptz(6)
   videoUrl   String
+  imageUrl   String?
   comments   Comment[]
   topicLikes TopicLike[]
 
