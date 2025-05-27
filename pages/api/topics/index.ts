@@ -7,12 +7,12 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== 'GET') return res.status(405).end();
-const topics = await prisma.topics.findMany({
-  orderBy: { date: 'desc' },
+const topics = await prisma.topic.findMany({
+  orderBy: { createdAt: 'desc' },
   select: {
     id: true,
     title: true,
-    date: true,
+    createdAt: true,
   }
 })
   res.status(200).json(topics);

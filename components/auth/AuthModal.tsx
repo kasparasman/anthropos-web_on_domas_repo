@@ -2,9 +2,10 @@
 
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { Dialog } from '@headlessui/react'
-import { signIn } from 'next-auth/react'
+import { signIn, signOut } from 'next-auth/react'
 import { signInClient, registerClient } from '../../lib/firebase-client'
 import { uploadAvatar } from '../../lib/uploadAvatar'
+import Image from 'next/image'
 
 interface AuthModalProps { open: boolean; onClose: () => void }
 
@@ -29,24 +30,30 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   /* male/female + style selection */
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [selectedStyle, setSelectedStyle] = useState<number | null>(null); // index of selected style
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null); // for file preview
+  
+  // Cloudflare R2 URLs for style references
   const maleStyles = [
-  { img: "/avatars/male1.jpg", label: "Classic" },
-  { img: "/avatars/male2.jpg", label: "Sporty" },
-  { img: "/avatars/male3.jpg", label: "Casual" },
-  { img: "/avatars/male4.jpg", label: "Hipster" },
-  { img: "/avatars/male5.jpg", label: "Elegant" },
-  { img: "/avatars/male6.jpg", label: "Adventurer" },
-  { img: "/avatars/male7.jpg", label: "Artist" },
-  { img: "/avatars/male8.jpg", label: "Techie" }]; // add your 8 objects
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Classic" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2026%2C%202025%2C%2009_13_57%20PM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2026%2C%202025%2C%2009_13_57%20PM.png", label: "Creative" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_21_29%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_21_29%20AM.png", label: "Reader" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_02%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_02%20AM.png", label: "Sportsman" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_14%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_14%20AM.png", label: "CyberMan" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_31%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_22_31%20AM.png", label: "The Lead" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_27_58%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_27_58%20AM.png", label: "Socialist" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Techie" }
+  ];
+  
   const femaleStyles = [
-  { img: "/avatars/female1.jpg", label: "Classic" },
-  { img: "/avatars/female2.jpg", label: "Sporty" },
-  { img: "/avatars/female3.jpg", label: "Casual" },
-  { img: "/avatars/female4.jpg", label: "Hipster" },
-  { img: "/avatars/female5.jpg", label: "Elegant" },
-  { img: "/avatars/female6.jpg", label: "Adventurer" },
-  { img: "/avatars/female7.jpg", label: "Artist" },
-  { img: "/avatars/female8.jpg", label: "Techie" }];
+    { img: "https://your-r2-bucket.r2.dev/styles/female1.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female1-ref.jpg", label: "Classic" },
+    { img: "https://your-r2-bucket.r2.dev/styles/female2.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female2-ref.jpg", label: "Sporty" },
+    { img: "https://your-r2-bucket.r2.dev/styles/female3.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female3-ref.jpg", label: "Casual" },
+    { img: "https://your-r2-bucket.r2.dev/styles/female4.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female4-ref.jpg", label: "Hipster" },
+    { img: "https://your-r2-bucket.r2.dev/styles/female5.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female5-ref.jpg", label: "Elegant" },
+    { img: "https://your-r2-bucket.r2.dev/styles/female6.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female6-ref.jpg", label: "Adventurer" },
+    { img: "https://your-r2-bucket.r2.dev/styles/female7.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female7-ref.jpg", label: "Artist" },
+    { img: "https://your-r2-bucket.r2.dev/styles/female8.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female8-ref.jpg", label: "Techie" }
+  ];
 
 
   /* body scroll lock */
@@ -58,7 +65,31 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     }
   }, [open])
 
+  /* cleanup preview URL on unmount */
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
+
   if (!open) return null
+
+  /* ------- file selection handler ------- */
+  const handleFileSelect = (selectedFile: File) => {
+    setFile(selectedFile)
+    // Create preview URL
+    const url = URL.createObjectURL(selectedFile)
+    setPreviewUrl(url)
+    
+    // Clean up previous preview URL
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }
 
   /* ------- avatar + nickname generation handler ------- */
   async function handleGenerate() {
@@ -92,10 +123,16 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         console.log('[AuthModal] Production mode: Running full avatar generation')
         
         /* 2.  call our avatar-gen route (LightX) */
+        const currentStyles = gender === 'male' ? maleStyles : femaleStyles
+        const selectedStyleRef = selectedStyle !== null ? currentStyles[selectedStyle]?.styleRef : undefined
+        
         const { tmpAvatarUrl } = await fetch('/api/avatar-gen', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sourceUrl: orig }),
+          body: JSON.stringify({ 
+            sourceUrl: orig,
+            styleRef: selectedStyleRef 
+          }),
         }).then(r => r.json())
         setTmpAvatarUrl(tmpAvatarUrl)
 
@@ -181,11 +218,29 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         if (result?.error === 'EMAIL_ALREADY_IN_USE') {
           console.log('[AuthModal] Email already in use')
           setError('This email is already registered. Please use a different email or try logging in.')
+          
+          // Force sign out to clear any session that might have been created
+          try {
+            await signOut({ redirect: false })
+            console.log('[AuthModal] Forced sign out after email conflict')
+          } catch (signOutError) {
+            console.error('[AuthModal] Failed to sign out after email conflict:', signOutError)
+          }
+          
           return
         }
         if (result?.error === 'NICKNAME_ALREADY_IN_USE') {
           console.log('[AuthModal] Nickname already in use')
           setError('This nickname is already taken. Please choose a different one.')
+          
+          // Force sign out to clear any session that might have been created
+          try {
+            await signOut({ redirect: false })
+            console.log('[AuthModal] Forced sign out after nickname conflict')
+          } catch (signOutError) {
+            console.error('[AuthModal] Failed to sign out after nickname conflict:', signOutError)
+          }
+          
           return
         }
         if (result?.error) {
@@ -308,24 +363,62 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       Female
                     </button>
                   </div>
-                  <label
-                    className="flex h-36 w-36 cursor-pointer items-center justify-center rounded-lg border-2 border-dim_smoke bg-neutral-900 mb-3"
-                  >
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => setFile(e.target.files?.[0] || null)}
-                      className="hidden"
-                    />
-                    <span className="text-4xl text-dim_smoke">+</span>
-                  </label>
-                  <button
-                    disabled={!file || loading}
-                    onClick={handleGenerate}
-                    className="w-full rounded bg-main py-2 font-semibold text-black disabled:opacity-60"
-                  >
-                    {loading ? 'Generating…' : 'Generate Avatar'}
-                  </button>
+                  {!tmpAvatarUrl ? (
+                    <label
+                      className="flex h-36 w-36 cursor-pointer items-center justify-center rounded-lg border-2 border-dim_smoke bg-neutral-900 mb-3 overflow-hidden"
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => {
+                          const selectedFile = e.target.files?.[0]
+                          if (selectedFile) {
+                            handleFileSelect(selectedFile)
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      {previewUrl ? (
+                        <img 
+                          src={previewUrl} 
+                          alt="Preview" 
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-4xl text-dim_smoke">+</span>
+                      )}
+                    </label>
+                  ) : (
+                    <div className="flex flex-col items-center mb-3">
+                      <img 
+                        src={tmpAvatarUrl} 
+                        alt="Generated Avatar" 
+                        className="h-36 w-36 rounded-lg object-cover mb-2"
+                      />
+                      <div className="text-sm text-white font-semibold">{nickname}</div>
+                    </div>
+                  )}
+                  {!tmpAvatarUrl ? (
+                    <button
+                      disabled={!file || loading}
+                      onClick={handleGenerate}
+                      className="w-full rounded bg-main py-2 font-semibold text-black disabled:opacity-60"
+                    >
+                      {loading ? 'Generating…' : 'Generate Avatar'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setTmpAvatarUrl(null)
+                        setNickname('')
+                        setPreviewUrl(null)
+                        setFile(null)
+                      }}
+                      className="w-full rounded bg-gray py-2 font-semibold text-white border border-dim_smoke"
+                    >
+                      Try Again
+                    </button>
+                  )}
                 </div>
 
                 {/* --- Styles --- */}
@@ -339,10 +432,15 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                         className={`flex flex-col items-center cursor-pointer rounded-lg border-2 transition-all ${selectedStyle === i ? 'border-main' : 'border-transparent'
                           }`}
                       >
-                        <img
+                        <Image
                           src={style.img}
                           alt={style.label}
-                          className="h-30 w-30 rounded-lg object-cover mb-1"
+                          width={480}
+                          height={480}
+                          className="rounded-lg mb-1 object-cover w-30 h-30"
+                          style={{ objectFit: 'cover', width: 120, height: 120 }}
+                          sizes="120px"
+                          priority={selectedStyle === i}
                         />
                         <span className="text-xs text-white">{style.label}</span>
                       </div>
@@ -354,11 +452,11 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           )}
           <div>
             <button
-              disabled={loading}
+              disabled={loading || (mode === 'register' && !tmpAvatarUrl)}
               onClick={submit}
-              className="mb-2 w-full rounded-md bg-main py-2 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)] "
+              className="mb-2 w-full rounded-md bg-main py-2 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)] disabled:opacity-60"
             >
-              {loading ? 'Processing…' : 'REGISTER'}
+              {loading ? 'Processing…' : mode === 'register' ? 'REGISTER' : 'LOGIN'}
             </button>
             
             <button disabled={loading}

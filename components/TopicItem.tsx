@@ -8,12 +8,9 @@ import { TopicWithBody } from '../types/topic-popup'
 interface TopicItemProps {
   topic: Topic
   isSelected: boolean
-  onSelect: (id: number) => void
+  onSelect: (id: string) => void
   onOpenTopic: (t: Topic) => void
-
 }
-
-
 
 export default function TopicItem({
   topic,
@@ -24,14 +21,14 @@ export default function TopicItem({
   /* -------------------------------------------------------------- */
   /*  Likes hook – start with SSR data for instant paint            */
   /* -------------------------------------------------------------- */
-  const { count, likedByMe, loading, toggleLike } = useLikes(Number(topic.id))
+  const { count, likedByMe, loading, toggleLike } = useLikes(topic.id)
 
   /* -------------------------------------------------------------- */
   /*  Render                                                        */
   /* -------------------------------------------------------------- */
   return (
     <div
-      onClick={() => onSelect(Number(topic.id))}
+      onClick={() => onSelect(topic.id)}
       className={`
         relative flex flex-row p-3 rounded-xl transition-colors h-[150px] gap-3 overflow-hidden mb-4
         ${isSelected
@@ -41,10 +38,12 @@ export default function TopicItem({
     >
       <div className="aspect-square h-full">
         <img
+          src={topic.imageUrl || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb'}
           alt={topic.title}
           className="aspect-square h-full rounded-lg object-cover"
+          loading="lazy"
+          decoding="async"
         />
-
       </div>
       {/* Content */}
       <div className=" relative flex flex-col items-start h-full overflow-hidden">

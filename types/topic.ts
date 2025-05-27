@@ -7,4 +7,5 @@ export interface Topic {
   createdAt: Date | string  // Accept both Date object and ISO string
   likes: number       // Added: to match how we use it
   likedByUser: boolean // Added: to match how we use it
+  imageUrl?: string | null // Optional image url for topic
 }

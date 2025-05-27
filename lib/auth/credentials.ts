@@ -43,50 +43,8 @@ export async function authorize(
       console.log('[Auth] Email conflict:', email)
       throw new Error('EMAIL_ALREADY_IN_USE')
     }
-    
-    /* 3 ◀ nickname conflict check */
-    let finalNickname = credentials.nickname || email.split('@')[0]
-    
-    if (credentials.nickname) {
-      const existingByNickname = await prisma.profile.findUnique({ 
-        where: { nickname: credentials.nickname },
-        select: { id: true }
-      })
-      if (existingByNickname && existingByNickname.id !== uid) {
-        console.log('[Auth] Nickname conflict:', credentials.nickname)
-        
-        // 🔧 NEW: Clean up Firebase user before throwing error
-        try {
-          await deleteFirebaseUser(uid)
-          console.log('[Auth] Deleted Firebase user after nickname conflict:', uid)
-        } catch (deleteError) {
-          console.error('[Auth] Failed to delete Firebase user after nickname conflict:', deleteError)
-        }
-        
-        throw new Error('NICKNAME_ALREADY_IN_USE')
-      }
-    } else {
-      // If no nickname provided, ensure the generated one is unique
-      let baseNickname = email.split('@')[0]
-      let counter = 1
-      let isUnique = false
-      
-      while (!isUnique) {
-        const existingByNickname = await prisma.profile.findUnique({ 
-          where: { nickname: finalNickname },
-          select: { id: true }
-        })
-        
-        if (!existingByNickname || existingByNickname.id === uid) {
-          isUnique = true
-        } else {
-          finalNickname = `${baseNickname}${counter}`
-          counter++
-        }
-      }
-    }
 
-    /* 4 ◀ Rekognition step only during REGISTER (tmpFaceUrl present) */
+    /* 3 ◀ Rekognition step only during REGISTER (tmpFaceUrl present) */
     let faceId: string | null = null
     if (credentials.tmpFaceUrl) {
       console.log('[Auth] Indexing face (already verified as unique)')
@@ -107,37 +65,74 @@ export async function authorize(
       }
     }
     
-    /* 5 ◀ if tmpAvatarUrl present, move avatar to avatars/<uid>.png */
+    /* 4 ◀ if tmpAvatarUrl present, move avatar to avatars/<uid>.png */
     const avatarUrl = credentials.tmpAvatarUrl
       ? await promoteAvatar(credentials.tmpAvatarUrl, uid)
       : null
 
-    /* 6 ◀ upsert profile row */
-    const profile = await prisma.profile.upsert({
-      where:  { id: uid },
-      update: {
-        ...(avatarUrl && { avatarUrl }),
-        ...(faceId && { rekFaceId: faceId }),
-        ...(credentials.nickname && { nickname: finalNickname }),
-      },
-      create: {
-        id:    uid,
-        email,
-        nickname: finalNickname,
-        avatarUrl,
-        rekFaceId: faceId,
-      },
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        avatarUrl: true,
-      },
+    /* 5 ◀ ATOMIC nickname check and profile creation using transaction */
+    let finalNickname = credentials.nickname || email.split('@')[0]
+    
+    const profile = await prisma.$transaction(async (tx) => {
+      // Nickname conflict check within transaction
+      if (credentials.nickname) {
+        const existingByNickname = await tx.profile.findUnique({ 
+          where: { nickname: credentials.nickname },
+          select: { id: true }
+        })
+        if (existingByNickname && existingByNickname.id !== uid) {
+          console.log('[Auth] Nickname conflict detected in transaction:', credentials.nickname)
+          throw new Error('NICKNAME_ALREADY_IN_USE')
+        }
+        finalNickname = credentials.nickname
+      } else {
+        // If no nickname provided, ensure the generated one is unique
+        let baseNickname = email.split('@')[0]
+        let counter = 1
+        let isUnique = false
+        
+        while (!isUnique) {
+          const existingByNickname = await tx.profile.findUnique({ 
+            where: { nickname: finalNickname },
+            select: { id: true }
+          })
+          
+          if (!existingByNickname || existingByNickname.id === uid) {
+            isUnique = true
+          } else {
+            finalNickname = `${baseNickname}${counter}`
+            counter++
+          }
+        }
+      }
+
+      // Create/update profile within the same transaction
+      return await tx.profile.upsert({
+        where:  { id: uid },
+        update: {
+          ...(avatarUrl && { avatarUrl }),
+          ...(faceId && { rekFaceId: faceId }),
+          ...(credentials.nickname && { nickname: finalNickname }),
+        },
+        create: {
+          id:    uid,
+          email,
+          nickname: finalNickname,
+          avatarUrl,
+          rekFaceId: faceId,
+        },
+        select: {
+          id: true,
+          email: true,
+          nickname: true,
+          avatarUrl: true,
+        },
+      })
     })
 
     console.log('[Auth] Profile created/updated successfully:', profile.id)
 
-    /* 7 ◀ return user for Next-Auth session */
+    /* 6 ◀ return user for Next-Auth session */
     return {
       id:    profile.id,
       name:  profile.nickname,
@@ -146,6 +141,17 @@ export async function authorize(
     }
   } catch (err: any) {
     console.log('[Auth] Authorization failed:', err.message)
+    
+    // Clean up Firebase user on any failure during registration
+    if (credentials.tmpFaceUrl || credentials.tmpAvatarUrl) {
+      try {
+        const decoded = await verifyIdToken(credentials.idToken)
+        await deleteFirebaseUser(decoded.uid)
+        console.log('[Auth] Deleted Firebase user after authorization failure:', decoded.uid)
+      } catch (deleteError) {
+        console.error('[Auth] Failed to delete Firebase user after authorization failure:', deleteError)
+      }
+    }
     
     // Let specific errors propagate, everything else becomes null
     const knownErrors = [

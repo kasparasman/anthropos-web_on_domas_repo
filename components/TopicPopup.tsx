@@ -51,7 +51,6 @@ export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProp
           
           {/* Body */}
           <TopicBody body={topic.body} />
-          <img src={topic.imageUrl} alt="Topic Image" className="w-full h-50"></img>
 
           {/* Comments */}
           <div className="space-y-4">

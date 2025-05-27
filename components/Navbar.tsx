@@ -64,7 +64,7 @@ export default function Navbar() {
               <Link
                 href={href}
                 className={`block py-2 px-3 md:px-2 rounded-sm hover:bg-white/10 md:hover:text-smoke ${
-                path === href ? styles.activeLink : ''
+                  path === href ? 'md:text-main font-bold' : ''
                 }`}
                 onClick={() => setIsMenuOpen(false)}
               >
