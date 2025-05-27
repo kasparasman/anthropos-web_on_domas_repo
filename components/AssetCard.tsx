@@ -10,8 +10,8 @@ interface AssetCardProps {
 
 export default function AssetCard({ asset }: AssetCardProps) {
   return (
-    <div className="w-64 flex-shrink-0 rounded-xl border border-gray bg-foreground flex relative mr-5 overflow-hidden" >
-      <div className=" flex-shrink-0 px-5 py-4 rounded-xl bg-foreground flex flex-col gap-3 z-2 w-full h-full m-0.25">
+    <div className="w-64 flex-shrink-0 rounded-xl border border-[#282114] bg-black flex relative mr-5 overflow-hidden" >
+      <div className=" flex-shrink-0 px-5 py-4 rounded-xl bg-black flex flex-col gap-3 z-2 w-full h-full my-0.25 ml-0.25 mr-0.5">
         {/* header */}
         <div className="flex items-center gap-3">
           <Image src={asset.logoUrl} alt={asset.name} width={36} height={36} className="w-9 h-9" />
@@ -31,8 +31,8 @@ export default function AssetCard({ asset }: AssetCardProps) {
         </div>
       </div>
       {/*movig dots*/}
-      <div className="absolute -bottom-[25px] -right-[25px] h-12 w-12 bg-main absolute animate-move-around"></div>
-      <div className="h-12 w-12 bg-main absolute animate-move-around2"></div>
+      <div className="absolute -bottom-[25px] -right-[25px] h-14 w-14 bg-main absolute animate-move-around"></div>
+      <div className="h-14 w-14 bg-main absolute animate-move-around2"></div>
     </div>
   )
 }

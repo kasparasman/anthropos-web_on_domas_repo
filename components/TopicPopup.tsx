@@ -36,7 +36,7 @@ export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProp
               </button>
             </Dialog.Close>
           </div>
-
+          
           {/* Body */}
           <TopicBody body={topic.body} />
           <img src={topic.imageUrl} alt="Topic Image" className="w-full h-50"></img>
@@ -57,3 +57,4 @@ export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProp
     </Dialog.Root>
   )
 }
+

@@ -39,7 +39,7 @@ export default function Home({
         alt="background"
         className="z-[-3] bg-black fixed inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
       />
-      <div className=" flex justify-between items-bottom z-[-2] absolute overflow-hidden inset-0 bg-black/50 pointer-events-none">
+      <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
         <img
           src="/BurjKalifa.png"
           alt="background"
@@ -48,9 +48,19 @@ export default function Home({
         <img
           src="/Building2.png"
           alt="background"
-          className="hidden lg:block mr-[-600px] object-cover opacity-100 pointer-events-none"
+          className="hidden lg:block mr-[-500px] object-cover opacity-100 pointer-events-none"
         />
-        <img src="/people.png" alt="people" className=" absolute z-[1] bottom-[-40px] object-cover opacity-100 pointer-events-none "></img>
+        <div
+          className="w-full absolute z-[1] bottom-[-40px] left-0 pointer-events-none"
+          style={{
+            backgroundImage: 'url(/people.png)',
+            backgroundRepeat: 'repeat-x',
+            backgroundPosition: 'bottom',
+            backgroundSize: 'auto 100%',
+            height: '200px', // adjust height as needed to fit your image
+          }}
+          aria-hidden="true"
+        />
 
       </div>
       <div className="max-w-5xl w-full space-y-10">
