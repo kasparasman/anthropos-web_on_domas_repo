@@ -38,10 +38,12 @@ export default function TopicItem({
     >
       <div className="aspect-square h-full">
         <img
+          src={topic.imageUrl || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb'}
           alt={topic.title}
           className="aspect-square h-full rounded-lg object-cover"
+          loading="lazy"
+          decoding="async"
         />
-
       </div>
       {/* Content */}
       <div className=" relative flex flex-col items-start h-full overflow-hidden">

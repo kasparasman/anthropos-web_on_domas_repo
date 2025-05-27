@@ -13,9 +13,10 @@ export default function AvatarPlayer({ videoUrl }: { videoUrl: string | null }) 
           key={videoUrl}
           src={videoUrl}
           autoPlay
-          muted
           loop
           className="w-full h-full object-cover"
+          preload="none"
+          playsInline
         />
       ) : (
         <span className="text-dim_smoke">No video</span>
