@@ -18,7 +18,7 @@ export default function TopicList({ topics, selectedId, onSelect, onOpenTopic }:
         <TopicItem
           key={t.id}
           topic={t}
-          isSelected={t.id === selectedId}
+          isSelected={Number(t.id) === selectedId}
           onSelect={onSelect}
           onOpenTopic={onOpenTopic}       // open modal with this topic
 

@@ -11,7 +11,7 @@ datasource db {
 ///   USER PROFILE
 /// ─────────────────────────────────────────────────────────────────────────────
 model Profile {
-  id         String      @id
+  id         String      @id @default(uuid())
   email      String      @unique
   nickname   String      @unique
   warnings   Int         @default(0)
@@ -22,6 +22,8 @@ model Profile {
   comments   Comment[]
   modLogs    ModLog[]
   topicLikes TopicLike[]
+  banReason  String?
+  bannedAt   DateTime?
 
   @@map("profiles")
 }
@@ -47,11 +49,11 @@ model Topic {
 model Comment {
   id        String    @id
   body      String
-  authorId  String
+  authorId  String?
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   parentId  String?
   topicId   String
-  author    Profile   @relation(fields: [authorId], references: [id])
+  author    Profile?  @relation(fields: [authorId], references: [id], onDelete: SetNull)
   parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
   topic     Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
@@ -65,13 +67,14 @@ model Comment {
 ///   TOPIC LIKES  (composite-PK: one like per user per topic)
 /// ─────────────────────────────────────────────────────────────────────────────
 model TopicLike {
+  id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   topicId   String
-  userId    String
+  userId    String?
   topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  user      Profile  @relation(fields: [userId], references: [id])
+  user      Profile?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@id([userId, topicId])
+  @@unique([userId, topicId])
   @@index([topicId])
   @@map("topic_likes")
 }
@@ -84,10 +87,10 @@ model ModLog {
   score     String
   commentId String?
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  userId    String
+  userId    String?
   action    Int      @default(0)
   comment   Comment? @relation(fields: [commentId], references: [id])
-  user      Profile  @relation(fields: [userId], references: [id])
+  user      Profile?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@map("mod_logs")

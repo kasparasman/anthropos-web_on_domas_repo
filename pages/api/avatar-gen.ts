@@ -1,62 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import axios from 'axios'
-import { uploadFromUrlToTmp } from '../../lib/uploadFromUrlToTmp'   // helper below
+import { OpenAI } from 'openai'
+import { uploadFromUrlToTmp } from '../../lib/uploadFromUrlToTmp'
+import { File } from 'node:buffer'   // Node 18/20 polyfill for browser File
 
-const LIGHTX_API_URL = 'https://api.lightxeditor.com/external/api/v1/avatar'
-const LIGHTX_STATUS_URL = 'https://api.lightxeditor.com/external/api/v1/order-status'
-const MAX_RETRIES = 5
-const RETRY_DELAY = 3000 // 3 seconds in milliseconds
+/* ─── OpenAI client ────────────────────────────────────── */
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-// Helper function to wait for specified milliseconds
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
-// Helper function to check order status
-async function checkOrderStatus(orderId: string, apiKey: string): Promise<{ status: string; output?: string }> {
-  const { data } = await axios.post(
-    LIGHTX_STATUS_URL,
-    { orderId },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey
-      }
-    }
-  )
-
-  console.log('📊 [avatar-gen] Status check response:', data)
-
-  if (data?.statusCode !== 2000) {
-    throw new Error(`Invalid status response: ${JSON.stringify(data)}`)
-  }
-
-  return {
-    status: data.body.status,
-    output: data.body.output
-  }
-}
-
-// Helper function to poll for completion
-async function pollForCompletion(orderId: string, apiKey: string): Promise<string> {
-  let retries = 0
-
-  while (retries < MAX_RETRIES) {
-    const { status, output } = await checkOrderStatus(orderId, apiKey)
-    console.log(`🔄 [avatar-gen] Attempt ${retries + 1}/${MAX_RETRIES}: Status = ${status}`)
-
-    if (status === 'active' && output) {
-      return output
-    }
-
-    if (status === 'failed') {
-      throw new Error('Avatar generation failed')
-    }
-
-    // Wait before next retry
-    await delay(RETRY_DELAY)
-    retries++
-  }
-
-  throw new Error(`Timed out after ${MAX_RETRIES} retries`)
+/* ─── helper: Buffer → File ─────────────────────────────── */
+async function fetchAsFile(url: string, name: string, mime: string): Promise<File> {
+  const arrayBuffer = await fetch(url).then(r => r.arrayBuffer())
+  return new File([new Uint8Array(arrayBuffer)], name, { type: mime })
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -65,72 +18,70 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   console.log('🎨 [avatar-gen] Starting generation with body:', req.body)
 
   // Validate environment variables
-  if (!process.env.LIGHTX_API_KEY) {
-    console.error('❌ [avatar-gen] Missing API key')
+  if (!process.env.OPENAI_API_KEY || !process.env.STYLE_REF_URL) {
+    console.error('❌ [avatar-gen] Missing required env vars')
     return res.status(500).json({ error: 'Server configuration error' })
   }
 
-  const { sourceUrl } = req.body as { sourceUrl: string }
-  
+  const { sourceUrl } = req.body
   if (!sourceUrl) {
     console.error('❌ [avatar-gen] Missing sourceUrl in request body')
     return res.status(400).json({ error: 'sourceUrl is required' })
   }
 
   try {
-    console.log('📡 [avatar-gen] Calling LightX API with URL:', sourceUrl)
+    console.log('📡 [avatar-gen] Preparing files for GPT Image generation')
 
-    /* 1️⃣  Call LightX AI Avatar */
-    const requestBody = JSON.stringify({
-      imageUrl: sourceUrl,
-      styleImageUrl: sourceUrl, // Use same image as style reference
-      textPrompt: "Create a professional, high-quality avatar in a modern style"
+    /* 1. prepare Uploadables (selfie FIRST, style SECOND) */
+    const [selfieFile, styleFile] = await Promise.all([
+      fetchAsFile(sourceUrl, 'selfie.jpg', 'image/jpeg'),
+      fetchAsFile(process.env.STYLE_REF_URL, 'style.png', 'image/png'),
+    ])
+
+    console.log('📤 [avatar-gen] Files prepared:', {
+      selfieSize: selfieFile.size,
+      styleSize: styleFile.size
     })
 
-    console.log('📤 [avatar-gen] Request body:', requestBody)
+    /* 2. GPT-Image-1 edit WITHOUT MASK */
+    const rsp = await openai.images.edit({
+      model: 'gpt-image-1',
+      image: [selfieFile, styleFile],
+      size: '1024x1024',
+      output_format: 'jpeg',          // ✅ Correct parameter name
+      prompt:
+        'Create a stylised avatar. Preserve **all facial proportions, skin tone, ' +
+        'eye shape, and hairline exactly**. Change only background, lighting, and ' +
+        'color palette to match the reference style.',
+    })
 
-    const { data: initResponse } = await axios.post(
-      LIGHTX_API_URL,
-      requestBody,
-      { 
-        headers: { 
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.LIGHTX_API_KEY 
-        }
-      }
-    )
-
-    console.log('📥 [avatar-gen] Initial response:', initResponse)
-
-    // Validate initial response
-    if (initResponse?.statusCode !== 2000 || !initResponse?.body?.orderId) {
-      console.error('❌ [avatar-gen] Invalid initial response:', initResponse)
-      throw new Error('Invalid response from LightX API')
+    if (!rsp.data?.[0]?.b64_json) {
+      throw new Error('No image data in response')
     }
 
-    /* 2️⃣  Poll for completion */
-    console.log('⏳ [avatar-gen] Polling for completion...')
-    const avatarUrl = await pollForCompletion(
-      initResponse.body.orderId,
-      process.env.LIGHTX_API_KEY
-    )
+    console.log('📥 [avatar-gen] Got GPT Image response, converting to buffer')
 
-    /* 3️⃣  Re-upload avatar into our R2 tmp/ folder (so we control it) */
-    console.log('📤 [avatar-gen] Re-uploading to R2:', avatarUrl)
-    const tmpAvatarUrl = await uploadFromUrlToTmp(avatarUrl, 'png')
+    /* 3. Convert base64 to buffer */
+    const imageBuffer = Buffer.from(rsp.data[0].b64_json, 'base64')
+
+    /* 4. Upload to our R2 tmp/ folder */
+    console.log('📤 [avatar-gen] Uploading to R2 tmp folder')
+    const tmpAvatarUrl = await uploadFromUrlToTmp(
+      'data:image/jpeg;base64,' + rsp.data[0].b64_json,
+      'jpg'
+    )
 
     console.log('✅ [avatar-gen] Success:', { tmpAvatarUrl })
     res.status(200).json({ tmpAvatarUrl })
+
   } catch (err: any) {
     const errorDetails = {
       message: err.message,
       response: err.response?.data,
       status: err.response?.status,
-      requestBody: err.config?.data
     }
     console.error('❌ [avatar-gen] Error:', errorDetails)
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Avatar generation failed',
       details: errorDetails
     })
