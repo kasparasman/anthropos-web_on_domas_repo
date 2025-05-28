@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "prisma generate",         
-    "build": "prisma generate && next build",  
+    "postinstall": "prisma generate",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "prisma:migrate": "prisma migrate dev",
@@ -55,6 +55,7 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.3.0",
+    "eventsource-parser": "^3.0.2",
     "firebase": "^10.14.1",
     "firebase-admin": "^12.7.0",
     "input-otp": "^1.2.4",
@@ -83,6 +84,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.6",
+    "@types/event-source-polyfill": "^1.0.5",
     "@types/node": "20.6.2",
     "@types/pg": "^8.11.4",
     "@types/react": "^19",

@@ -18,13 +18,13 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
   /* avatar flow */
   const [file, setFile] = useState<File | null>(null)
-  const [origUrl, setOrigUrl] = useState<string | null>(null)
   const [tmpAvatarUrl, setTmpAvatarUrl] = useState<string | null>(null)
   const [tmpFaceUrl, setTmpFaceUrl] = useState<string | null>(null)
   const [nickname, setNickname] = useState<string>('')
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [streamingProgress, setStreamingProgress] = useState<string | null>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
 
   /* male/female + style selection */
@@ -93,60 +93,135 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
   /* ------- avatar + nickname generation handler ------- */
   async function handleGenerate() {
-    if (!file) return
-    setLoading(true); setError(null)
+    if (!file) return;
+    setLoading(true); setError(null);
+    setTmpAvatarUrl(null);
+    setStreamingProgress('Analyzing your photo...');
     try {
-      /* 1.  direct PUT to R2 /tmp/original */
-      const orig = await uploadAvatar(file)
-      setOrigUrl(orig)
-      setTmpFaceUrl(orig)
+      // 1. Upload original selfie to storage (R2)
+      const orig = await uploadAvatar(file);
+      setTmpFaceUrl(orig);
 
-      // 🚀 DEV BYPASS: Skip expensive LightX calls during rekognition development
-      const isDev = process.env.NODE_ENV === 'development'
-      const skipAvatarGen = process.env.NEXT_PUBLIC_SKIP_AVATAR_GEN === 'true'
+      // 2. Get style image as base64
+      const currentStyles = gender === 'male' ? maleStyles : femaleStyles;
+      const selectedStyleRef = selectedStyle !== null ? currentStyles[selectedStyle]?.styleRef : undefined;
+      if (!selectedStyleRef) throw new Error('Please select a style');
+      const styleResp = await fetch(selectedStyleRef);
+      const styleBlob = await styleResp.blob();
+      const styleBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(styleBlob);
+      });
+
+      // 3. Read selfie as base64
+      const selfieBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // 4. Start streaming avatar generation using fetch with SSE parsing
+      setStreamingProgress('Generating your avatar...');
       
-      if (isDev && skipAvatarGen) {
-        console.log('[AuthModal] 🚀 DEV MODE: Skipping avatar generation and nickname API calls')
-        
-        // Use original image as "generated" avatar for dev
-        setTmpAvatarUrl(orig)
-        
-        // Use a simple dev nickname
-        const devNickname = `dev_${email.split('@')[0]}_${Date.now().toString().slice(-4)}`
-        setNickname(devNickname)
-        
-        console.log('[AuthModal] 🚀 DEV MODE: Using dev avatar and nickname:', { 
-          avatar: orig, 
-          nickname: devNickname 
-        })
-      } else {
-        console.log('[AuthModal] Production mode: Running full avatar generation')
-        
-        /* 2.  call our avatar-gen route (LightX) */
-        const currentStyles = gender === 'male' ? maleStyles : femaleStyles
-        const selectedStyleRef = selectedStyle !== null ? currentStyles[selectedStyle]?.styleRef : undefined
-        
-        const { tmpAvatarUrl } = await fetch('/api/avatar-gen', {
+      const finalAvatarUrl = await streamAvatar(selfieBase64, styleBase64);
+      
+      // streamAvatar function with proper fetch SSE parsing
+      async function streamAvatar(selfieB64: string, styleB64: string): Promise<string | null> {
+        const resp = await fetch('/api/avatar-gen', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            sourceUrl: orig,
-            styleRef: selectedStyleRef 
-          }),
-        }).then(r => r.json())
-        setTmpAvatarUrl(tmpAvatarUrl)
-
-        /* 3.  get nickname */
-        const { nickname } = await fetch('/api/nickname', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ avatarUrl: tmpAvatarUrl }),
-        }).then(r => r.json())
-        setNickname(nickname)
+          body: JSON.stringify({ selfieBase64: selfieB64, styleBase64: styleB64 }),
+        });
+        
+        if (!resp.body) throw new Error('No response body');
+        
+        let cdnUrl: string | null = null;
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        
+        // Manual SSE parsing
+        let buffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          
+          const messages = buffer.split('\n\n');
+          buffer = messages.pop() || ''; // Keep incomplete message in buffer
+          
+          for (const message of messages) {
+            const lines = message.split('\n');
+            let currentEvent: { event?: string; data?: string; id?: string } = {};
+            for (const line of lines) {
+              if (line.startsWith('event: ')) {
+                currentEvent.event = line.substring(7);
+              } else if (line.startsWith('data: ')) {
+                currentEvent.data = line.substring(6);
+              } else if (line.startsWith('id: ')) {
+                currentEvent.id = line.substring(4);
+              }
+            }
+            if (currentEvent.event && currentEvent.data !== undefined) {
+              await handleSSEEvent(currentEvent);
+            }
+          }
+        }
+        
+        async function handleSSEEvent(event: { event?: string; data?: string; id?: string }) {
+          switch (event.event) {
+            case 'partial':
+              const partialIndex = event.id ? parseInt(event.id) + 1 : 'unknown';
+              setTmpAvatarUrl(`data:image/png;base64,${event.data}`);
+              setStreamingProgress(`Generating... (${partialIndex})`);
+              console.log(`[AuthModal] Partial ${partialIndex}`);
+              break;
+            case 'complete':
+              setTmpAvatarUrl(`data:image/png;base64,${event.data}`);
+              setStreamingProgress('Finalizing avatar...');
+              console.log('[AuthModal] Final image received');
+              break;
+            case 'uploaded':
+              cdnUrl = event.data || null;
+              setTmpAvatarUrl(event.data || ''); // CDN URL
+              setStreamingProgress('Creating nickname...');
+              console.log('[AuthModal] Avatar uploaded to storage');
+              break;
+            case 'error':
+              throw new Error(event.data || 'Avatar generation failed');
+            case 'done':
+              console.log('[AuthModal] Stream completed');
+              break;
+          }
+        }
+        
+        return cdnUrl;
       }
+      
+      // Check if we have a final avatar URL
+      if (!finalAvatarUrl) {
+        throw new Error('Avatar generation failed - no CDN URL received');
+      }
+      
+      // 5. Get nickname from /api/nickname using the generated avatar
+      const { nickname } = await fetch('/api/nickname', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: finalAvatarUrl }),
+      }).then(r => r.json());
+      setNickname(nickname);
+      
+      setLoading(false);
+      setStreamingProgress(null);
     } catch (e: any) {
-      setError(e.message || 'Generation failed')
-    } finally { setLoading(false) }
+      setError(e.message || 'Generation failed');
+      setLoading(false);
+      setStreamingProgress(null);
+    }
   }
 
   /* ------- submit (sign in / register) ---------------- */
@@ -390,11 +465,18 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                     </label>
                   ) : (
                     <div className="flex flex-col items-center mb-3">
-                      <img 
-                        src={tmpAvatarUrl} 
-                        alt="Generated Avatar" 
-                        className="h-36 w-36 rounded-lg object-cover mb-2"
-                      />
+                      <div className="relative">
+                        <img 
+                          src={tmpAvatarUrl} 
+                          alt="Generated Avatar" 
+                          className="h-36 w-36 rounded-lg object-cover mb-2"
+                        />
+                        {loading && streamingProgress && (
+                          <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                            <div className="w-6 h-6 border-2 border-main border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
                       <div className="text-sm text-white font-semibold">{nickname}</div>
                     </div>
                   )}
@@ -413,6 +495,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                         setNickname('')
                         setPreviewUrl(null)
                         setFile(null)
+                        setStreamingProgress(null)
                       }}
                       className="w-full rounded bg-gray py-2 font-semibold text-white border border-dim_smoke"
                     >
@@ -470,6 +553,14 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               Cancel
             </button>
           </div>
+          {loading && (
+            <div className="flex flex-col items-center justify-center my-4">
+              <div className="w-10 h-10 border-4 border-main border-t-transparent rounded-full animate-spin mb-2"></div>
+              <span className="text-main font-semibold">
+                {streamingProgress || 'Generating avatar…'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </Dialog>
