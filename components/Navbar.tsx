@@ -15,9 +15,6 @@ export default function Navbar() {
   const { data: session } = useSession()
 
   const links = [
-    { href: '/about',    label: 'About' },
-    { href: '/services', label: 'Services' },
-    { href: '/contact',  label: 'Contact' },
     { href: '/team',     label: 'Team' },
   ]
 

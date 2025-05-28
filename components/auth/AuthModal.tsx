@@ -5,6 +5,7 @@ import { Dialog } from '@headlessui/react'
 import { signIn, signOut } from 'next-auth/react'
 import { signInClient, registerClient } from '../../lib/firebase-client'
 import { uploadAvatar } from '../../lib/uploadAvatar'
+import Passport from '.././Passport'
 import Image from 'next/image'
 
 interface AuthModalProps { open: boolean; onClose: () => void }
@@ -292,7 +293,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={onClose} />
         <div
           onClick={e => e.stopPropagation()}
-          className={`flex flex-col gap-6 relative z-10 rounded-xl bg-black py-6 md:py-8 md:px-12 sm:border border-main ${mode === 'register' ? 'w-220 gap-10 h-full sm:h-auto px-4 py-12 sm:py-8 overflow-y-scroll no-scrollbar' : 'px-6 w-120 border'
+          className={`flex flex-col gap-6 relative z-10 rounded-xl bg-black py-6 md:py-8 md:px-12 sm:border border-main ${mode === 'register' ? 'w-220 gap-10 h-full sm:h-auto sm:max-h-[90vh] px-4 py-12 sm:py-8 overflow-y-scroll no-scrollbar' : 'px-6 w-120 border'
             }`}
         >
           <h2 className=" text-center sm:text-3xl text-2xl font-semibold"> 
@@ -352,7 +353,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                     onChange={e => setEmail(e.target.value)}
                     className=" w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
                   />
-                  <input
+                  <input 
                     type="password"
                     placeholder="Password"
                     value={password}
@@ -379,7 +380,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 </div>
 
               </div>
-              <div className="flex justify-between gap-8 sm:flex-row flex-col sm:items-start items-center">
+              <div className="flex justify-between gap-8 sm:flex-row flex-col items-center sm:items-start">
                 {/* --- Upload --- */}
                 <div className="flex flex-col sm:items-start items-center w-full sm:max-w-40 max-w-50">
                   <div className="mb-2 text-lg font-semibold text-dim_smoke">Upload your photo</div>
@@ -415,7 +416,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                       <img
                         src={tmpAvatarUrl}
                         alt="Generated Avatar"
-                        className="h-36 w-36 rounded-lg object-cover mb-2"
+                        className="aspect-square w-full rounded-lg object-cover mb-2"
                       />
                       <div className="text-sm text-white font-semibold">{nickname}</div>
                     </div>
@@ -436,7 +437,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                         setPreviewUrl(null)
                         setFile(null)
                       }}
-                      className="w-full rounded bg-gray py-2 font-semibold text-white border border-dim_smoke"
+                      className="w-full rounded-full bg-gray py-2 font-semibold text-smoke border border-dim_smoke"
                     >
                       Try Again
                     </button>
@@ -470,14 +471,23 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 </div>
 
               </div>
-              <div className="flex flex-col gap-3">
-                <button
-                  disabled={loading || !tmpAvatarUrl}
-                  onClick={submit}
-                  className="w-full rounded-md bg-main py-2 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)] disabled:opacity-60"
-                >
-                  {loading ? 'Registering…' : 'REGISTER'}
-                </button>
+              <div className="flex flex-col gap-4 items-center">
+                {tmpAvatarUrl && (
+                  <div className="flex flex-col items-center gap-4 mt-">
+                    <Passport
+                      id={1} // Placeholder ID, will be replaced by actual user ID after registration
+                      nickname={nickname || "Xamonu"} // Use generated nickname if available
+                      gender={gender === "male" ? "Male" : "Female"}
+                    />
+                    <button
+                      disabled={loading || !tmpAvatarUrl}
+                      onClick={submit}
+                      className="w-fit rounded-md bg-main py-2 px-6 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)] disabled:opacity-60"
+                    >
+                      {loading ? 'Registering…' : 'FINISH REGISTRATION'}
+                    </button>
+                  </div>
+                )}
                 <button
                   disabled={loading}
                   onClick={() => setMode('login')}
@@ -488,25 +498,24 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               </div>
             </>
           )}
-          <div>
 
-            <button
-              ref={cancelRef}
-              onClick={onClose}
-              className="absolute top-4 right-4 text-dim_smoke hover:text-white text-2xl font-bold focus:outline-none"
-              aria-label="Close"
-              type="button"
-            >
-              <Image
+          <button
+            ref={cancelRef}
+            onClick={onClose}
+            className="absolute top-4 right-4 text-dim_smoke hover:text-white text-2xl font-bold focus:outline-none"
+            aria-label="Close"
+            type="button"
+          >
+            <Image
               src="/Close_round.png"
               alt="Close"
               width={28}
               height={28}
-              className="object-contain"
+              className="object-contain "
               priority
-              />
-            </button>
-          </div>
+            />
+          </button>
+
         </div>
       </div>
     </Dialog>

@@ -9,30 +9,31 @@ interface PassportProps {
 
 export default function Passport({ id, nickname, gender, avatarUrl }: PassportProps) {
   return (
-    <div className="flex items-center bg-black border border-main rounded-xl p-4 max-w-md">
+    <div className="flex sm:flex-row flex-col gap-4 sm:gap-8 bg-[linear-gradient(-45deg,_#000000_-10%,_#252014_50%,_#000000_110%)] border border-main rounded-xl py-4 px-6 sm:p-4 w-fit mx-auto">
       {/* Avatar Section */}
-      <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+      <div className="w-50 h-50 rounded-lg overflow-hidden bg-gray">
         <img
-          src={avatarUrl}
+          src={''}
           alt={`${nickname}'s avatar`}
           className="w-full h-full object-cover"
         />
       </div>
 
       {/* Info Section */}
-      <div className="ml-4 flex-1 text-white">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm uppercase tracking-wide text-neutral-400">Anthropos Citizen</span>
-          <span className="text-sm font-medium">#{id}</span>
+      <div className="flex flex-col items-center sm:items-start text-white gap-3 relative ">
+        <div className="flex justify-between items-center py-0.5 px-6 border rounded-full border-main">
+          <span className="text- tracking-wide text-main">Anthropos Citizen</span>
         </div>
-        <div className="mb-1">
-          <span className="block text-xs text-neutral-400">Nickname</span>
-          <span className="block text-lg font-semibold">{nickname}</span>
+        <div className="flex flex-col items-center sm:block">
+          <span className="block text-sm text-dim_smoke">Nickname</span>
+          <span className="block text-lg font-semibold font-smoke">{nickname}</span>
         </div>
-        <div>
-          <span className="block text-xs text-neutral-400">Gender</span>
-          <span className="block text-lg font-semibold capitalize">{gender}</span>
+        <div className="flex flex-col items-center sm:block">
+          <span className="block text-sm text-dim_smoke">Gender</span>
+          <span className="block text-lg font-semibold font-smoke">{gender}</span>
         </div>
+        <div className="text-main sm:absolute right-0 bottom-0"># 000 000 00{id}</div>
+
       </div>
     </div>
   )
