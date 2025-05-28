@@ -5,6 +5,8 @@ import StatsSection from '../components/StatsSection'
 import RightPanel from '../components/RightPanel'
 import AssetsCounter from '@/components/AssetCounter'
 import AssetCarousel from '../components/AssetCarousel'
+import GridWithRays from '@/components/GridWithRays'
+
 
 import { DexToolsResponse } from '../types/dex-tools'
 import { Topic } from '../types/topic'
@@ -34,11 +36,9 @@ export default function Home({
   return (
     <main className=" realtive flex flex-col items-center p-4 md:p-6">
       {/* Background */}
-      <img
-        src="/background.png"
-        alt="background"
-        className="z-[-3] bg-black fixed inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
-      />
+      <GridWithRays/>
+
+      
       <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
         <img
           src="/BurjKalifa.png"

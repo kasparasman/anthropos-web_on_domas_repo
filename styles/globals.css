@@ -66,4 +66,25 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* grid */
+  .bg-grid {
+    background-color: #000;
+    background-image:
+      linear-gradient(#2e2618 1px, transparent 1px),
+      linear-gradient(90deg, #2e2618 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  /* keyframes */
+  @keyframes move-right {
+    from { transform: translateX(0) }
+    to   { transform: translateX(calc(100vw + 24px)) }
+  }
+  @keyframes move-left {
+    from { transform: translateX(0) }
+    to   { transform: translateX(calc(-100vw - 24px)) }
+  }
+  .ray-right { animation: move-right var(--speed) linear var(--delay) infinite; }
+  .ray-left  { animation: move-left  var(--speed) linear var(--delay) infinite; }
 }
+

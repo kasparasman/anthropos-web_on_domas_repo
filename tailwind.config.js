@@ -25,7 +25,7 @@ module.exports = {
         inter: ['Inter', ...defaultTheme.fontFamily.sans],
       },
       spacing: {
-        // add any custom spacings you repeatedly used
+        // add any custom spacings you repeatedly use
       },
       screens: {
         // add any custom breakpoints if needed
