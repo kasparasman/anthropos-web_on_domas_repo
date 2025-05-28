@@ -58,11 +58,12 @@
 }
 
 
-/* 5. Utilities layer: custom helpers if needed */
-/*
 @layer utilities {
-  .content-auto {
-    content-visibility: auto;
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
-*/

@@ -292,7 +292,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={onClose} />
         <div
           onClick={e => e.stopPropagation()}
-          className={`flex flex-col gap-6 relative z-10 rounded-xl bg-black py-6 md:py-8 md:px-12 sm:border border-main ${mode === 'register' ? 'w-220 gap-10 h-full sm:h-auto px-4 py-12 sm:py-8' : 'w-120 border'
+          className={`flex flex-col gap-6 relative z-10 rounded-xl bg-black py-6 md:py-8 md:px-12 sm:border border-main ${mode === 'register' ? 'w-220 gap-10 h-full sm:h-auto px-4 py-12 sm:py-8 overflow-y-scroll no-scrollbar' : 'px-6 w-120 border'
             }`}
         >
           <h2 className=" text-center sm:text-3xl text-2xl font-semibold"> 
@@ -381,13 +381,13 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               </div>
               <div className="flex justify-between gap-8 sm:flex-row flex-col sm:items-start items-center">
                 {/* --- Upload --- */}
-                <div className="flex flex-col items-start w-full max-w-40">
+                <div className="flex flex-col sm:items-start items-center w-full sm:max-w-40 max-w-50">
                   <div className="mb-2 text-lg font-semibold text-dim_smoke">Upload your photo</div>
 
 
                   {!tmpAvatarUrl ? (
                     <label
-                      className="flex w-full max-w-40 aspect-square cursor-pointer items-center justify-center rounded-lg border-1 border-dim_smoke bg-gray mb-3 overflow-hidden"
+                      className="flex w-full aspect-square cursor-pointer items-center justify-center rounded-lg border-1 border-dim_smoke bg-gray mb-3 overflow-hidden"
                     >
                       <input
                         type="file"
@@ -444,9 +444,9 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 </div>
 
                 {/* --- Styles --- */}
-                <div className="flex flex-col items-start w-full order-first sm:order-last">
+                <div className="flex flex-col sm:items-end items-center w-full order-first sm:order-last">
                   <div className="mb-2 text-lg font-semibold text-dim_smoke">Choose your style</div>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                     {(gender === 'male' ? maleStyles : femaleStyles).map((style, i) => (
                       <div
                         key={i}
@@ -493,11 +493,18 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
             <button
               ref={cancelRef}
               onClick={onClose}
-              className="absolute top-3 right-4 text-dim_smoke hover:text-white text-2xl font-bold focus:outline-none"
+              className="absolute top-4 right-4 text-dim_smoke hover:text-white text-2xl font-bold focus:outline-none"
               aria-label="Close"
               type="button"
             >
-              ×
+              <Image
+              src="/Close_round.png"
+              alt="Close"
+              width={28}
+              height={28}
+              className="object-contain"
+              priority
+              />
             </button>
           </div>
         </div>
