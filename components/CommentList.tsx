@@ -1,3 +1,4 @@
+// components/CommentList.tsx
 import { Comment } from '../hooks/useComments'
 
 interface Props {
