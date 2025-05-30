@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This rule describes the main orientational logic in deciding any new code, logic chains in the project. THe main thing here is to design modular architecture, using principles like Dependency injection (User will refer to as: DI), dependency inversion principle(DIP), Factory methodology, Smartly efficient code which not only is easy to code, but allows additions of many further changes of processes. You will need to make sure all the code in this project is written in this methodology.

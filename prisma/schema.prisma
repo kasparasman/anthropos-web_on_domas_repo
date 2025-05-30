@@ -11,20 +11,32 @@ datasource db {
 ///   USER PROFILE
 /// ─────────────────────────────────────────────────────────────────────────────
 model Profile {
-  id         String      @id @default(uuid())
-  email      String      @unique
-  nickname   String      @unique
-  warnings   Int         @default(0)
-  banned     Boolean     @default(false)
-  avatarUrl  String?
-  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
-  rekFaceId  String?
-  comments   Comment[]
-  modLogs    ModLog[]
-  topicLikes TopicLike[]
-  banReason  String?
-  bannedAt   DateTime?
+  id             String    @id @unique
+  email          String    @unique
+  nickname       String?   @unique
+  warnings       Int         @default(0)
+  banned         Boolean     @default(false)
+  avatarUrl      String?
+  status         String    @default("PENDING_PAYMENT")
+  rekFaceId      String?   @unique
+  stripeCustomerId String?   @unique
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  lastModifiedAt DateTime  @updatedAt
+  comments       Comment[]
+  modLogs        ModLog[]
+  topicLikes     TopicLike[]
+  banReason      String?
+  bannedAt       DateTime?
 
+  // Commenting out relations to undefined models for now
+  // sentMessages     Message[] @relation("SentMessages")
+  // receivedMessages Message[] @relation("ReceivedMessages")
+  // history          UserHistory[]
+  // bans             Ban[]
+
+  @@index([email])
+  @@index([nickname])
+  @@index([status])
   @@map("profiles")
 }
 

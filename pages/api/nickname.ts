@@ -5,27 +5,33 @@ import { prisma } from '@/lib/prisma'
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 async function getCandidates(avatarUrl: string, exclude: string[] = []) {
-  const prompt = `Suggest 10 unique, short nicknames (no spaces) for the person in this profile image: ${avatarUrl}.
+  const prompt = `Suggest 10 unique, short nicknames (no spaces) for the person in this profile image which I will attach. Analyze the persons face, expression, theme, how it represents itself, elements in the photo/image. All these should be reflected in the nickname. Also if it's male or female, give the nickname accordingly.
 ${exclude.length > 0 ? `Do not use any of these nicknames: ${exclude.join(', ')}.` : ''}
 Respond with a JSON array of nicknames only.\n\nCriteria:\nNames should sound dignified, aspirational, and fit for a "citizen of the future" or a digital passport.\nAvoid common/generic words and focus on invented or semi-invented names inspired by ancient languages or high-concept terms.\nOptionally, blend Latin/Greek roots with modern or tech-inspired suffixes or forms.`
 
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    max_tokens: 100,
-  })
+    const response = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: [{
+          role: "user",
+          content: [
+              { type: "input_text", text: prompt },
+              {type:'input_text', text:'USER_PROFILE_IMAGE'},
+              {
+                  type: "input_image",
+                  image_url: avatarUrl,
+                  detail: 'high',
+              },
+          ],
+      }],
+    });
+
 
   let candidates: string[] = []
   try {
-    candidates = JSON.parse(completion.choices[0].message?.content ?? '[]')
+    candidates = JSON.parse(response.output_text ?? '[]')
   } catch {
     // fallback: try to extract nicknames from text
-    candidates = (completion.choices[0].message?.content ?? '')
+    candidates = (response.output_text ?? '')
       .split(/[^a-z0-9_-]+/i)
       .filter(Boolean)
   }

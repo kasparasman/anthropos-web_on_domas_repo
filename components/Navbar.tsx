@@ -7,15 +7,15 @@ import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 
 import ProfileButton from '../components/ProfileButton'
-import AuthButton     from './auth/AuthButton'
+import AuthButton from './auth/AuthButton'
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const path  = usePathname()
+  const path = usePathname()
   const { data: session } = useSession()
 
   const links = [
-    { href: '/team',     label: 'Team' },
+    { href: '/team', label: 'Team' },
   ]
 
   return (
@@ -51,22 +51,20 @@ export default function Navbar() {
         {/* Links + mobile menu */}
         <div
           id="navbar-cta"
-          className={`items-center w-full md:flex md:w-auto md:order-1 ${
-            isMenuOpen ? 'block' : 'hidden'
-          }`}
+          className={`items-center w-full md:flex md:w-auto md:order-1 ${isMenuOpen ? 'block' : 'hidden'
+            }`}
         >
-            <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray rounded-lg bg-foreground md:bg-transparent md:space-x-4 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:absolute md:left-1/2 md:-translate-x-1/2">
+          <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray rounded-lg bg-foreground md:bg-transparent md:space-x-4 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:absolute md:left-1/2 md:-translate-x-1/2">
             {links.map(({ href, label }) => (
               <li key={href}>
-              <Link
-                href={href}
-                className={`block py-2 px-3 md:px-2 rounded-sm hover:bg-white/10 md:hover:text-smoke ${
-                  path === href ? 'md:text-main font-bold' : ''
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {label}
-              </Link>
+                <Link
+                  href={href}
+                  className={`block py-2 px-3 md:px-2 rounded-sm hover:bg-white/10 md:hover:text-smoke ${path === href ? 'md:text-main font-bold' : ''
+                    }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {label}
+                </Link>
               </li>
             ))}
 
@@ -74,7 +72,7 @@ export default function Navbar() {
             <li className="md:hidden ml-3">
               {session?.user ? <ProfileButton /> : <AuthButton />}
             </li>
-            </ul>
+          </ul>
         </div>
       </div>
     </nav>
