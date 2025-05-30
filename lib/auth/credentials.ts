@@ -1,170 +1,89 @@
 /* lib/auth/credentials.ts --------------------------------------- */
-import { verifyIdToken, deleteFirebaseUser } from '../firebase-admin'
+import { verifyIdToken } from '../firebase-admin'
 import { prisma } from '@/lib/prisma'
-import { promoteAvatar } from '../promoteAvatar'
-import { indexFaceOnly } from '../rekognition/indexFace'
 
+// Type for credentials now only expects idToken, as other details are handled by provisional registration.
 type Creds = {
-  idToken:  string
-  tmpAvatarUrl?:  string   // present only during registration
-  nickname?: string  // present only during registration
-  tmpFaceUrl?: string  // present only during registration
+  idToken: string
 }
 
 export async function authorize(
   credentials: Creds | undefined,
 ): Promise<{ id: string; name: string; email: string; image?: string } | null> {
-  if (!credentials?.idToken) return null
+  if (!credentials?.idToken) {
+    console.log('[Auth Credentials] No idToken provided.')
+    return null
+  }
 
-  console.log('[Auth] Starting authorization flow')
-  console.log('[Auth] Has tmpFaceUrl:', !!credentials.tmpFaceUrl)
+  console.log('[Auth Credentials] Starting authorization flow for login.')
 
   try {
-    /* 1 ◀ verify Firebase JWT */
+    /* 1 ◀ Verify Firebase JWT */
     const decoded = await verifyIdToken(credentials.idToken)
     const { uid, email = '' } = decoded
-    
-    console.log('[Auth] Firebase user verified:', { uid, email })
-    
-    /* 2 ◀ check for existing profile by email */
-    const existingByEmail = await prisma.profile.findUnique({
-      where: { email },
-      select: { id: true, banned: true }
+    console.log('[Auth Credentials] Firebase user verified:', { uid, email })
+
+    /* 2 ◀ Fetch existing profile by ID (uid) */
+    const profile = await prisma.profile.findUnique({
+      where: { id: uid },
+      select: {
+        id: true,
+        email: true,
+        nickname: true,
+        avatarUrl: true,
+        banned: true,
+        status: true, // Crucial for checking registration/payment completion
+      },
     })
-    
-    // Ban check
-    if (existingByEmail?.banned) {
-      console.log('[Auth] User is banned:', email)
+
+    if (!profile) {
+      console.log('[Auth Credentials] No profile found for UID:', uid)
+      throw new Error('PROFILE_NOT_FOUND')
+    }
+
+    /* 3 ◀ Ban Check */
+    if (profile.banned) {
+      console.log('[Auth Credentials] User is banned:', email)
       throw new Error('ACCOUNT_BANNED')
     }
-    
-    // Email conflict check (different user with same email)
-    if (existingByEmail && existingByEmail.id !== uid) {
-      console.log('[Auth] Email conflict:', email)
-      throw new Error('EMAIL_ALREADY_IN_USE')
-    }
 
-    /* 3 ◀ Rekognition step only during REGISTER (tmpFaceUrl present) */
-    let faceId: string | null = null
-    if (credentials.tmpFaceUrl) {
-      console.log('[Auth] Indexing face (already verified as unique)')
-      try {
-        faceId = await indexFaceOnly(credentials.tmpFaceUrl, email)
-        console.log('[Auth] Face indexed successfully, faceId:', faceId)
-      } catch (faceError: any) {
-        console.error('[Auth] Face indexing failed unexpectedly:', faceError.message)
-        // This shouldn't happen since we already checked for duplicates
-        // But if it does, we still need to clean up the Firebase user
-        try {
-          await deleteFirebaseUser(uid)
-          console.log('[Auth] Deleted Firebase user after unexpected face indexing failure:', uid)
-        } catch (deleteError) {
-          console.error('[Auth] Failed to delete Firebase user:', deleteError)
-        }
-        throw faceError
-      }
+    /* 4 ◀ Status Check: Ensure user has completed payment */
+    if (profile.status === 'PENDING_PAYMENT') {
+      console.log('[Auth Credentials] User login denied - payment pending:', email, profile.status)
+      throw new Error('PAYMENT_PENDING')
     }
     
-    /* 4 ◀ if tmpAvatarUrl present, move avatar to avatars/<uid>.png */
-    const avatarUrl = credentials.tmpAvatarUrl
-      ? await promoteAvatar(credentials.tmpAvatarUrl, uid)
-      : null
+    if (profile.status !== 'ACTIVE_PENDING_PROFILE_SETUP' && profile.status !== 'ACTIVE_COMPLETE') {
+        console.log('[Auth Credentials] User login denied - invalid status for login:', email, profile.status)
+        throw new Error('INVALID_USER_STATUS_FOR_LOGIN')
+    }
 
-    /* 5 ◀ ATOMIC nickname check and profile creation using transaction */
-    let finalNickname = credentials.nickname || email.split('@')[0]
-    
-    const profile = await prisma.$transaction(async (tx) => {
-      // Nickname conflict check within transaction
-      if (credentials.nickname) {
-        const existingByNickname = await tx.profile.findUnique({ 
-          where: { nickname: credentials.nickname },
-          select: { id: true }
-        })
-        if (existingByNickname && existingByNickname.id !== uid) {
-          console.log('[Auth] Nickname conflict detected in transaction:', credentials.nickname)
-          throw new Error('NICKNAME_ALREADY_IN_USE')
-        }
-        finalNickname = credentials.nickname
-      } else {
-        // If no nickname provided, ensure the generated one is unique
-        let baseNickname = email.split('@')[0]
-        let counter = 1
-        let isUnique = false
-        
-        while (!isUnique) {
-          const existingByNickname = await tx.profile.findUnique({ 
-            where: { nickname: finalNickname },
-            select: { id: true }
-          })
-          
-          if (!existingByNickname || existingByNickname.id === uid) {
-            isUnique = true
-          } else {
-            finalNickname = `${baseNickname}${counter}`
-            counter++
-          }
-        }
-      }
+    console.log('[Auth Credentials] Profile retrieved and authorized for login:', profile.id, 'Status:', profile.status)
 
-      // Create/update profile within the same transaction
-      return await tx.profile.upsert({
-        where:  { id: uid },
-        update: {
-          ...(avatarUrl && { avatarUrl }),
-          ...(faceId && { rekFaceId: faceId }),
-          ...(credentials.nickname && { nickname: finalNickname }),
-        },
-        create: {
-          id:    uid,
-          email,
-          nickname: finalNickname,
-          avatarUrl,
-          rekFaceId: faceId,
-        },
-        select: {
-          id: true,
-          email: true,
-          nickname: true,
-          avatarUrl: true,
-        },
-      })
-    })
-
-    console.log('[Auth] Profile created/updated successfully:', profile.id)
-
-    /* 6 ◀ return user for Next-Auth session */
+    /* 5 ◀ Return user data for Next-Auth session */
     return {
-      id:    profile.id,
-      name:  profile.nickname,
+      id: profile.id,
+      name: profile.nickname ?? 'User', // Fallback for safety, though nickname should exist
       email: profile.email,
       image: profile.avatarUrl ?? undefined,
     }
+
   } catch (err: any) {
-    console.log('[Auth] Authorization failed:', err.message)
-    
-    // Clean up Firebase user on any failure during registration
-    if (credentials.tmpFaceUrl || credentials.tmpAvatarUrl) {
-      try {
-        const decoded = await verifyIdToken(credentials.idToken)
-        await deleteFirebaseUser(decoded.uid)
-        console.log('[Auth] Deleted Firebase user after authorization failure:', decoded.uid)
-      } catch (deleteError) {
-        console.error('[Auth] Failed to delete Firebase user after authorization failure:', deleteError)
-      }
-    }
-    
-    // Let specific errors propagate, everything else becomes null
+    console.error('[Auth Credentials] Authorization failed during login:', err.message)
+
     const knownErrors = [
-      'FACE_DUPLICATE', 
-      'FACE_INDEX_FAILED', 
+      'PROFILE_NOT_FOUND',
       'ACCOUNT_BANNED',
-      'EMAIL_ALREADY_IN_USE',
-      'NICKNAME_ALREADY_IN_USE'
+      'PAYMENT_PENDING',
+      'INVALID_USER_STATUS_FOR_LOGIN'
     ]
-    
-    if (knownErrors.includes(err.message)) throw err
-    
-    console.error('authorize():', err)
+
+    if (knownErrors.includes(err.message)) {
+      throw err // Re-throw known errors to be handled by NextAuth
+    }
+
+    // For unknown errors, log and return null to prevent login.
+    console.error('[Auth Credentials] Unknown error during authorize():', err)
     return null
   }
 }

@@ -11,6 +11,7 @@ import {
 import { onAuthStateChanged, User } from 'firebase/auth'
 import { firebaseAuth, logOutClient } from '../lib/firebase-client'
 import { signIn, signOut } from 'next-auth/react'
+import { useRegistrationStatus } from './useRegistrationStatus'
 
 /* --------------------------------------------------------------- */
 /*  Context shape                                                  */
@@ -29,6 +30,7 @@ const AuthSyncContext = createContext<AuthSyncState | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]   = useState<User | null>(null)
   const [ready, setReady] = useState(false)
+  const { isRegistrationInProgress } = useRegistrationStatus()
 
   useEffect(() => {
     /** Fires on every client-side auth change */
@@ -39,8 +41,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // 1) Fetch a fresh ID token from Firebase
         const idToken = await fbUser.getIdToken()
 
-        // 2) Tell Next-Auth to create/update its session
-        await signIn('credentials', { idToken, redirect: false })
+        // 2) Only sign into NextAuth if not in the middle of registration
+        if (!isRegistrationInProgress) {
+          console.log('[AuthSync] Proceeding with NextAuth signIn')
+          await signIn('credentials', { idToken, redirect: false })
+        } else {
+          console.log('[AuthSync] Registration in progress, deferring NextAuth signIn')
+        }
       } else {
         // 3) Firebase signed out → clear Next-Auth session too
         await signOut({ redirect: false })
@@ -50,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return unsub         // clean listener on unmount (HMR)
-  }, [])
+  }, [isRegistrationInProgress])
 
   const value: AuthSyncState = {
     ready,

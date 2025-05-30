@@ -2,37 +2,47 @@
 
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { Dialog } from '@headlessui/react'
-import { signIn, signOut } from 'next-auth/react'
-import { signInClient, registerClient } from '../../lib/firebase-client'
-import { uploadAvatar } from '../../lib/uploadAvatar'
-import Image from 'next/image'
+// import Image from 'next/image' // Not used, can be removed if not needed elsewhere
+import PaymentModal from '../PaymentModal'
+// import { StripeProvider } from '../StripeProvider'; // Assuming StripeProvider is <Elements> or similar. If it's just context, it's fine. If it's another Elements wrapper, it's redundant here. For now, I'll assume it's not an <Elements> wrapper.
+import { useAuthModalManager, AuthStep } from '../../hooks/useAuthModalManager'
+import { Elements } from '@stripe/react-stripe-js'
+import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js'
+
+// Import Step Components
+import LoginStep from './steps/LoginStep'
+import InitialRegistrationStep from './steps/InitialRegistrationStep'
+import AvatarNicknameStep from './steps/AvatarNicknameStep'
+import { StripeProvider } from '../StripeProvider'
 
 interface AuthModalProps { open: boolean; onClose: () => void }
 
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
 export default function AuthModal({ open, onClose }: AuthModalProps) {
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const {
+    state: authState,
+    setMode,
+    setEmail: setAuthEmail,
+    setPaymentClientSecret,
+    handleInitialRegistration,
+    handlePaymentSuccess,
+    handlePaymentModalClose,
+    handleFinalProfileUpdate,
+    handleLogin,
+    setCurrentStep,
+  } = useAuthModalManager();
 
-  /* basic fields */
-  const [email, setEmail] = useState('')
+  const { paymentClientSecret } = authState;
+
   const [password, setPassword] = useState('')
-
-  /* avatar flow */
-  const [file, setFile] = useState<File | null>(null)
-  const [tmpAvatarUrl, setTmpAvatarUrl] = useState<string | null>(null)
-  const [tmpFaceUrl, setTmpFaceUrl] = useState<string | null>(null)
-  const [nickname, setNickname] = useState<string>('')
-
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [streamingProgress, setStreamingProgress] = useState<string | null>(null)
+  const [fileForUpload, setFileForUpload] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  
+  const [selectedGender, setSelectedGender] = useState<'male' | 'female'>('male')
+  
   const cancelRef = useRef<HTMLButtonElement>(null)
 
-  /* male/female + style selection */
-  const [gender, setGender] = useState<'male' | 'female'>('male');
-  const [selectedStyle, setSelectedStyle] = useState<number | null>(null); // index of selected style
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null); // for file preview
-  
-  // Cloudflare R2 URLs for style references
   const maleStyles = [
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Classic" },
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2026%2C%202025%2C%2009_13_57%20PM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2026%2C%202025%2C%2009_13_57%20PM.png", label: "Creative" },
@@ -55,7 +65,6 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     { img: "https://your-r2-bucket.r2.dev/styles/female8.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female8-ref.jpg", label: "Techie" }
   ];
 
-
   /* body scroll lock */
   useEffect(() => {
     if (open) {
@@ -77,492 +86,136 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   if (!open) return null
 
   /* ------- file selection handler ------- */
-  const handleFileSelect = (selectedFile: File) => {
-    setFile(selectedFile)
-    // Create preview URL
-    const url = URL.createObjectURL(selectedFile)
-    setPreviewUrl(url)
-    
-    // Clean up previous preview URL
-    return () => {
+  const handleFileSelectForInitialScan = (selectedFile: File) => {
+    setFileForUpload(selectedFile)
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl)
       }
-    }
+    setPreviewUrl(URL.createObjectURL(selectedFile))
   }
 
-  /* ------- avatar + nickname generation handler ------- */
-  async function handleGenerate() {
-    if (!file) return;
-    setLoading(true); setError(null);
-    setTmpAvatarUrl(null);
-    setStreamingProgress('Analyzing your photo...');
-    try {
-      // 1. Upload original selfie to storage (R2)
-      const orig = await uploadAvatar(file);
-      setTmpFaceUrl(orig);
-
-      // 2. Get style image as base64
-      const currentStyles = gender === 'male' ? maleStyles : femaleStyles;
-      const selectedStyleRef = selectedStyle !== null ? currentStyles[selectedStyle]?.styleRef : undefined;
-      if (!selectedStyleRef) throw new Error('Please select a style');
-      const styleResp = await fetch(selectedStyleRef);
-      const styleBlob = await styleResp.blob();
-      const styleBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(styleBlob);
-      });
-
-      // 3. Read selfie as base64
-      const selfieBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      // 4. Start streaming avatar generation using fetch with SSE parsing
-      setStreamingProgress('Generating your avatar...');
-      
-      const finalAvatarUrl = await streamAvatar(selfieBase64, styleBase64);
-      
-      // streamAvatar function with proper fetch SSE parsing
-      async function streamAvatar(selfieB64: string, styleB64: string): Promise<string | null> {
-        const resp = await fetch('/api/avatar-gen', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ selfieBase64: selfieB64, styleBase64: styleB64 }),
-        });
-        
-        if (!resp.body) throw new Error('No response body');
-        
-        let cdnUrl: string | null = null;
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        
-        // Manual SSE parsing
-        let buffer = '';
-        
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          buffer += decoder.decode(value, { stream: true });
-          
-          const messages = buffer.split('\n\n');
-          buffer = messages.pop() || ''; // Keep incomplete message in buffer
-          
-          for (const message of messages) {
-            const lines = message.split('\n');
-            let currentEvent: { event?: string; data?: string; id?: string } = {};
-            for (const line of lines) {
-              if (line.startsWith('event: ')) {
-                currentEvent.event = line.substring(7);
-              } else if (line.startsWith('data: ')) {
-                currentEvent.data = line.substring(6);
-              } else if (line.startsWith('id: ')) {
-                currentEvent.id = line.substring(4);
-              }
-            }
-            if (currentEvent.event && currentEvent.data !== undefined) {
-              await handleSSEEvent(currentEvent);
-            }
-          }
-        }
-        
-        async function handleSSEEvent(event: { event?: string; data?: string; id?: string }) {
-          switch (event.event) {
-            case 'partial':
-              const partialIndex = event.id ? parseInt(event.id) + 1 : 'unknown';
-              setTmpAvatarUrl(`data:image/png;base64,${event.data}`);
-              setStreamingProgress(`Generating... (${partialIndex})`);
-              console.log(`[AuthModal] Partial ${partialIndex}`);
-              break;
-            case 'complete':
-              setTmpAvatarUrl(`data:image/png;base64,${event.data}`);
-              setStreamingProgress('Finalizing avatar...');
-              console.log('[AuthModal] Final image received');
-              break;
-            case 'uploaded':
-              cdnUrl = event.data || null;
-              setTmpAvatarUrl(event.data || ''); // CDN URL
-              setStreamingProgress('Creating nickname...');
-              console.log('[AuthModal] Avatar uploaded to storage');
-              break;
-            case 'error':
-              throw new Error(event.data || 'Avatar generation failed');
-            case 'done':
-              console.log('[AuthModal] Stream completed');
-              break;
-          }
-        }
-        
-        return cdnUrl;
-      }
-      
-      // Check if we have a final avatar URL
-      if (!finalAvatarUrl) {
-        throw new Error('Avatar generation failed - no CDN URL received');
-      }
-      
-      // 5. Get nickname from /api/nickname using the generated avatar
-      const { nickname } = await fetch('/api/nickname', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ avatarUrl: finalAvatarUrl }),
-      }).then(r => r.json());
-      setNickname(nickname);
-      
-      setLoading(false);
-      setStreamingProgress(null);
-    } catch (e: any) {
-      setError(e.message || 'Generation failed');
-      setLoading(false);
-      setStreamingProgress(null);
-    }
+  /* ------- submit action (delegated to hook) ---------------- */
+  const handleSubmitLogin = async () => {
+    const success = await handleLogin(authState.email, password)
+    if (success) onClose()
   }
 
-  /* ------- submit (sign in / register) ---------------- */
-  async function submit() {
-    try {
-      setLoading(true)
-      setError(null)
-    
-      if (mode === 'register') {
-        console.log('[AuthModal] Starting registration flow')
-        
-        // STEP 1: Check face duplicate BEFORE creating Firebase user
-        if (tmpFaceUrl) {
-          console.log('[AuthModal] Checking face duplicate before user creation')
-          try {
-            const faceCheckResponse = await fetch('/api/check-face-duplicate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                imageUrl: tmpFaceUrl,
-                email: email 
-              }),
-            })
-            
-            const faceCheckResult = await faceCheckResponse.json()
-            
-            if (!faceCheckResponse.ok) {
-              if (faceCheckResult.error === 'FACE_DUPLICATE') {
-                setError('This face already exists in our system. If you believe this is an error, contact support.')
-                return
-              }
-              throw new Error(faceCheckResult.error || 'Face check failed')
-            }
-            
-            console.log('[AuthModal] Face check passed - no duplicates found')
-          } catch (faceError: any) {
-            console.error('[AuthModal] Face check failed:', faceError.message)
-            setError(faceError.message || 'Face verification failed')
-            return
-          }
-        }
-        
-        // STEP 2: Only now create Firebase user (face check passed)
-        console.log('[AuthModal] Creating Firebase user (face check passed)')
-        const cred = await registerClient(email, password)
-        const firebaseUser = cred.user
-        console.log('[AuthModal] Firebase user created:', firebaseUser.uid)
-        
-        const idToken = await firebaseUser.getIdToken()
-        console.log('[AuthModal] Got Firebase ID token')
+  const handleSubmitInitialRegistration = async () => {
+    if (!fileForUpload) {
+      alert('Please upload a profile picture for face verification.')
+      return
+    }
+    await handleInitialRegistration(authState.email, password, fileForUpload)
+  }
 
-        // STEP 3: Create profile (we know face is unique)
-        const result = await signIn('credentials', {
-          idToken,
-          tmpAvatarUrl: tmpAvatarUrl ?? '',
-          tmpFaceUrl: tmpFaceUrl ?? '',  // Still pass this for final indexing
-          nickname,
-          redirect: false,
-        })
-        
-        console.log('[AuthModal] signIn result:', result)
-        
-        // Handle other possible errors (not face duplicate)
-        if (result?.error === 'AccountBanned' || result?.error === 'ACCOUNT_BANNED') {
-          console.log('[AuthModal] Account banned')
-          setError('This account has been permanently suspended.')
-          return
-        }
-        if (result?.error === 'EMAIL_ALREADY_IN_USE') {
-          console.log('[AuthModal] Email already in use')
-          setError('This email is already registered. Please use a different email or try logging in.')
-          
-          // Force sign out to clear any session that might have been created
-          try {
-            await signOut({ redirect: false })
-            console.log('[AuthModal] Forced sign out after email conflict')
-          } catch (signOutError) {
-            console.error('[AuthModal] Failed to sign out after email conflict:', signOutError)
-          }
-          
-          return
-        }
-        if (result?.error === 'NICKNAME_ALREADY_IN_USE') {
-          console.log('[AuthModal] Nickname already in use')
-          setError('This nickname is already taken. Please choose a different one.')
-          
-          // Force sign out to clear any session that might have been created
-          try {
-            await signOut({ redirect: false })
-            console.log('[AuthModal] Forced sign out after nickname conflict')
-          } catch (signOutError) {
-            console.error('[AuthModal] Failed to sign out after nickname conflict:', signOutError)
-          }
-          
-          return
-        }
-        if (result?.error) {
-          console.log('[AuthModal] Other error:', result.error)
-          throw new Error(result.error)
-        }
-        
-        // Success!
-        if (!result?.error) {
-          console.log('[AuthModal] Registration successful!')
-          onClose()
-        }
-    
-      } else {                           // ────── LOGIN ──────
-        console.log('[AuthModal] Starting login flow')
-        const cred    = await signInClient(email, password)   // firebase
-        const idToken = await cred.user.getIdToken()
-    
-        const result  = await signIn('credentials', {
-          idToken,
-          redirect: false,
-        })
-    
-        if (result?.error === 'AccountBanned' || result?.error === 'ACCOUNT_BANNED') {
-          setError('This account has been permanently suspended.')
-          return
-        }
-        if (result?.error) throw new Error(result.error)
-        
-        // Only close modal if no errors
-        if (!result?.error) {
-          onClose()
-        }
-      }
-    
-    } catch (e: any) {
-      console.error('[AuthModal] Submit error:', e.message)
-      setError(e.message || 'Authentication failed')
-    } finally {
-      setLoading(false)
+  const handleSubmitFinalProfile = async (avatarCdnUrl: string, nickname: string) => {
+    const success = await handleFinalProfileUpdate(avatarCdnUrl, nickname)
+    if (success) onClose()
+  }
+
+  let modalTitle = ''
+  if (authState.mode === 'login') {
+    modalTitle = 'Log in to your account'
+  } else {
+    if (authState.currentStep === AuthStep.InitialRegistration) {
+      modalTitle = 'Register: Step 1 of 3 - Account & Face Scan'
+    } else if (authState.currentStep === AuthStep.Payment) {
+      modalTitle = 'Register: Step 2 of 3 - Payment'
+    } else if (authState.currentStep === AuthStep.AvatarNicknameSetup) {
+      modalTitle = 'Register: Step 3 of 3 - Avatar & Profile'
     }
   }
-  /* --------------------------- UI --------------------------- */
+  
+  const { isLoading, error: authError } = authState
+  const currentStylesToDisplay = selectedGender === 'male' ? maleStyles : femaleStyles
+
   return (
+    <StripeProvider>  
     <Dialog as={Fragment} open={open}
-      onClose={loading ? () => { } : onClose}
+        onClose={isLoading && authState.currentStep !== AuthStep.Payment ? () => {} : onClose}
       initialFocus={cancelRef}>
       <div className="fixed inset-0 z-[60] flex items-center justify-center">
-        <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={onClose} />
+          <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={isLoading && authState.currentStep !== AuthStep.Payment ? () => {} : onClose} />
         <div
           onClick={e => e.stopPropagation()}
-          className={`flex flex-col gap-4 relative z-10 rounded-xl bg-black py-8 px-12 border border-main gap ${
-            mode === 'register' ? 'w-220 gap-10' : 'w-120'
-          }`}
+            className={`flex flex-col gap-4 relative z-10 rounded-xl bg-black py-8 px-12 border border-main ${authState.mode === 'register' ? 'w-[600px]' : 'w-[450px]'}`}
         >
-          <h2 className="mb-6 text-center text-3xl font-semibold">
-            {mode === 'login' ? 'Log in to your account' : 'Register to Anthropos City'}
+            <h2 className="mb-4 text-center text-3xl font-semibold">
+              {modalTitle}
           </h2>
+            {authError && <p className="mb-2 text-sm text-red-500 text-center">Error: {authError}</p>}
 
-          {error && <p className="mb-2 text-sm text-red-500">{error}</p>}
-        
-
-          
-          {/* switching code */}
-          {mode === 'login' && (
-            <>
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
+            {authState.mode === 'login' && (
+              <LoginStep 
+                email={authState.email} 
+                onEmailChange={setAuthEmail} 
+                onPasswordChange={setPassword} 
+                onSubmit={handleSubmitLogin} 
+                isLoading={isLoading} 
               />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
-              />
-            </>
-          )}
-          
-          {/* avatar generation section */}
-
-          {mode === 'register' && (
-            <>
-              <div className="flex flex-row gap-3">
-                <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="mb-4 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
-                />
-              </div>
-              <div className="flex justify-between gap-8">
-                {/* --- Upload + Gender --- */}
-                <div className="flex flex-col items-center">
-                  <div className="mb-3 flex gap-2">
-                    <button
-                      className={`rounded-full px-5 py-1 font-semibold border-2 ${gender === 'male' ? 'bg-main text-black border-main' : 'bg-black border-white text-white'
-                        }`}
-                      onClick={() => setGender('male')}
-                    >
-                      Male
-                    </button>
-                    <button
-                      className={`rounded-full px-5 py-1 font-semibold border-2 ${gender === 'female' ? 'bg-main text-black border-main' : 'bg-black border-white text-white'
-                        }`}
-                      onClick={() => setGender('female')}
-                    >
-                      Female
-                    </button>
-                  </div>
-                  {!tmpAvatarUrl ? (
-                    <label
-                      className="flex h-36 w-36 cursor-pointer items-center justify-center rounded-lg border-2 border-dim_smoke bg-neutral-900 mb-3 overflow-hidden"
-                    >
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={e => {
-                          const selectedFile = e.target.files?.[0]
-                          if (selectedFile) {
-                            handleFileSelect(selectedFile)
-                          }
-                        }}
-                        className="hidden"
-                      />
-                      {previewUrl ? (
-                        <img 
-                          src={previewUrl} 
-                          alt="Preview" 
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-4xl text-dim_smoke">+</span>
-                      )}
-                    </label>
-                  ) : (
-                    <div className="flex flex-col items-center mb-3">
-                      <div className="relative">
-                        <img 
-                          src={tmpAvatarUrl} 
-                          alt="Generated Avatar" 
-                          className="h-36 w-36 rounded-lg object-cover mb-2"
-                        />
-                        {loading && streamingProgress && (
-                          <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                            <div className="w-6 h-6 border-2 border-main border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-sm text-white font-semibold">{nickname}</div>
-                    </div>
-                  )}
-                  {!tmpAvatarUrl ? (
-                    <button
-                      disabled={!file || loading}
-                      onClick={handleGenerate}
-                      className="w-full rounded bg-main py-2 font-semibold text-black disabled:opacity-60"
-                    >
-                      {loading ? 'Generating…' : 'Generate Avatar'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setTmpAvatarUrl(null)
-                        setNickname('')
-                        setPreviewUrl(null)
-                        setFile(null)
-                        setStreamingProgress(null)
-                      }}
-                      className="w-full rounded bg-gray py-2 font-semibold text-white border border-dim_smoke"
-                    >
-                      Try Again
-                    </button>
-                  )}
-                </div>
-
-                {/* --- Styles --- */}
-                <div>
-                  <div className="mb-2 text-lg font-semibold text-white">Choose your style</div>
-                  <div className="grid grid-cols-4 gap-3">
-                    {(gender === 'male' ? maleStyles : femaleStyles).map((style, i) => (
-                      <div
-                        key={i}
-                        onClick={() => setSelectedStyle(i)}
-                        className={`flex flex-col items-center cursor-pointer rounded-lg border-2 transition-all ${selectedStyle === i ? 'border-main' : 'border-transparent'
-                          }`}
-                      >
-                        <Image
-                          src={style.img}
-                          alt={style.label}
-                          width={480}
-                          height={480}
-                          className="rounded-lg mb-1 object-cover w-30 h-30"
-                          style={{ objectFit: 'cover', width: 120, height: 120 }}
-                          sizes="120px"
-                          priority={selectedStyle === i}
-                        />
-                        <span className="text-xs text-white">{style.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-          <div>
-            <button
-              disabled={loading || (mode === 'register' && !tmpAvatarUrl)}
-              onClick={submit}
-              className="mb-2 w-full rounded-md bg-main py-2 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)] disabled:opacity-60"
-            >
-              {loading ? 'Processing…' : mode === 'register' ? 'REGISTER' : 'LOGIN'}
-            </button>
+            )}
             
-            <button disabled={loading}
-                    onClick={()=>setMode(m=>m==='login'?'register':'login')}
-                    className="w-full text-sm text-main disabled:opacity-60 hover:underline">
-              {mode==='login'?'Need an account? Register':'Have an account? Sign In'}
-            </button>
+            {authState.mode === 'register' && authState.currentStep === AuthStep.InitialRegistration && (
+              <InitialRegistrationStep 
+                email={authState.email} 
+                onEmailChange={setAuthEmail} 
+                onPasswordChange={setPassword} 
+                onFileSelect={handleFileSelectForInitialScan} 
+                onSubmit={handleSubmitInitialRegistration} 
+                isLoading={isLoading} 
+                previewUrl={previewUrl} 
+                selectedFile={fileForUpload}
+              />
+            )}
 
-            <button ref={cancelRef} onClick={onClose}
-                    className="mt-2 w-full px-2 py-1 text-center text-dim_smoke">
+            {authState.mode === 'register' && authState.currentStep === AuthStep.AvatarNicknameSetup && (
+              <AvatarNicknameStep
+                initialFaceUrl={authState.tmpFaceUrl}
+                currentStyles={currentStylesToDisplay}
+                onGenderChange={setSelectedGender}
+                selectedGender={selectedGender}
+                onSubmitFinalProfile={handleSubmitFinalProfile}
+                isLoadingFromParent={isLoading}
+              />
+            )}
+            
+            {/* Conditional rendering for PaymentModal with Elements provider */}
+            {authState.mode === 'register' && authState.currentStep === AuthStep.Payment && (
+              <PaymentModal
+                email={authState.email} 
+                open={true} 
+                onClose={() => {
+                  handlePaymentModalClose();
+                }}
+                onPaymentSuccess={handlePaymentSuccess}
+                onClientSecretFetched={setPaymentClientSecret}
+                clientSecret={paymentClientSecret}
+                stripePromise={stripePromise}
+              />
+            )}
+            
+            {(authState.currentStep === AuthStep.InitialRegistration || authState.mode === 'login') && (
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => setMode(authState.mode === 'login' ? 'register' : 'login')}
+                className="w-full mt-2 text-sm text-main disabled:opacity-60 hover:underline">
+                {authState.mode === 'login' ? 'Need an account? Register' : 'Have an account? Sign In'}
+              </button>
+            )}
+
+            <button
+              type="button"
+              ref={cancelRef} 
+              onClick={onClose} 
+              className="mt-3 w-full rounded-md border border-gray-600 py-2.5 text-base font-semibold text-gray-400 transition hover:border-gray-500 hover:text-gray-300 disabled:opacity-50"
+              disabled={isLoading && authState.currentStep !== AuthStep.Payment}
+            >
               Cancel
             </button>
-          </div>
-          {loading && (
-            <div className="flex flex-col items-center justify-center my-4">
-              <div className="w-10 h-10 border-4 border-main border-t-transparent rounded-full animate-spin mb-2"></div>
-              <span className="text-main font-semibold">
-                {streamingProgress || 'Generating avatar…'}
-              </span>
-            </div>
-          )}
         </div>
       </div>
     </Dialog>
+     </StripeProvider> 
   )
 }
