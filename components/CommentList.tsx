@@ -1,22 +1,42 @@
-import { Comment } from '../hooks/useComments'
+import { Comment as CommentType, organizeCommentsIntoTree } from '../hooks/useComments'
+import Comment from './Comment'
 
 interface Props {
-  comments: Comment[]
+  comments: CommentType[]
   loading: boolean
+  topicId: string
+  onAddComment: (content: string, parentId?: string) => Promise<boolean>
+  warn: any
+  clearWarn: () => void
 }
 
-export default function CommentList({ comments, loading }: Props) {
+export default function CommentList({ 
+  comments, 
+  loading, 
+  topicId, 
+  onAddComment, 
+  warn, 
+  clearWarn 
+}: Props) {
   if (loading) return <p>Loading comments…</p>
-  if (!comments.length) return <p className="italic">No comments yet.</p>
+  if (!comments.length) return <p className="italic text-stone-400">No comments yet.</p>
+
+  // Organize flat comments into nested tree structure
+  const commentTree = organizeCommentsIntoTree(comments)
 
   return (
-    <ul className="space-y-3">
-      {comments.map((c) => (
-        <li key={c.id} className="border border-stone-800 rounded p-3">
-          <p className="text-sm text-zinc-400">{new Date(c.createdAt).toLocaleString()}</p>
-          <p>{c.body}</p>
-        </li>
+    <div className="space-y-4">
+      {commentTree.map((comment) => (
+        <Comment
+          key={comment.id}
+          comment={comment}
+          depth={0}
+          topicId={topicId}
+          onAddComment={onAddComment}
+          warn={warn}
+          clearWarn={clearWarn}
+        />
       ))}
-    </ul>
+    </div>
   )
 }

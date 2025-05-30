@@ -55,14 +55,21 @@ export default function TopicPopup({ topic, open, onOpenChange }: TopicPopupProp
           {/* Comments */}
           <div className="space-y-4">
             <h3 className="text-xl text-smoke font-semibold">Comments</h3>
-            <CommentList comments={comments} loading={loading} />
+            <CommentList 
+              comments={comments} 
+              loading={loading} 
+              topicId={topic.id}
+              onAddComment={addComment}
+              warn={warn}
+              clearWarn={clearWarn}
+            />
             <CommentForm
-        topicId={topic.id}
-        onAdd={addComment}
-        warn={warn}
-        clearWarn={clearWarn}
-      />          
-      </div>
+              topicId={topic.id}
+              onAdd={addComment}
+              warn={warn}
+              clearWarn={clearWarn}
+            />          
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
