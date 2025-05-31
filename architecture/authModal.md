@@ -13,3 +13,19 @@ AuthModal.tsx (Orchestrator - uses useAuthModalState)
     |
     |--- useAvatarGeneration.ts (Handles avatar SSE, progress)
             |--- avatarService.ts (Calls to /api/avatar-gen, /api/nickname)
+
+```mermaid
+flowchart TD
+    A[AuthModal.tsx] --> B[useAuthModalState.ts]
+    B --> C[authService.ts]
+    B --> D[fileUploadService.ts]
+    B --> E[useAvatarGeneration.ts]
+    E --> F[avatarService.ts]
+    A --> G[Conditional Rendering based on flow step]
+    G --> H[InitialRegistrationStep.tsx]
+    G --> I[PaymentModal.tsx]
+    G --> J[AvatarNicknameStep.tsx]
+    G --> K[LoginStep.tsx]
+    J --> E
+```
+

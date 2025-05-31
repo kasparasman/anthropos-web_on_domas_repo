@@ -44,11 +44,13 @@ export default async function handler(
         id: uid,
         email: session.user.email ?? '',
         nickname,
-        avatarUrl: avatarUrl ?? null
+        avatarUrl: avatarUrl ?? null,
+        status: 'ACTIVE_COMPLETE'
       },
       update: {
         nickname,
-        avatarUrl: avatarUrl ?? null
+        avatarUrl: avatarUrl ?? null,
+        status: 'ACTIVE_COMPLETE'
       }
     })
 

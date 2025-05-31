@@ -129,64 +129,99 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const { isLoading, error: authError } = authState
   const currentStylesToDisplay = selectedGender === 'male' ? maleStyles : femaleStyles
 
+  // Determine if modal should be closable - disabled during mandatory avatar setup
+  const isAvatarSetupStep = authState.mode === 'register' && authState.currentStep === AuthStep.AvatarNicknameSetup;
+  const allowModalClose = !isLoading && !isAvatarSetupStep; // No closing during avatar setup
+  
+  // Stricter: only explicit buttons should close, and only if not loading and not in avatar setup.
+  const explicitClose = () => {
+    if (allowModalClose) {
+      onClose(); // This is the main onClose prop from parent (likely connected to useAuthModalManager.closeAuthModal)
+    }
+  };
+
+  // When Payment step is active, AuthModal itself should provide minimal chrome or adapt.
+  // The PaymentModal component brings its own modal-like UI (white box, its own close).
+  const isPaymentStep = authState.mode === 'register' && authState.currentStep === AuthStep.Payment;
+
   return (
     <StripeProvider>  
     <Dialog as={Fragment} open={open}
-        onClose={isLoading && authState.currentStep !== AuthStep.Payment ? () => {} : onClose}
-      initialFocus={cancelRef}>
+        onClose={allowModalClose ? explicitClose : () => {}} // Disable ESC key during avatar setup
+        initialFocus={cancelRef}>
       <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={isLoading && authState.currentStep !== AuthStep.Payment ? () => {} : onClose} />
+          {/* Backdrop: click disabled during avatar setup */}
+          <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={() => {}} aria-hidden="true" />
         <div
-          onClick={e => e.stopPropagation()}
-            className={`flex flex-col gap-4 relative z-10 rounded-xl bg-black py-8 px-12 border border-main ${authState.mode === 'register' ? 'w-[600px]' : 'w-[450px]'}`}
+          onClick={e => e.stopPropagation()} // Prevent clicks inside modal from bubbling to backdrop
+            className={`flex flex-col relative z-10 rounded-xl bg-black border border-main 
+                        ${isPaymentStep ? 'p-0 w-auto bg-transparent border-none' : `py-8 px-12 ${authState.mode === 'register' ? 'w-[600px]' : 'w-[450px]'}`}`}
         >
+            {/* Explicit X Close Button - Hidden during avatar setup */}
+            {!isPaymentStep && !isAvatarSetupStep && (
+              <button 
+                type="button"
+                onClick={explicitClose} 
+                disabled={!allowModalClose}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 disabled:opacity-50 z-20"
+                aria-label="Close modal"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+
             <h2 className="mb-4 text-center text-3xl font-semibold">
               {modalTitle}
-          </h2>
+            </h2>
             {authError && <p className="mb-2 text-sm text-red-500 text-center">Error: {authError}</p>}
 
-            {authState.mode === 'login' && (
-              <LoginStep 
-                email={authState.email} 
-                onEmailChange={setAuthEmail} 
-                onPasswordChange={setPassword} 
-                onSubmit={handleSubmitLogin} 
-                isLoading={isLoading} 
-              />
-            )}
-            
-            {authState.mode === 'register' && authState.currentStep === AuthStep.InitialRegistration && (
-              <InitialRegistrationStep 
-                email={authState.email} 
-                onEmailChange={setAuthEmail} 
-                onPasswordChange={setPassword} 
-                onFileSelect={handleFileSelectForInitialScan} 
-                onSubmit={handleSubmitInitialRegistration} 
-                isLoading={isLoading} 
-                previewUrl={previewUrl} 
-                selectedFile={fileForUpload}
-              />
-            )}
+            {/* Render steps only if not in Payment step, or specifically for that step */}
+            {authState.currentStep !== AuthStep.Payment && (
+              <>
+                {authState.mode === 'login' && (
+                  <LoginStep 
+                    email={authState.email} 
+                    onEmailChange={setAuthEmail} 
+                    onPasswordChange={setPassword} 
+                    onSubmit={handleSubmitLogin} 
+                    isLoading={isLoading} 
+                  />
+                )}
+                
+                {authState.mode === 'register' && authState.currentStep === AuthStep.InitialRegistration && (
+                  <InitialRegistrationStep 
+                    email={authState.email} 
+                    onEmailChange={setAuthEmail} 
+                    onPasswordChange={setPassword} 
+                    onFileSelect={handleFileSelectForInitialScan} 
+                    onSubmit={handleSubmitInitialRegistration} 
+                    isLoading={isLoading} 
+                    previewUrl={previewUrl} 
+                    selectedFile={fileForUpload}
+                  />
+                )}
 
-            {authState.mode === 'register' && authState.currentStep === AuthStep.AvatarNicknameSetup && (
-              <AvatarNicknameStep
-                initialFaceUrl={authState.tmpFaceUrl}
-                currentStyles={currentStylesToDisplay}
-                onGenderChange={setSelectedGender}
-                selectedGender={selectedGender}
-                onSubmitFinalProfile={handleSubmitFinalProfile}
-                isLoadingFromParent={isLoading}
-              />
+                {authState.mode === 'register' && authState.currentStep === AuthStep.AvatarNicknameSetup && (
+                  <AvatarNicknameStep
+                    initialFaceUrl={authState.tmpFaceUrl}
+                    currentStyles={currentStylesToDisplay}
+                    onGenderChange={setSelectedGender}
+                    selectedGender={selectedGender}
+                    onSubmitFinalProfile={handleSubmitFinalProfile}
+                    isLoadingFromParent={isLoading}
+                  />
+                )}
+              </>
             )}
             
-            {/* Conditional rendering for PaymentModal with Elements provider */}
-            {authState.mode === 'register' && authState.currentStep === AuthStep.Payment && (
+            {/* PaymentModal: Rendered when it is the current step */}
+            {isPaymentStep && (
               <PaymentModal
                 email={authState.email} 
-                open={true} 
-                onClose={() => {
-                  handlePaymentModalClose();
-                }}
+                open={true} // Controlled by currentStep now
+                onClose={handlePaymentModalClose}
                 onPaymentSuccess={handlePaymentSuccess}
                 onClientSecretFetched={setPaymentClientSecret}
                 clientSecret={paymentClientSecret}
@@ -195,7 +230,8 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               />
             )}
             
-            {(authState.currentStep === AuthStep.InitialRegistration || authState.mode === 'login') && (
+            {/* Toggle between Login/Register, only if not in Payment or AvatarSetup step */}
+            {(authState.currentStep === AuthStep.InitialRegistration || authState.currentStep === AuthStep.Login) && (
               <button
                 type="button"
                 disabled={isLoading}
@@ -205,15 +241,18 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               </button>
             )}
 
-            <button
-              type="button"
-              ref={cancelRef} 
-              onClick={onClose} 
-              className="mt-3 w-full rounded-md border border-gray-600 py-2.5 text-base font-semibold text-gray-400 transition hover:border-gray-500 hover:text-gray-300 disabled:opacity-50"
-              disabled={isLoading && authState.currentStep !== AuthStep.Payment}
-            >
-              Cancel
-            </button>
+            {/* Cancel button - Hidden during avatar setup since it's mandatory */}
+            {!isAvatarSetupStep && (
+              <button
+                type="button"
+                ref={cancelRef} 
+                onClick={explicitClose}
+                className="mt-3 w-full rounded-md border border-gray-600 py-2.5 text-base font-semibold text-gray-400 transition hover:border-gray-500 hover:text-gray-300 disabled:opacity-50"
+                disabled={!allowModalClose}
+              >
+                Cancel
+              </button>
+            )}
         </div>
       </div>
     </Dialog>

@@ -22,7 +22,7 @@ const initialState: AvatarGenerationState = {
 export function useAvatarGeneration() {
   const [state, setState] = useState<AvatarGenerationState>(initialState);
 
-  const generateAvatarAndNickname = useCallback(async (selfieFile: File | null, selfieUrlFallback: string | null, styleRefUrl: string) => {
+  const generateAvatarAndNickname = useCallback(async (selfieFile: File | null, selfieUrlFallback: string | null, styleRefUrl: string, gender: 'male' | 'female') => {
     setState({ ...initialState, isLoading: true, streamingProgress: 'Preparing images...' });
     
     let selfieToProcessBase64: string;
@@ -101,7 +101,7 @@ export function useAvatarGeneration() {
 
         for (const message of messages) {
           const lines = message.split('\n');
-          let currentEvent: { event?: string; data?: string; id?: string } = {};
+          const currentEvent: { event?: string; data?: string; id?: string } = {};
           for (const line of lines) {
             if (line.startsWith('event: ')) currentEvent.event = line.substring(7);
             else if (line.startsWith('data: ')) currentEvent.data = line.substring(6);
@@ -149,7 +149,7 @@ export function useAvatarGeneration() {
       }
 
       // 4. Fetch nickname
-      const nicknameData = await fetchNickname({ avatarUrl: receivedFinalCdnUrl });
+      const nicknameData = await fetchNickname({ avatarUrl: receivedFinalCdnUrl, gender });
       setState(s => ({
         ...s,
         nickname: nicknameData.nickname,
@@ -158,9 +158,10 @@ export function useAvatarGeneration() {
         error: null,
       }));
 
-    } catch (err: any) {
+    } catch (err) {
       console.error('[useAvatarGeneration] Error:', err);
-      setState(s => ({ ...s, isLoading: false, error: err.message || 'Avatar generation process failed.', streamingProgress: null }));
+      const errorMessage = err instanceof Error ? err.message : 'Avatar generation process failed.';
+      setState(s => ({ ...s, isLoading: false, error: errorMessage, streamingProgress: null }));
     }
   }, []);
 

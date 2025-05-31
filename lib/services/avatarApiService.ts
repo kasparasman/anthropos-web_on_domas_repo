@@ -13,6 +13,7 @@ interface AvatarGenerationRequest {
 
 interface NicknameRequest {
   avatarUrl: string;
+  gender?: 'male' | 'female';
 }
 
 interface NicknameResponse {

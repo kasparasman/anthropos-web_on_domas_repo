@@ -11,7 +11,8 @@ const nextConfig = {
 
   images: {
     domains: [
-      'pub-0539ca942f4a457a83573a5585904cba.r2.dev'  // Your R2 domain
+      'pub-0539ca942f4a457a83573a5585904cba.r2.dev',  // Your R2 domain
+      'your-r2-bucket.r2.dev' // Added for female style images
     ],
   },
 

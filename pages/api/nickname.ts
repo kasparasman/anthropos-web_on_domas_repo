@@ -4,8 +4,13 @@ import { prisma } from '@/lib/prisma'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-async function getCandidates(avatarUrl: string, exclude: string[] = []) {
-  const prompt = `Suggest 10 unique, short nicknames (no spaces) for the person in this profile image which I will attach. Analyze the persons face, expression, theme, how it represents itself, elements in the photo/image. All these should be reflected in the nickname. Also if it's male or female, give the nickname accordingly.
+async function getCandidates(avatarUrl: string, gender: 'male' | 'female' | undefined, exclude: string[] = []) {
+  let genderInstruction = "Analyze the person's face to determine if they are male or female and give the nickname accordingly.";
+  if (gender) {
+    genderInstruction = `The person is ${gender}. Give the nickname accordingly.`;
+  }
+
+  const prompt = `Suggest 10 unique, short nicknames (no spaces) for the person in this profile image which I will attach. Analyze the persons face, expression, theme, how it represents itself, elements in the photo/image. All these should be reflected in the nickname. ${genderInstruction}
 ${exclude.length > 0 ? `Do not use any of these nicknames: ${exclude.join(', ')}.` : ''}
 Respond with a JSON array of nicknames only.\n\nCriteria:\nNames should sound dignified, aspirational, and fit for a "citizen of the future" or a digital passport.\nAvoid common/generic words and focus on invented or semi-invented names inspired by ancient languages or high-concept terms.\nOptionally, blend Latin/Greek roots with modern or tech-inspired suffixes or forms.`
 
@@ -48,10 +53,10 @@ Respond with a JSON array of nicknames only.\n\nCriteria:\nNames should sound di
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { avatarUrl } = req.body as { avatarUrl: string }
+  const { avatarUrl, gender } = req.body as { avatarUrl: string; gender?: 'male' | 'female' }
 
   // 1. Get first batch of candidates
-  let candidates = await getCandidates(avatarUrl)
+  let candidates = await getCandidates(avatarUrl, gender)
 
   // 2. Check which are unique
   let taken = await prisma.profile.findMany({
@@ -63,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // 3. If none are unique, retry with the already-tried names
   if (!available) {
-    candidates = await getCandidates(avatarUrl, candidates)
+    candidates = await getCandidates(avatarUrl, gender, candidates)
     taken = await prisma.profile.findMany({
       where: { nickname: { in: candidates } },
       select: { nickname: true },

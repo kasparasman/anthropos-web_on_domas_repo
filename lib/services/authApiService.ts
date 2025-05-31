@@ -32,7 +32,7 @@ export const checkFaceDuplicate = async (data: FaceCheckRequest): Promise<FaceCh
 };
 
 export const updateProfile = async (data: ProfileUpdateRequest): Promise<ProfileUpdateResponse> => {
-  return apiPost<ProfileUpdateRequest, ProfileUpdateResponse>('/api/profile/update', data);
+  return apiPost<ProfileUpdateRequest, ProfileUpdateResponse>('/api/profile', data);
 };
 
 // New function to get current user's ID token

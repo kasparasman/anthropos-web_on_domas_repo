@@ -56,29 +56,39 @@ export function useAuthModalManager() {
   const { user: firebaseUser, ready: firebaseReady } = useAuthSync();
 
   // Define all useCallback hooks first
-  const openAuthModal = useCallback(() => {
-    setState(s => ({ ...s, isModalOpen: true }));
+  const openAuthModal = useCallback((targetMode?: 'login' | 'register', targetStep?: AuthStep) => {
+    console.log('[AuthModalManager] openAuthModal called with mode:', targetMode, 'step:', targetStep);
+    setState(s => ({
+       ...s, 
+       mode: targetMode || s.mode, // Fallback to current mode or login if nothing specific
+       currentStep: targetStep || (targetMode === 'register' ? AuthStep.InitialRegistration : AuthStep.Login),
+       isModalOpen: true 
+      }));
   }, []);
 
   const closeAuthModal = useCallback(() => {
-    // Potentially add logic here: if profile is incomplete, prevent closing or reset further?
-    // For now, just closes.
-    setState(s => ({ ...s, isModalOpen: false }));
-    // Reset to initial login mode when modal is explicitly closed by user, 
-    // unless we are in a state where closing should not reset (e.g. mid-flow forced by system)
-    // This needs careful consideration based on desired UX.
-    // For now, let's assume closing via this function means user wants to exit the flow.
-    // If checkAndResumeIncompleteRegistration reopens it, it will set the correct state.
-    // setState(initialState); // Or a more nuanced reset
-  }, []);
+    console.log('[AuthModalManager] closeAuthModal called.');
+    // If a registration was in progress but not fully complete (e.g., payment done, but avatar not set)
+    // keep registrationInProgress true, so checkAndResume can pick it up later.
+    // Only set to false if registration is truly abandoned or fully completed.
+    if (state.currentStep === AuthStep.InitialRegistration || state.currentStep === AuthStep.Payment) {
+      setRegistrationInProgress(false); // User explicitly closed before completion
+      console.log('[AuthModalManager] Registration explicitly abandoned by user closing modal.');
+    }
+    // For AvatarNicknameSetup, if closed, it might mean they want to do it later.
+    // setRegistrationInProgress is handled by handleFinalProfileUpdate for completion.
+
+    setState(s => ({ ...s, isModalOpen: false, error: null })); // Clear error on explicit close
+  }, [state.currentStep, setRegistrationInProgress]);
   
   const setMode = useCallback((mode: 'login' | 'register') => {
+    console.log('[AuthModalManager] setMode called:', mode);
     setState(s => ({
-      ...initialState, // Resets steps, errors, etc.
-      email: s.email, // Keep current email if any
+      ...initialState, 
+      email: s.email, 
       mode,
       currentStep: mode === 'login' ? AuthStep.Login : AuthStep.InitialRegistration,
-      isModalOpen: true, // Always open modal when mode is set explicitly
+      isModalOpen: true, 
     }));
     if (mode === 'register') setRegistrationInProgress(true);
     else setRegistrationInProgress(false);
@@ -94,6 +104,7 @@ export function useAuthModalManager() {
 
   const handleInitialRegistration = useCallback(
     async (email_val: string, password_in: string, faceFile: File) => {
+      console.log('[AuthModalManager] handleInitialRegistration started for email:', email_val);
       if (typeof window !== 'undefined') {
         localStorage.removeItem('paymentCompletedForUser');
         localStorage.removeItem('paymentIntentId');
@@ -108,28 +119,30 @@ export function useAuthModalManager() {
         provisionalNickname: null, 
         tmpFaceUrl: null, 
         paymentClientSecret: null,
-        // isModalOpen should already be true if this is called via setMode('register')
+        isModalOpen: true, // Ensure modal is open for this step
+        currentStep: AuthStep.InitialRegistration, // Explicitly set step
+        mode: 'register', // Explicitly set mode
       }));
       let firebaseUserUid: string | null = null;
       let idToken: string | null = null;
       let uploadedFaceUrl: string | null = null;
 
       try {
-        console.log('[useAuthModalManager] Uploading face image...');
+        console.log('[AuthModalManager] Uploading face image...');
         uploadedFaceUrl = await uploadFileToStorage(faceFile);
-        console.log('[useAuthModalManager] Face image uploaded:', uploadedFaceUrl);
+        console.log('[AuthModalManager] Face image uploaded:', uploadedFaceUrl);
 
-        console.log('[useAuthModalManager] Checking face duplicate (client-side pre-check)...');
+        console.log('[AuthModalManager] Checking face duplicate (client-side pre-check)...');
         await authApiService.checkFaceDuplicate({ imageUrl: uploadedFaceUrl, email: email_val });
-        console.log('[useAuthModalManager] Client-side face check passed.');
+        console.log('[AuthModalManager] Client-side face check passed.');
 
-        console.log('[useAuthModalManager] Creating Firebase user...');
+        console.log('[AuthModalManager] Creating Firebase user...');
         const cred = await registerClient(email_val, password_in);
         firebaseUserUid = cred.user.uid;
         idToken = await cred.user.getIdToken();
-        console.log('[useAuthModalManager] Firebase user created:', firebaseUserUid);
+        console.log('[AuthModalManager] Firebase user created:', firebaseUserUid);
 
-        console.log('[useAuthModalManager] Calling backend /api/auth/provisional-register...');
+        console.log('[AuthModalManager] Calling backend /api/auth/provisional-register...');
         const provisionalResponse = await fetch('/api/auth/provisional-register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -137,49 +150,51 @@ export function useAuthModalManager() {
         });
 
         const provisionalData = await provisionalResponse.json();
-        console.log('[useAuthModalManager] Provisional registration API response:', provisionalData);
+        console.log('[AuthModalManager] Provisional registration API response:', provisionalData);
 
         if (!provisionalResponse.ok || !provisionalData.success) {
           // Cleanup Firebase user if provisional reg fails
           if (firebaseAuth.currentUser && firebaseAuth.currentUser.uid === firebaseUserUid) {
-            console.warn(`[useAuthModalManager] Provisional registration failed (${provisionalData.message || 'Unknown API error'}). Attempting to delete Firebase user: ${firebaseUserUid}`);
-            try { await firebaseAuth.currentUser.delete(); console.log('[useAuthModalManager] Successfully deleted Firebase user after provisional reg failure.'); }
-            catch (deleteError: any) { console.error('[useAuthModalManager] Failed to delete Firebase user after provisional reg failure:', deleteError.message); }
+            console.warn(`[AuthModalManager] Provisional registration failed (${provisionalData.message || 'Unknown API error'}). Attempting to delete Firebase user: ${firebaseUserUid}`);
+            try { await firebaseAuth.currentUser.delete(); console.log('[AuthModalManager] Successfully deleted Firebase user after provisional reg failure.'); }
+            catch (deleteErr) {
+              const delErrMsg = deleteErr instanceof Error ? deleteErr.message : 'Unknown error during Firebase user deletion';
+              console.error('[AuthModalManager] Failed to delete Firebase user after provisional reg failure:', delErrMsg); 
+            }
           }
           throw new Error(provisionalData.message || 'Provisional registration failed after Firebase user creation.');
         }
         
-        // Provisional registration successful, now proceed to payment step in UI.
-        // PaymentModal will handle fetching the client secret based on price selection.
-        console.log('[useAuthModalManager] Provisional registration successful. Proceeding to payment step for price selection.');
+        console.log('[AuthModalManager] Provisional registration successful. Proceeding to payment step for price selection.');
         setState(s => ({
           ...s,
           isLoading: false,
-          currentStep: AuthStep.Payment, // Proceed to payment step UI
+          currentStep: AuthStep.Payment,
           tmpFaceUrl: uploadedFaceUrl,
           provisionalUserId: provisionalData.userId,
           provisionalNickname: provisionalData.tempNickname,
           email: provisionalData.email || email_val,
-          // paymentClientSecret will be set by PaymentModal via setPaymentClientSecret callback
         }));
 
-        // Ensure localStorage flags are cleared at the start of a new registration attempt for this user
         if (typeof window !== 'undefined') {
           localStorage.removeItem('paymentCompletedForUser');
           localStorage.removeItem('paymentIntentId');
           localStorage.removeItem('paymentFailedForUser');
         }
 
-      } catch (err: any) {
-        console.error('[useAuthModalManager] Initial registration failed catch block:', err.message);
-        // General cleanup for Firebase user if created before any error
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : 'Initial registration failed.';
+        console.error('[AuthModalManager] Initial registration failed catch block:', errMsg);
         if (firebaseUserUid && firebaseAuth.currentUser && firebaseAuth.currentUser.uid === firebaseUserUid && 
-            (!(err.message?.includes('Provisional registration failed')) && !(err.message?.includes('Failed to set up payment'))) ) {
-          console.warn(`[useAuthModalManager] Error occurred after Firebase user creation (${firebaseUserUid}). Attempting cleanup.`);
-          try { await firebaseAuth.currentUser.delete(); console.log('[useAuthModalManager] Successfully deleted Firebase user during general error catch.'); }
-          catch (deleteError: any) { console.error('[useAuthModalManager] Failed to delete Firebase user during general error catch:', deleteError.message); }
+            (!(errMsg?.includes('Provisional registration failed')) && !(errMsg?.includes('Failed to set up payment'))) ) {
+          console.warn(`[AuthModalManager] Error occurred after Firebase user creation (${firebaseUserUid}). Attempting cleanup.`);
+          try { await firebaseAuth.currentUser.delete(); console.log('[AuthModalManager] Successfully deleted Firebase user during general error catch.'); }
+          catch (deleteErr) {
+            const delErrMsg = deleteErr instanceof Error ? deleteErr.message : 'Unknown error during Firebase user deletion in general catch';
+            console.error('[AuthModalManager] Failed to delete Firebase user during general error catch:', delErrMsg); 
+          }
         }
-        setState(s => ({ ...s, isLoading: false, error: err.message || 'Initial registration failed.', tmpFaceUrl: null, provisionalUserId: null, provisionalNickname: null, paymentClientSecret: null }));
+        setState(s => ({ ...s, isLoading: false, error: errMsg, tmpFaceUrl: null, provisionalUserId: null, provisionalNickname: null, paymentClientSecret: null }));
       }
     },
     [] 
@@ -189,53 +204,48 @@ export function useAuthModalManager() {
     const currentProvisionalUserId = userIdToProcess || state.provisionalUserId;
 
     if (!currentProvisionalUserId) {
-      console.error("[useAuthModalManager] handlePaymentSuccess: provisionalUserId is missing. Aborting.");
+      console.error("[AuthModalManager] handlePaymentSuccess: provisionalUserId is missing. Aborting.");
       setState(s => ({ ...s, isLoading: false, error: "User context lost. Cannot complete session.", isModalOpen: true, pendingPaymentConfirmationUserId: null }));
       setRegistrationInProgress(false);
       return;
     }
 
-    // Ensure Firebase user is ready and matches the ID we are processing
     if (!firebaseUser || firebaseUser.uid !== currentProvisionalUserId) {
-      console.error(`[useAuthModalManager] handlePaymentSuccess: Firebase user not ready or mismatch. Firebase UID: ${firebaseUser?.uid}, Expected: ${currentProvisionalUserId}. Aborting.`);
-      setState(s => ({ ...s, isLoading: false, error: "Firebase session issue. Please wait a moment and try again.", isModalOpen: true, pendingPaymentConfirmationUserId: currentProvisionalUserId /* Keep it pending */ }));
-      // Do not set setRegistrationInProgress(false) here, as we want to retry if possible.
+      console.error(`[AuthModalManager] handlePaymentSuccess: Firebase user not ready or mismatch. Firebase UID: ${firebaseUser?.uid}, Expected: ${currentProvisionalUserId}. Aborting.`);
+      setState(s => ({ ...s, isLoading: false, error: "Firebase session issue. Please wait a moment and try again.", isModalOpen: true, pendingPaymentConfirmationUserId: currentProvisionalUserId }));
       return;
     }
 
-    console.log(`[useAuthModalManager] handlePaymentSuccess: Proceeding for user ${currentProvisionalUserId}`);
-    // If userIdToProcess was provided, ensure state.provisionalUserId is aligned.
+    console.log(`[AuthModalManager] handlePaymentSuccess: Proceeding for user ${currentProvisionalUserId}`);
     if (userIdToProcess && userIdToProcess !== state.provisionalUserId) {
-        setState(s => ({ ...s, provisionalUserId: userIdToProcess, isLoading: true, error: null, isModalOpen: true }));
+        setState(s => ({ ...s, provisionalUserId: userIdToProcess, isLoading: true, error: null, isModalOpen: false }));
     } else {
-        setState(s => ({ ...s, isLoading: true, error: null, isModalOpen: true }));
+        setState(s => ({ ...s, isLoading: true, error: null, isModalOpen: false }));
     }
 
     try {
-      const idToken = await firebaseUser.getIdToken(true); // Now using firebaseUser from useAuthSync
-      console.log(`[useAuthModalManager] handlePaymentSuccess: Confirming payment for user ${currentProvisionalUserId}`);
+      const idToken = await firebaseUser.getIdToken(true);
+      console.log(`[AuthModalManager] handlePaymentSuccess: Confirming payment for user ${currentProvisionalUserId}`);
       const confirmPaymentResponse = await fetch('/api/user/confirm-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }), // idToken should implicitly be for currentProvisionalUserId if Firebase auth is synced
+        body: JSON.stringify({ idToken }),
       });
       const confirmPaymentData = await confirmPaymentResponse.json();
       if (!confirmPaymentResponse.ok || !confirmPaymentData.success) {
         throw new Error(confirmPaymentData.message || 'Failed to confirm payment with backend.');
       }
-      console.log('[useAuthModalManager] Profile status confirmed by backend:', confirmPaymentData.status);
+      console.log('[AuthModalManager] Profile status confirmed by backend:', confirmPaymentData.status);
 
-      console.log('[useAuthModalManager] Calling NextAuth signIn to complete registration session...');
+      console.log('[AuthModalManager] Calling NextAuth signIn to complete registration session...');
       const result = await signIn('credentials', {
-        idToken, // This idToken MUST be for the user whose status was just updated
+        idToken,
         redirect: false,
       });
       if (result?.error) {
-        console.error("[useAuthModalManager] Error from NextAuth signIn during session completion:", result.error);
-        // Specific handling if PAYMENT_PENDING is still returned, though it shouldn't be.
+        console.error("[AuthModalManager] Error from NextAuth signIn during session completion:", result.error);
         if (result.error === 'PAYMENT_PENDING') {
-            console.error("[useAuthModalManager] CRITICAL: signIn returned PAYMENT_PENDING after confirm-payment call. Status update might have failed or NextAuth is using stale data.");
-            // Fallback or specific error message
+            console.error("[AuthModalManager] CRITICAL: signIn returned PAYMENT_PENDING after confirm-payment call. Status update might have failed or NextAuth is using stale data.");
         }
         throw new Error(result.error); 
       }
@@ -250,45 +260,65 @@ export function useAuthModalManager() {
         error: null,
         paymentClientSecret: null,
         isModalOpen: true,
-        pendingPaymentConfirmationUserId: null, // Clear pending ID on success
+        pendingPaymentConfirmationUserId: null,
       }));
-      console.log('[useAuthModalManager] Payment successful & session created. Proceeding to avatar/nickname setup.');
+      console.log('[AuthModalManager] Payment successful & session created. Proceeding to avatar/nickname setup.');
 
-    } catch (err: any) {
-      console.error('[useAuthModalManager] Error during payment success handling:', err.message);
-      setState(s => ({ ...s, provisionalUserId: currentProvisionalUserId, isLoading: false, error: err.message, isModalOpen: true, pendingPaymentConfirmationUserId: null /* Clear on error too, to prevent loops if error is persistent */ }));
-      // Potentially setRegistrationInProgress(false) if error is terminal for this attempt
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Payment success handling failed.';
+      console.error('[AuthModalManager] Error during payment success handling for user:', state.provisionalUserId, 'Error:', errMsg);
+      setState(s => ({ 
+        ...s, 
+        isLoading: false, 
+        error: errMsg, 
+        isModalOpen: true,
+        currentStep: AuthStep.Payment,
+        pendingPaymentConfirmationUserId: null 
+      }));
     }
-  }, [state.provisionalUserId, state.pendingPaymentConfirmationUserId, firebaseUser, setRegistrationInProgress]);
+  }, [state.provisionalUserId, firebaseUser, firebaseReady, setRegistrationInProgress]);
 
   const handlePaymentModalClose = useCallback(() => {
-    console.log('[useAuthModalManager] Payment modal closed/cancelled by user.');
-    // Transition back to initial registration if payment is cancelled
-    // Also clear the client secret as it might be invalid or single-use
+    console.log('[AuthModalManager] Payment modal closed/cancelled by user.');
     setState(s => ({
         ...s,
-        currentStep: AuthStep.InitialRegistration,
+        currentStep: AuthStep.InitialRegistration, // Revert to initial registration
         paymentClientSecret: null,
-        error: 'Payment was cancelled.' // Optionally set an info/error message
+        error: 'Payment was cancelled.',
+        isLoading: false,
+        isModalOpen: true, // Keep modal open at initial registration step
     }));
   }, []);
 
   const handleFinalProfileUpdate = useCallback(async (avatarUrl: string, nickname_in: string) => {
+    console.log('[AuthModalManager] handleFinalProfileUpdate started.');
     setState(s => ({ ...s, isLoading: true, error: null, isModalOpen: true }));
     try {
       await authApiService.updateProfile({ avatarUrl, nickname: nickname_in });
       setRegistrationInProgress(false);
-      setState(s => ({ ...s, isLoading: false, error: null, isModalOpen: false })); // Close modal on final success
-      console.log('[useAuthModalManager] Registration completed successfully. Modal closed.');
+      setState(s => ({ ...initialState, isModalOpen: false }));
+      console.log('[AuthModalManager] Registration completed successfully. Modal closed & state reset.');
       return true; 
-    } catch (err: any) {
-      setState(s => ({ ...s, isLoading: false, error: err.message, isModalOpen: true }));
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Final profile update failed.';
+      console.error('[AuthModalManager] Error during final profile update:', errMsg);
+      setState(s => ({ ...s, isLoading: false, error: errMsg, isModalOpen: true }));
       return false; 
     }
   }, [setRegistrationInProgress]);
 
   const handleLogin = useCallback(async (email_in: string, password_in: string) => {
-    setState(s => ({ ...s, isLoading: true, error: null, email: email_in, paymentClientSecret: null, isModalOpen: true }));
+    console.log('[AuthModalManager] handleLogin started for email:', email_in);
+    setState(s => ({ 
+      ...s, 
+      isLoading: true, 
+      error: null, 
+      email: email_in, 
+      paymentClientSecret: null, 
+      isModalOpen: true, // Ensure modal is open
+      currentStep: AuthStep.Login, // Explicitly set step
+      mode: 'login', // Explicitly set mode
+    }));
     let firebaseIdToken: string | null = null;
     try {
       const cred = await signInClient(email_in, password_in);
@@ -300,9 +330,7 @@ export function useAuthModalManager() {
 
       if (result?.error) {
         if (result.error === 'PAYMENT_PENDING') {
-          console.warn('[useAuthModalManager] Login attempt for user with PENDING_PAYMENT status.');
-          // TODO: Potentially fetch a new clientSecret here and redirect to payment?
-          // For now, just showing an error.
+          console.warn('[AuthModalManager] Login attempt for user with PENDING_PAYMENT status.');
           throw new Error('Your account is pending payment. Please complete the registration process or contact support.');
         } else if (result.error === 'PROFILE_NOT_FOUND'){
            throw new Error('Profile not found. Please register first.');
@@ -311,10 +339,10 @@ export function useAuthModalManager() {
         } else if (result.error === 'ACCOUNT_BANNED') {
             throw new Error('This account has been banned.');
         }
-        console.error("[useAuthModalManager] Login NextAuth signIn error:", result.error);
+        console.error("[AuthModalManager] Login NextAuth signIn error:", result.error);
         throw new Error(result.error);
       }
-      console.log('[useAuthModalManager] Login successful.');
+      console.log('[AuthModalManager] Login successful.');
       setState(s => ({ 
           ...initialState, 
           mode: 'login',
@@ -323,19 +351,20 @@ export function useAuthModalManager() {
           isModalOpen: false, // Close modal on successful login
       }));
       return true; 
-    } catch (err: any) {
-      console.error('[useAuthModalManager] Login failed catch block:', err.message);
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Login failed.';
+      console.error('[AuthModalManager] Login failed catch block:', errMsg);
       if (firebaseIdToken && firebaseAuth.currentUser) {
-        console.log('[useAuthModalManager] Signing out Firebase user due to NextAuth login failure.');
+        console.log('[AuthModalManager] Signing out Firebase user due to NextAuth login failure.');
         await firebaseAuth.signOut();
       }
-      setState(s => ({ ...s, isLoading: false, error: err.message, isModalOpen: true }));
+      setState(s => ({ ...s, isLoading: false, error: errMsg, isModalOpen: true }));
       return false;
     }
   }, []);
 
   const resetToInitial = useCallback(() => {
-    console.log('[useAuthModalManager] resetToInitial CALLED. Stack trace:', new Error().stack);
+    console.log('[AuthModalManager] resetToInitial CALLED. Stack trace:', new Error().stack);
     setState({...initialState, isModalOpen: false });
     setRegistrationInProgress(false);
   }, [setRegistrationInProgress]);
@@ -347,17 +376,17 @@ export function useAuthModalManager() {
   const checkAndResumeIncompleteRegistration = useCallback(async (currentAuthUserId?: string | null) => {
     const effectiveUserId = currentAuthUserId || state.provisionalUserId;
     if (!effectiveUserId) {
-      console.log('[useAuthModalManager] checkAndResume: No user ID to check.');
+      console.log('[AuthModalManager] checkAndResume: No user ID to check.');
       return;
     }
-    console.log(`[useAuthModalManager] checkAndResume: Checking profile status for ${effectiveUserId}...`);
+    console.log(`[AuthModalManager] checkAndResume: Checking profile status for ${effectiveUserId}...`);
     const profileData = await authApiService.getCurrentUserProfileStatus();
 
     if (profileData && profileData.id === effectiveUserId && profileData.status === 'ACTIVE_PENDING_PROFILE_SETUP') {
-      console.log('[useAuthModalManager] checkAndResume: Found ACTIVE_PENDING_PROFILE_SETUP for user:', profileData.id);
+      console.log('[AuthModalManager] checkAndResume: Found ACTIVE_PENDING_PROFILE_SETUP for user:', profileData.id);
       
       if (state.currentStep !== AuthStep.AvatarNicknameSetup || !state.isModalOpen || state.mode !== 'register') {
-        console.log('[useAuthModalManager] checkAndResume: Modal state needs update for AvatarNicknameSetup. Current state:', 
+        console.log('[AuthModalManager] checkAndResume: Modal state needs update for AvatarNicknameSetup. Current state:', 
           { step: state.currentStep, isOpen: state.isModalOpen, mode: state.mode });
         setState(s => ({
           ...s, 
@@ -373,28 +402,28 @@ export function useAuthModalManager() {
         }));
         setRegistrationInProgress(true);
       } else {
-        console.log('[useAuthModalManager] checkAndResume: Modal already in correct state for AvatarNicknameSetup. Ensuring registration is marked as in progress.');
+        console.log('[AuthModalManager] checkAndResume: Modal already in correct state for AvatarNicknameSetup. Ensuring registration is marked as in progress.');
         setRegistrationInProgress(true); // Ensure the flag is set if we are in this state.
       }
     } else if (profileData && profileData.id === effectiveUserId && profileData.status === 'ACTIVE_COMPLETE') {
-      console.log('[useAuthModalManager] checkAndResume: User status is ACTIVE_COMPLETE.');
+      console.log('[AuthModalManager] checkAndResume: User status is ACTIVE_COMPLETE.');
       if (state.isModalOpen && state.currentStep === AuthStep.AvatarNicknameSetup && state.mode === 'register') {
-        console.log('[useAuthModalManager] checkAndResume: Profile is complete. Closing modal if it was for setup.');
+        console.log('[AuthModalManager] checkAndResume: Profile is complete. Closing modal if it was for setup.');
         setState(s => ({...s, isModalOpen: false}));
         setRegistrationInProgress(false);
       } else if (state.mode === 'register') {
-        console.log('[useAuthModalManager] checkAndResume: Profile complete but modal in register mode. Resetting/closing.');
+        console.log('[AuthModalManager] checkAndResume: Profile complete but modal in register mode. Resetting/closing.');
         resetToInitial();
       }
     } else if (profileData) {
-      console.log(`[useAuthModalManager] checkAndResume: User status is ${profileData.status}. Current modal state: step=${state.currentStep}, mode=${state.mode}, open=${state.isModalOpen}. No specific action taken.`);
+      console.log(`[AuthModalManager] checkAndResume: User status is ${profileData.status}. Current modal state: step=${state.currentStep}, mode=${state.mode}, open=${state.isModalOpen}. No specific action taken.`);
       if (state.mode === 'register' && state.isModalOpen && 
           (profileData.status !== 'ACTIVE_PENDING_PROFILE_SETUP' && profileData.status !== 'PENDING_PAYMENT') ) {
-        console.log(`[useAuthModalManager] checkAndResume: Modal in register mode but user status (${profileData.status}) is unexpected for continuation. Resetting.`);
+        console.log(`[AuthModalManager] checkAndResume: Modal in register mode but user status (${profileData.status}) is unexpected for continuation. Resetting.`);
         resetToInitial(); 
       }
     } else if (!profileData && effectiveUserId) {
-      console.warn(`[useAuthModalManager] checkAndResume: Could not fetch profile data for ${effectiveUserId}.`);
+      console.warn(`[AuthModalManager] checkAndResume: Could not fetch profile data for ${effectiveUserId}.`);
     }
   }, [state.provisionalUserId, state.currentStep, state.isModalOpen, state.mode, state.email, state.tmpFaceUrl, setRegistrationInProgress, resetToInitial]);
 
@@ -406,47 +435,60 @@ export function useAuthModalManager() {
         localStorage.removeItem('paymentCompletedForUser');
         localStorage.removeItem('paymentIntentId');
         
-        console.log(`[useAuthModalManager] localStorage: Detected payment completed for ${paymentCompletedForUserId}. Setting as pending.`);
+        console.log(`[AuthModalManager] localStorage: Detected payment completed for ${paymentCompletedForUserId}. Setting as pending.`);
         setRegistrationInProgress(true);
-        setState(s => ({ ...s, pendingPaymentConfirmationUserId: paymentCompletedForUserId, provisionalUserId: s.provisionalUserId || paymentCompletedForUserId }));
-        // DO NOT call handlePaymentSuccess directly here anymore.
+        // Do not open modal here, just set pending ID. Let the next effect handle it.
+        setState(s => ({ 
+          ...s, 
+          pendingPaymentConfirmationUserId: paymentCompletedForUserId, 
+          // If provisionalUserId is null or different, update it. This helps if context was lost.
+          provisionalUserId: s.provisionalUserId && s.provisionalUserId !== paymentCompletedForUserId ? s.provisionalUserId : paymentCompletedForUserId,
+          // Do NOT change currentStep or isModalOpen here, wait for Firebase ready state.
+        }));
       }
 
       const paymentFailedForUserId = localStorage.getItem('paymentFailedForUser');
       if (paymentFailedForUserId && paymentFailedForUserId !== 'unknown') {
         localStorage.removeItem('paymentFailedForUser');
-        console.log(`[useAuthModalManager] localStorage: Detected payment failed for user ${paymentFailedForUserId}.`);
-        setRegistrationInProgress(false);
+        console.log(`[AuthModalManager] localStorage: Detected payment failed for user ${paymentFailedForUserId}.`);
+        setRegistrationInProgress(false); // Registration failed
         setState(s => ({
             ...s,
             provisionalUserId: paymentFailedForUserId,
             email: s.email || '',
             error: 'Payment failed or was cancelled. Please try again.',
-            currentStep: AuthStep.InitialRegistration, 
-            isModalOpen: true,
+            currentStep: AuthStep.InitialRegistration, // Revert to initial step
+            mode: 'register', // Ensure mode is register
+            isModalOpen: true, // Open modal to show error and allow retry
             isLoading: false,
             paymentClientSecret: null,
         }));
       }
     }
-  }, [setRegistrationInProgress]); // Removed handlePaymentSuccess from here
+  }, [setRegistrationInProgress]); // Dependencies are minimal, only runs on mount/refresh essentially for localStorage check
 
   // New useEffect to process pending payment confirmation when Firebase user is ready
   useEffect(() => {
+    console.log(`[AuthModalManager] Effect for pending payment check. PendingID: ${state.pendingPaymentConfirmationUserId}, FirebaseReady: ${firebaseReady}, FirebaseUser: ${firebaseUser?.uid}`);
     if (state.pendingPaymentConfirmationUserId && firebaseReady && firebaseUser) {
       if (firebaseUser.uid === state.pendingPaymentConfirmationUserId) {
-        console.log(`[useAuthModalManager] Firebase user ${firebaseUser.uid} is ready and matches pending payment ID. Calling handlePaymentSuccess.`);
+        console.log(`[AuthModalManager] Firebase user ${firebaseUser.uid} is ready and matches pending payment ID. Calling handlePaymentSuccess.`);
+        // Don't show any modal during payment confirmation processing to avoid pricing list popup
+        // The handlePaymentSuccess will set the appropriate modal state (AvatarNicknameSetup) when done
+        setState(s => ({...s, mode: 'register', isLoading: true, error: null, isModalOpen: false})); // Keep modal closed during payment confirmation processing
         handlePaymentSuccess(state.pendingPaymentConfirmationUserId);
-        // handlePaymentSuccess will clear pendingPaymentConfirmationUserId from state on success/final error.
       } else {
-        // This case should be rare if provisional_user_id in URL was correct Firebase UID
-        console.warn(`[useAuthModalManager] Firebase user ${firebaseUser.uid} is ready but DOES NOT match pending payment ID ${state.pendingPaymentConfirmationUserId}. This might indicate an issue or old pending ID.`);
-        // setState(s => ({ ...s, pendingPaymentConfirmationUserId: null, error: "User session mismatch during payment confirmation."})); // Optionally clear or error out
+        console.warn(`[AuthModalManager] Firebase user ${firebaseUser.uid} is ready but DOES NOT match pending payment ID ${state.pendingPaymentConfirmationUserId}. This might indicate an issue or old pending ID.`);
+        setState(s => ({ ...s, pendingPaymentConfirmationUserId: null, error: "User session mismatch during payment confirmation.", isLoading: false, isModalOpen: true, currentStep: AuthStep.Login }));
       }
     } else if (state.pendingPaymentConfirmationUserId && firebaseReady && !firebaseUser) {
-        console.log(`[useAuthModalManager] Payment confirmation for ${state.pendingPaymentConfirmationUserId} is pending, Firebase SDK ready, but Firebase user not yet available. Waiting...`);
+        console.log(`[AuthModalManager] Payment confirmation for ${state.pendingPaymentConfirmationUserId} is pending, Firebase SDK ready, but Firebase user not yet available. User might need to log in or Firebase is still syncing.`);
+        // If Firebase is ready but no user, it might mean they need to log in. 
+        // Or, if we *expect* them to be logged in (e.g. after Firebase user creation in step 1),
+        // this indicates a problem. For now, let user manually log in if this state is reached without auto-login.
+        setState(s => ({...s, error: "Please log in to complete your registration.", isLoading: false, isModalOpen: true, mode: 'login', currentStep: AuthStep.Login, pendingPaymentConfirmationUserId: null})); 
     }
-  }, [state.pendingPaymentConfirmationUserId, firebaseUser, firebaseReady, handlePaymentSuccess]);
+  }, [state.pendingPaymentConfirmationUserId, firebaseUser, firebaseReady, handlePaymentSuccess]); // handlePaymentSuccess is stable due to useCallback
 
   return {
     state, // Includes paymentClientSecret now

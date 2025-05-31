@@ -73,7 +73,8 @@ export default function AvatarNicknameStep({
       return;
     }
     // Use avatarSourceFile if provided, otherwise fall back to initialFaceUrl from props
-    generateAvatarAndNickname(avatarSourceFile, initialFaceUrl, styleRefUrl);
+    // Pass selectedGender to the hook
+    generateAvatarAndNickname(avatarSourceFile, initialFaceUrl, styleRefUrl, selectedGender);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,15 +144,15 @@ export default function AvatarNicknameStep({
 
       {/* Nickname Input */}
       <div className="flex flex-col items-center gap-2 p-4 border border-gray-700 rounded-lg">
-        <label htmlFor="nickname" className="text-lg font-semibold text-white">2. Choose Your Nickname</label>
+        <label htmlFor="nickname" className="text-lg font-semibold text-white">2. Your Generated Nickname</label>
         <input 
           id="nickname"
           type="text" 
-          placeholder="Enter your nickname" 
-          value={customNickname} 
-          onChange={e => setCustomNickname(e.target.value)} 
-          className="w-full max-w-xs rounded-md bg-neutral-800 px-4 py-3 text-lg text-white placeholder-gray-500 focus:border-main focus:ring-main"
-          disabled={avatarState.isLoading || isLoadingFromParent}
+          placeholder="Nickname will appear here..." 
+          value={customNickname} // This will be updated from avatarState.nickname
+          readOnly // Make the input read-only
+          className="w-full max-w-xs rounded-md bg-neutral-700 px-4 py-3 text-lg text-white placeholder-gray-500 focus:border-main focus:ring-main cursor-default"
+          disabled={avatarState.isLoading || isLoadingFromParent} // Keep disabled logic for consistency
         />
       </div>
 
