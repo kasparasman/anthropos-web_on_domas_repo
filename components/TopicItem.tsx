@@ -10,6 +10,7 @@ interface TopicItemProps {
   isSelected: boolean
   onSelect: (id: string) => void
   onOpenTopic: (t: Topic) => void
+  hasPlayedVideo: boolean  // Whether this topic's video has played (for dimmed highlight)
 }
 
 export default function TopicItem({
@@ -17,6 +18,7 @@ export default function TopicItem({
   isSelected,
   onSelect,
   onOpenTopic,
+  hasPlayedVideo,
 }: TopicItemProps) {
   /* -------------------------------------------------------------- */
   /*  Likes hook – start with SSR data for instant paint            */
@@ -26,14 +28,27 @@ export default function TopicItem({
   /* -------------------------------------------------------------- */
   /*  Render                                                        */
   /* -------------------------------------------------------------- */
+  // Determine the styling based on selection and video played state
+  const getSelectionClass = () => {
+    if (!isSelected) {
+      return 'border border-gray bg-stone-800 text-dim_smoke'
+    }
+    
+    if (hasPlayedVideo) {
+      // Dimmed selected state (video has played)
+      return 'bg-secondary border border-main/60 text-smoke opacity-75'
+    } else {
+      // Bright selected state (video hasn't played yet)  
+      return 'bg-secondary border border-main text-smoke'
+    }
+  }
+
   return (
     <div
       onClick={() => onSelect(topic.id)}
       className={`
         relative flex flex-row p-3 rounded-xl transition-colors h-[150px] gap-3 overflow-hidden mb-4
-        ${isSelected
-          ? ' bg-secondary border border-main text-smoke'
-          : ' border border-gray bg-stone-800 text-dim_smoke '}
+        ${getSelectionClass()}
       `}
     >
       <div className="aspect-square h-full">
@@ -87,7 +102,9 @@ export default function TopicItem({
               className={`
                 px-4 py-1 uppercase text-sm font-semibold rounded-tl-[32px] rounded-br-xl transition-all duration-200
                 ${isSelected 
-                  ? 'bg-main text-black hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]'
+                  ? hasPlayedVideo 
+                    ? 'bg-main/70 text-black' // Dimmed when video played
+                    : 'bg-main text-black hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]' // Bright when not played
                   : 'bg-dim_smoke text-black'
                 }
               `}

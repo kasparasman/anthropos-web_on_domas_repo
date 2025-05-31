@@ -100,6 +100,8 @@ export function useAvatarGeneration() {
         buffer = messages.pop() || '';
 
         for (const message of messages) {
+          if (!message.trim()) continue; // Skip empty messages
+          
           const lines = message.split('\n');
           const currentEvent: { event?: string; data?: string; id?: string } = {};
           for (const line of lines) {
@@ -108,7 +110,9 @@ export function useAvatarGeneration() {
             else if (line.startsWith('id: ')) currentEvent.id = line.substring(4);
           }
 
-          if (currentEvent.event && currentEvent.data !== undefined) {
+          console.log('[useAvatarGeneration] Received SSE event:', currentEvent);
+
+          if (currentEvent.event) {
             switch (currentEvent.event) {
               case 'partial':
                 const partialIndex = currentEvent.id ? parseInt(currentEvent.id) + 1 : '...';
@@ -119,6 +123,7 @@ export function useAvatarGeneration() {
                 }));
                 break;
               case 'complete': // This is the final generated image (base64)
+                console.log('[useAvatarGeneration] Complete event received');
                 setState(s => ({
                   ...s,
                   generatedAvatarUrl: `data:image/png;base64,${currentEvent.data}`,
@@ -126,6 +131,7 @@ export function useAvatarGeneration() {
                 }));
                 break;
               case 'uploaded': // This is the CDN URL after upload
+                console.log('[useAvatarGeneration] Uploaded event received with URL:', currentEvent.data);
                 receivedFinalCdnUrl = currentEvent.data || null; // Ensure null if undefined
                 setState(s => ({
                   ...s,
@@ -137,6 +143,7 @@ export function useAvatarGeneration() {
               case 'error':
                 throw new Error(currentEvent.data || 'Avatar generation stream reported an error.');
               case 'done':
+                console.log('[useAvatarGeneration] Done event received, finalCdnUrl:', receivedFinalCdnUrl);
                 // Stream finished, but wait for nickname if finalCdnUrl is available
                 break;
             }

@@ -63,8 +63,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }],
     });
 
+    let imageGenerationStarted = false;
+    let streamCompleted = false;
+
     for await (const e of stream) {
+      console.log('[avatar-gen] Received event:', e.type, JSON.stringify(e).substring(0, 200));
+      
+      // Handle image generation events
       if (e.type === 'response.image_generation_call.partial_image') {
+        imageGenerationStarted = true;
         lastPartial = e.partial_image_b64;
         const partialIndex = e.partial_image_index || 0;
         console.log(`[avatar-gen] Partial ${partialIndex}`);
@@ -73,12 +80,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.write(`event: partial\n`);
         res.write(`id: ${partialIndex}\n`);
         res.write(`data: ${lastPartial}\n\n`);
-        
-        // Force flush to client - Next.js doesn't have res.flush, but write() auto-flushes
       }
+      
       if (e.type === 'response.image_generation_call.completed') {
+        imageGenerationStarted = true;
         // Use the correct field for the final image
-        const finalB64 = (e as any).image_generation_call?.result ?? lastPartial;
+        const finalB64 = (e as { image_generation_call?: { result?: string } }).image_generation_call?.result ?? lastPartial;
         console.log(`[avatar-gen] Generation completed`);
         
         res.write(`event: complete\n`);
@@ -87,11 +94,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Upload final image to R2
         console.log('[avatar-gen] Uploading to R2...');
         const url = await uploadFromUrlToTmp(`data:image/png;base64,${finalB64}`, 'png');
-        console.log('[avatar-gen] Upload complete');
+        console.log('[avatar-gen] Upload complete, URL:', url);
         
         res.write(`event: uploaded\n`);
         res.write(`data: ${url}\n\n`);
+        console.log('[avatar-gen] Sent uploaded event with URL:', url);
       }
+    }
+    
+    // After stream ends, check if image generation occurred
+    streamCompleted = true;
+    console.log('[avatar-gen] Stream completed, imageGenerationStarted:', imageGenerationStarted);
+    
+    if (!imageGenerationStarted) {
+      console.log('[avatar-gen] No image generation occurred - OpenAI likely responded with text');
+      res.write(`event: error\n`);
+      res.write(`data: Unable to generate avatar from the provided images. Please ensure you're using two different images: one as your selfie and one as the style reference.\n\n`);
+      return res.end();
     }
     
     // Send completion event
@@ -99,10 +118,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.write(`data: Stream completed\n\n`);
     res.end();
     
-  } catch (err: any) {
-    console.error('[avatar-gen] Error:', err.message);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+    console.error('[avatar-gen] Error:', errorMessage);
     res.write(`event: error\n`);
-    res.write(`data: ${err.message}\n\n`);
+    res.write(`data: ${errorMessage}\n\n`);
     res.end();
   }
 }
