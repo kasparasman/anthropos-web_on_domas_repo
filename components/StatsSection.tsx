@@ -23,11 +23,14 @@ export default function StatsSection({ data }: StatsSectionProps) {
         <StatsCard key={label} label={label} value={value} />
         ))}
         </div>
-      <button
-        className="whitespace-nowrap lg:w-full bg-main text-black rounded-lg px-6 py-3 font-sans font-semibold transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]"
+      <a
+        href="https://app.uniswap.org/swap?chain=arbitrum&inputCurrency=NATIVE&outputCurrency=0xe234046b5d046f72a3221c32dc09df5c4f7a4b49"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="whitespace-nowrap lg:w-full bg-main text-black rounded-lg px-6 py-3 font-sans font-semibold transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)] text-center"
       >
         BUY NOW
-      </button>
+      </a>
     </div>
   )
 }

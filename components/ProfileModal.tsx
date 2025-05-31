@@ -38,7 +38,7 @@ export default function ProfileModal({
         <Dialog.Content className="fixed h-full sm:h-auto items-center justify-center left-1/2 top-1/2 w-full sm:w-auto -translate-x-1/2 -translate-y-1/2 rounded-xl bg-black sm:border border-main p-8 flex flex-col gap-6 focus:outline-none">
           {/* Header */}
           <div className="flex justify-between items-center">
-            <h2 className=" text-xl whitespace-nowrap sm:text-2xl font-semibold text-smoke">Your Anthopos City account</h2>
+            <h2 className=" text-2xl whitespace-nowrap sm:text-2xl font-semibold text-smoke">Your Anthopos City account</h2>
             <Dialog.Close asChild>
               <button>
                 <X size={20} className="absolute top-4 right-4" />
