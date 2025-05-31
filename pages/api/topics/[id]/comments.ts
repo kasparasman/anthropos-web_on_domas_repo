@@ -40,12 +40,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       select: {
         id: true,
         authorId: true,
+        parentId: true,
         body: true,
         createdAt: true,
-        topicId: true
+        topicId: true,
+        author: {
+          select: {
+            id: true,
+            nickname: true,
+            avatarUrl: true
+          }
+        }
       }
     })
-    return res.status(200).json(comments.map(c => ({
+    return res.status(200).json(comments.map((c: any) => ({
       ...c,
       createdAt: c.createdAt.toISOString()
     })))
@@ -56,15 +64,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!session?.user?.id)
       return res.status(401).json({ error: 'Not authenticated' })
 
-    const { content } = req.body
+    const { content, parentId } = req.body
     if (!content || typeof content !== 'string')
       return res.status(400).json({ error: 'Content required' })
+
+    // Validate parentId if provided
+    if (parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: parentId },
+        select: { topicId: true }
+      })
+      
+      if (!parentComment || parentComment.topicId !== topicId) {
+        return res.status(400).json({ error: 'Invalid parent comment' })
+      }
+    }
 
     /* Step 1 – Moderation */
     const { score, raw } = await scoreContent(content)
     if (score > MAX_ALLOWED) {
       /* Step 2 – warn / ban inside a transaction */
-      const result = await prisma.$transaction(async tx => {
+      const result = await prisma.$transaction(async (tx: any) => {
         const profile = await tx.profile.update({
           where: { id: session.user.id },
           data:  { warnings: { increment: 1 } },
@@ -104,7 +124,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         id:       crypto.randomUUID(),
         topicId,
         authorId: session.user.id,
+        parentId: parentId || null,
         body:     content.trim()
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            nickname: true,
+            avatarUrl: true
+          }
+        }
       }
     })
     return res.status(201).json(inserted)

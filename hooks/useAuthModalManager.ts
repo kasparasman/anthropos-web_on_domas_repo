@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import {
   registerClient,
@@ -49,6 +49,7 @@ export function useAuthModalManager() {
   const [state, setState] = useState<AuthModalManagerState>(initialState);
   const { setRegistrationInProgress } = useRegistrationStatus();
 
+  // Define all useCallback hooks first
   const setMode = useCallback((mode: 'login' | 'register') => {
     setState(s => ({
       ...initialState,
@@ -139,6 +140,13 @@ export function useAuthModalManager() {
           // paymentClientSecret will be set by PaymentModal via setPaymentClientSecret callback
         }));
 
+        // Ensure localStorage flags are cleared at the start of a new registration attempt for this user
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('paymentCompletedForUser');
+          localStorage.removeItem('paymentIntentId');
+          localStorage.removeItem('paymentFailedForUser');
+        }
+
       } catch (err: any) {
         console.error('[useAuthModalManager] Initial registration failed catch block:', err.message);
         // General cleanup for Firebase user if created before any error
@@ -155,19 +163,37 @@ export function useAuthModalManager() {
   );
 
   const handlePaymentSuccess = useCallback(async () => {
+    // Check if provisionalUserId exists before proceeding
+    if (!state.provisionalUserId) {
+      console.error("[useAuthModalManager] Payment success called, but no provisionalUserId found in state. Aborting.", state);
+      setState(s => ({ ...s, isLoading: false, error: "User registration context lost. Cannot complete session."}));
+      return; // Exit if no provisionalUserId
+    }
     setState(s => ({ ...s, isLoading: true, error: null }));
     try {
-      if (!state.provisionalUserId) {
-        console.error("[useAuthModalManager] Payment success called, but no provisionalUserId found in state.", state);
-        throw new Error("User not provisionally registered. Cannot complete session.");
-      }
-      
       const idToken = await authApiService.getCurrentUserIdToken(); 
       if (!idToken) {
-        console.error("[useAuthModalManager] Could not get Firebase ID token for session completion. Current Firebase user:", firebaseAuth.currentUser);
+        console.error("[useAuthModalManager] Could not get Firebase ID token for payment confirmation.", firebaseAuth.currentUser);
         throw new Error("Session token missing. Please try signing in again or contact support.");
       }
 
+      // Call the new API endpoint to confirm payment and update profile status
+      console.log('[useAuthModalManager] Calling API to confirm payment and update profile status...');
+      const confirmPaymentResponse = await fetch('/api/user/confirm-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const confirmPaymentData = await confirmPaymentResponse.json();
+      console.log('[useAuthModalManager] Confirm payment API response:', confirmPaymentData);
+
+      if (!confirmPaymentResponse.ok || !confirmPaymentData.success) {
+        throw new Error(confirmPaymentData.message || 'Failed to confirm payment with backend.');
+      }
+      console.log('[useAuthModalManager] Profile status confirmed by backend:', confirmPaymentData.status);
+
+      // Now that backend status is updated, attempt to sign into NextAuth
       console.log('[useAuthModalManager] Calling NextAuth signIn to complete registration session...');
       const result = await signIn('credentials', {
         idToken,
@@ -187,15 +213,15 @@ export function useAuthModalManager() {
         currentStep: AuthStep.AvatarNicknameSetup,
         isLoading: false,
         error: null,
-        paymentClientSecret: null, // Clear client secret after successful payment and session creation
+        paymentClientSecret: null, 
       }));
       console.log('[useAuthModalManager] Payment successful & session created. Proceeding to avatar/nickname setup.');
 
     } catch (err: any) {
-      console.error('[useAuthModalManager] Error during payment success handling (session creation):', err.message);
+      console.error('[useAuthModalManager] Error during payment success handling (status update or session creation):', err.message);
       setState(s => ({ ...s, isLoading: false, error: err.message || 'Failed to finalize registration after payment.'}));
     }
-  }, [state.provisionalUserId]); // state.email removed as it's used from provisionalData or initial email_val
+  }, [state.provisionalUserId]);
 
   const handlePaymentModalClose = useCallback(() => {
     console.log('[useAuthModalManager] Payment modal closed/cancelled by user.');
@@ -282,6 +308,49 @@ export function useAuthModalManager() {
   const setCurrentStep = useCallback((step: AuthStep) => {
     setState(s => ({ ...s, currentStep: step }));
   }, []);
+
+  // Now define the useEffect that uses some of these callbacks
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const paymentCompletedForUserId = localStorage.getItem('paymentCompletedForUser');
+      const paymentIntentId = localStorage.getItem('paymentIntentId'); 
+
+      if (paymentCompletedForUserId && paymentCompletedForUserId !== 'unknown') {
+        if (state.provisionalUserId && state.provisionalUserId === paymentCompletedForUserId) {
+          console.log(`[useAuthModalManager] Resuming completed payment for current user ${state.provisionalUserId} (Intent: ${paymentIntentId}).`);
+          localStorage.removeItem('paymentCompletedForUser');
+          localStorage.removeItem('paymentIntentId');
+          handlePaymentSuccess(); 
+        } else if (!state.provisionalUserId) {
+          console.log(`[useAuthModalManager] Restoring provisionalUserId (${paymentCompletedForUserId}) from localStorage to resume payment flow.`);
+          // Set state and then call handlePaymentSuccess directly if the IDs match
+          // This avoids relying on an immediate re-trigger of useEffect if state update isn't batched as expected.
+          setState(s => ({ ...s, provisionalUserId: paymentCompletedForUserId, email: s.email || '' }));
+          // We expect this useEffect to run again with the updated provisionalUserId, and then the first `if` block will catch it.
+          // Or, to be more direct, we could call handlePaymentSuccess here too, but that might lead to double calls
+          // if the useEffect re-triggers very quickly. The current approach relies on the next tick of useEffect.
+        }
+      }
+      
+      const paymentFailedForUserId = localStorage.getItem('paymentFailedForUser');
+      if (paymentFailedForUserId && paymentFailedForUserId !== 'unknown') {
+        if (state.provisionalUserId && state.provisionalUserId === paymentFailedForUserId) {
+          console.log(`[useAuthModalManager] Processing failed payment for current user ${state.provisionalUserId}.`);
+          localStorage.removeItem('paymentFailedForUser');
+          setState(s => ({ 
+            ...s, 
+            error: 'Payment failed or was cancelled. Please try again.', 
+            currentStep: AuthStep.Payment, 
+            isLoading: false,
+            paymentClientSecret: null 
+          }));
+        } else if (!state.provisionalUserId) {
+          console.log(`[useAuthModalManager] Restoring provisionalUserId (${paymentFailedForUserId}) from localStorage for failed payment.`);
+          setState(s => ({ ...s, provisionalUserId: paymentFailedForUserId, email: s.email || '' }));
+        }
+      }
+    }
+  }, [state.provisionalUserId, handlePaymentSuccess]);
 
   return {
     state, // Includes paymentClientSecret now

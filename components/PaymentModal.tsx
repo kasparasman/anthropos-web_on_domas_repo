@@ -10,13 +10,15 @@ interface PaymentModalProps {
   onClientSecretFetched: (secret: string | null) => void;
   clientSecret: string | null;
   stripePromise: any;
+  provisionalUserId: string | null;
 }
 
 // Inner component that uses Stripe hooks
-function PaymentForm({ email, onPaymentSuccess, clientSecret }: { 
+function PaymentForm({ email, onPaymentSuccess, clientSecret, provisionalUserId }: { 
   email: string; 
   onPaymentSuccess: () => void; 
   clientSecret: string; 
+  provisionalUserId: string | null;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,15 +40,24 @@ function PaymentForm({ email, onPaymentSuccess, clientSecret }: {
       elements,
       confirmParams: { 
         receipt_email: email,
-        return_url: `${window.location.origin}/payment-complete`,
+        return_url: `${window.location.origin}/payment-complete?provisional_user_id=${provisionalUserId}`,
       },
     });
 
     setLoading(false);
 
     if (stripeError) {
-      setError(stripeError.message || 'Payment failed');
+      if (stripeError.type === "card_error" || stripeError.type === "validation_error") {
+        setError(stripeError.message || 'An error occurred with your card.');
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
+      console.error("Stripe confirmPayment error:", stripeError);
     } else {
+      // If confirmPayment doesn't throw an error and doesn't redirect, 
+      // it means the payment was successful without a redirect (e.g., no 3DS needed).
+      // In this case, onPaymentSuccess will be called, and the /payment-complete page might not be hit.
+      console.log("Payment successful (no redirect)");
       onPaymentSuccess();
     }
   };
@@ -76,7 +87,8 @@ export default function PaymentModal({
   onPaymentSuccess, 
   onClientSecretFetched,
   clientSecret,
-  stripePromise 
+  stripePromise,
+  provisionalUserId
 }: PaymentModalProps) {
   const [prices, setPrices] = useState<any[]>([]);
   const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
@@ -168,6 +180,7 @@ export default function PaymentModal({
               email={email} 
               onPaymentSuccess={onPaymentSuccess} 
               clientSecret={clientSecret} 
+              provisionalUserId={provisionalUserId}
             />
           </Elements>
         )}

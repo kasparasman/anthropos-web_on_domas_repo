@@ -10,9 +10,18 @@ interface Props {
   onAdd:    (content: string) => Promise<boolean>
   warn:     any
   clearWarn: () => void
+  placeholder?: string
+  submitButtonText?: string
 }
 
-export default function CommentForm({ topicId, onAdd, warn, clearWarn }: Props) {
+export default function CommentForm({ 
+  topicId, 
+  onAdd, 
+  warn, 
+  clearWarn, 
+  placeholder = "Write your comment…",
+  submitButtonText = "Post"
+}: Props) {
   const { data: session } = useSession()
   const [text,    setText]    = useState('')
   const [loading, setLoading] = useState(false)
@@ -50,7 +59,7 @@ export default function CommentForm({ topicId, onAdd, warn, clearWarn }: Props) 
       <form onSubmit={submit} className="flex flex-col gap-2">
         <textarea
           className="w-full h-24 rounded bg-stone-800 p-2"
-          placeholder="Write your comment…"
+          placeholder={placeholder}
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={loading}
@@ -60,7 +69,7 @@ export default function CommentForm({ topicId, onAdd, warn, clearWarn }: Props) 
           className="self-end px-4 py-1 rounded bg-main text-background disabled:opacity-60"
           disabled={loading}
         >
-          {loading ? 'Posting…' : 'Post'}
+          {loading ? 'Posting…' : submitButtonText}
         </button>
       </form>
 

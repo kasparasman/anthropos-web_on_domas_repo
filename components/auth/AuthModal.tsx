@@ -191,6 +191,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 onClientSecretFetched={setPaymentClientSecret}
                 clientSecret={paymentClientSecret}
                 stripePromise={stripePromise}
+                provisionalUserId={authState.provisionalUserId}
               />
             )}
             
