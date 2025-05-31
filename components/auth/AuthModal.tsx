@@ -118,11 +118,11 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     modalTitle = 'Log in to your account'
   } else {
     if (authState.currentStep === AuthStep.InitialRegistration) {
-      modalTitle = 'Register: Step 1 of 3 - Account & Face Scan'
+      modalTitle = 'Step 1/3 - Account & Face Scan'
     } else if (authState.currentStep === AuthStep.Payment) {
-      modalTitle = 'Register: Step 2 of 3 - Payment'
+      modalTitle = 'Step 2/3 Select a plan'
     } else if (authState.currentStep === AuthStep.AvatarNicknameSetup) {
-      modalTitle = 'Register: Step 3 of 3 - Avatar & Profile'
+      modalTitle = 'Step 3/3 - Avatar & Profile'
     }
   }
   
@@ -241,7 +241,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               </button>
             )}
 
-            {/* Cancel button - Hidden during avatar setup since it's mandatory */}
+            {/* Cancel button - Hidden during avatar setup since it's mandatory 
             {!isAvatarSetupStep && (
               <button
                 type="button"
@@ -252,7 +252,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               >
                 Cancel
               </button>
-            )}
+            )}*/}
         </div>
       </div>
     </Dialog>

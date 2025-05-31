@@ -26,15 +26,15 @@ interface PaymentModalProps {
 }
 
 // Inner component that uses Stripe hooks
-function PaymentForm({ email, onPaymentSuccess, clientSecret, provisionalUserId }: { 
-  email: string; 
-  onPaymentSuccess: () => void; 
-  clientSecret: string; 
+function PaymentForm({ email, onPaymentSuccess, clientSecret, provisionalUserId }: {
+  email: string;
+  onPaymentSuccess: () => void;
+  clientSecret: string;
   provisionalUserId: string | null;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
+
   const stripe = useStripe();
   const elements = useElements();
 
@@ -50,7 +50,7 @@ function PaymentForm({ email, onPaymentSuccess, clientSecret, provisionalUserId 
 
     const { error: stripeError } = await stripe.confirmPayment({
       elements,
-      confirmParams: { 
+      confirmParams: {
         receipt_email: email,
         return_url: `${window.location.origin}/payment-complete?provisional_user_id=${provisionalUserId}`,
       },
@@ -92,11 +92,11 @@ function PaymentForm({ email, onPaymentSuccess, clientSecret, provisionalUserId 
   );
 }
 
-export default function PaymentModal({ 
-  email, 
-  open, 
-  onClose, 
-  onPaymentSuccess, 
+export default function PaymentModal({
+  email,
+  open,
+  onClose,
+  onPaymentSuccess,
   onClientSecretFetched,
   clientSecret,
   stripePromise,
@@ -143,9 +143,9 @@ export default function PaymentModal({
           }
         })
         .catch((err) => {
-            console.error("Error in create-subscription fetch:", err);
-            setError('Failed to create subscription.');
-            onClientSecretFetched(null);
+          console.error("Error in create-subscription fetch:", err);
+          setError('Failed to create subscription.');
+          onClientSecretFetched(null);
         })
         .finally(() => setLoading(false));
     }
@@ -156,74 +156,83 @@ export default function PaymentModal({
   // Custom dark/gold theme for Stripe Elements
   const elementsOptions: StripeElementsOptions | undefined = clientSecret
     ? {
-        clientSecret,
-        appearance: {
-          theme: 'night',
-          variables: {
-            colorPrimary: '#FFD700',
-            colorBackground: '#000000',
-            colorText: '#fff',
-            colorDanger: '#ff4d4f',
+      clientSecret,
+      appearance: {
+        theme: 'night',
+        variables: {
+          colorPrimary: '#FFD700',
+          colorBackground: '#000000',
+          colorText: '#fff',
+          colorDanger: '#ff4d4f',
+          fontFamily: 'inherit',
+          borderRadius: '12px',
+        },
+        rules: {
+          '.Block': {
+            border: 'none',
+            boxShadow: 'none',
+            backgroundColor: '#18181b',
             fontFamily: 'inherit',
-            borderRadius: '12px',
           },
-          rules: {
-            '.Block': {
-              border: 'none',
-              boxShadow: 'none',
-              backgroundColor: '#18181b',
-              fontFamily: 'inherit',
-            },
-            '.Input': {
-              border: '1px solid #FFD700',
-              backgroundColor: '#18181b',
-              color: '#fff',
-              fontFamily: 'inherit',
-            },
-            '.Label': {
-              color: '#FFD700',
-              fontFamily: 'inherit',
-            },
-            '.Tab, .Tab--selected': {
-              color: '#FFD700',
-              fontFamily: 'inherit',
-            },
+          '.Input': {
+            border: '1px solid #FFD700',
+            backgroundColor: '#18181b',
+            color: '#fff',
+            fontFamily: 'inherit',
+          },
+          '.Label': {
+            color: '#FFD700',
+            fontFamily: 'inherit',
+          },
+          '.Tab, .Tab--selected': {
+            color: '#FFD700',
+            fontFamily: 'inherit',
           },
         },
-      }
+      },
+    }
     : undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-black rounded-xl py-8 px-12 w-full max-w-md border border-main shadow-xl relative">
+      <div className="flex flex-col bg-black rounded-xl py-6 px-8 w-full h-full sm:w-auto sm:h-auto border items-center border-main shadow-xl relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-main transition-colors p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-main"
+          className="absolute top-4 right-4 text-gray-400 hover:text-main transition-colors p-2 rounded-full "
           aria-label="Close"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        
+
         {step === 'select' && (
           <>
-            <h2 className="text-2xl font-bold mb-6 text-center text-white">Select a plan</h2>
+            <h2 className="text-3xl font-bold mb-6 text-center text-white">Step 2/3 Select a plan</h2>
             {error && <div className="text-red-500 mb-2 text-center">{error}</div>}
-            <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-6">
               {prices.map((price) => (
-                <div key={price.id} className="border border-main p-4 rounded-lg flex justify-between items-center bg-neutral-900">
-                  <div>
-                    <div className="font-semibold text-white">{price.product.name}</div>
-                    <div className="text-main">${(price.unit_amount / 100).toFixed(2)} / {price.recurring?.interval}</div>
+                <div key={price.id} className="border border-main p-4 rounded-xl flex flex-col sm:justify-between items-center max-w-80 sm:max-w-auto bg-[linear-gradient(-45deg,_#000000_-10%,_#252014_50%,_#000000_110%)]">
+                  <div className="flex flex-col items-center">
+                    <div className="font-semibold text-[24px] text-smoke mb-3 uppercase">{price.product.name}</div>
+                    <div className="flex flex-col text-smoke text-[32px] font-semibold items-center mb-5">${(price.unit_amount / 100).toFixed(2)}
+                      <p className="text-base ">per {price.recurring?.interval}</p>
+                    </div>
                   </div>
                   <button
-                    className="bg-main text-black px-4 py-2 rounded font-semibold hover:bg-yellow-400 transition"
+                    className="bg-main text-black w-full py-2 rounded-full font-semibold transition mb-5"
                     onClick={() => setSelectedPrice(price.id)}
                     disabled={loading}
                   >
-                    Select
+                    Select Plan
                   </button>
+                  <div className="">
+                    <p className="w-full text-center text-smoke ">Includes:</p>
+                    <p className="w-full text-center text-dim_smoke ">✓ Full access to all features</p>
+                    <p className="w-full text-center text-dim_smoke ">✓ Priority support</p>
+                    <p className="w-full text-center text-dim_smoke ">✓ Cancel anytime</p>
+                  </div>
+
                 </div>
               ))}
             </div>
@@ -232,10 +241,10 @@ export default function PaymentModal({
 
         {step === 'pay' && clientSecret && elementsOptions && (
           <Elements stripe={stripePromise} options={elementsOptions}>
-            <PaymentForm 
-              email={email} 
-              onPaymentSuccess={onPaymentSuccess} 
-              clientSecret={clientSecret} 
+            <PaymentForm
+              email={email}
+              onPaymentSuccess={onPaymentSuccess}
+              clientSecret={clientSecret}
               provisionalUserId={provisionalUserId}
             />
           </Elements>

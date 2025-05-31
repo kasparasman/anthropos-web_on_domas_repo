@@ -30,7 +30,7 @@ export default function CommentForm({
   const [error, setError] = useState<string | null>(null)
 
   if (!session?.user)
-    return <p className="text-sm text-zinc-500">Log in to leave a comment.</p>
+    return <button className="italic text-smoke">Log in to leave a comment.</button>
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()

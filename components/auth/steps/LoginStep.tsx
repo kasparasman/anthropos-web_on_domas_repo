@@ -30,13 +30,13 @@ export default function LoginStep({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col">
       <input 
         type="email" 
         placeholder="Email" 
         value={email} 
         onChange={(e) => onEmailChange(e.target.value)} 
-        className="w-full rounded-md bg-neutral-800 px-4 py-3 text-lg text-white placeholder-gray-500 focus:border-main focus:ring-main"
+        className="mb-3 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
         disabled={isLoading}
       />
       <input 
@@ -44,13 +44,13 @@ export default function LoginStep({
         placeholder="Password" 
         value={localPassword} // Use local password for controlled input
         onChange={handlePasswordChange} 
-        className="w-full rounded-md bg-neutral-800 px-4 py-3 text-lg text-white placeholder-gray-500 focus:border-main focus:ring-main"
+        className="mb-3 w-full rounded-md bg-gray px-4 py-2 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/40"
         disabled={isLoading}
       />
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full rounded-md bg-main py-3 text-lg font-semibold text-black transition hover:bg-yellow-400 disabled:opacity-60"
+        className="mb-2 w-full rounded-md bg-main py-2 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]"
       >
         {isLoading ? 'Processing…' : 'LOGIN'}
       </button>
