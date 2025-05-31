@@ -13,13 +13,13 @@ interface CommentProps {
   clearWarn: () => void
 }
 
-export default function Comment({ 
-  comment, 
-  depth = 0, 
-  topicId, 
-  onAddComment, 
-  warn, 
-  clearWarn 
+export default function Comment({
+  comment,
+  depth = 0,
+  topicId,
+  onAddComment,
+  warn,
+  clearWarn
 }: CommentProps) {
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [isReplying, setIsReplying] = useState(false)
@@ -40,10 +40,10 @@ export default function Comment({
   // Limit nesting depth for UI purposes
   const maxDepth = 4
   const isMaxDepth = depth >= maxDepth
-  
+
   // Calculate indentation based on depth
   const indentationClass = depth > 0 ? 'ml-4 md:ml-8' : ''
-  
+
   return (
     <div className={`${indentationClass} ${depth > 0 ? 'border-l-2 border-stone-700 pl-4' : ''}`}>
       {/* Comment Content */}
@@ -51,9 +51,9 @@ export default function Comment({
         {/* Author and timestamp */}
         <div className="flex items-center gap-3 mb-2">
           {comment.author?.avatarUrl ? (
-            <img 
-              src={comment.author.avatarUrl} 
-              alt={comment.author.nickname || 'User'} 
+            <img
+              src={comment.author.avatarUrl}
+              alt={comment.author.nickname || 'User'}
               className="w-8 h-8 rounded-full object-cover"
             />
           ) : (
@@ -69,19 +69,19 @@ export default function Comment({
             </span>
             <span className="text-xs text-stone-400">
               {new Date(comment.createdAt).toLocaleDateString()} at{' '}
-              {new Date(comment.createdAt).toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+              {new Date(comment.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
               })}
             </span>
           </div>
         </div>
-        
+
         {/* Comment body */}
         <p className="text-stone-100 mb-3 leading-relaxed whitespace-pre-wrap">
           {comment.body}
         </p>
-        
+
         {/* Reply button */}
         {!isMaxDepth && (
           <button

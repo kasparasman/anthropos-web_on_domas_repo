@@ -125,12 +125,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   /* 3) Assets --------------------------------------------------------- */
   // your real data or mock
   const assets: Asset[] = [
-    { id: 'zinzino',  logoUrl: '', name: 'Zinzino',     totalInvestment: 1562, tokenCount: 7_777_777_777 },
+  /*{ id: 'zinzino',  logoUrl: '', name: 'Zinzino',     totalInvestment: 1562, tokenCount: 7_777_777_777 },
     { id: 'alphacorp',logoUrl: '', name: 'AlphaCorp',   totalInvestment: 2300, tokenCount: 4_200_000_000 },
     { id: 'betacorp', logoUrl: '', name: 'BetaCorp',    totalInvestment: 2300, tokenCount: 4_200_000_000 },
     { id: 'gammatech',logoUrl: '', name: 'GammaTech',   totalInvestment: 1800, tokenCount: 3_500_000_000 },
     { id: 'deltainc', logoUrl: '', name: 'DeltaInc',    totalInvestment: 2750, tokenCount: 5_100_000_000 },
-  ]
+  */]
 
   // ← your counter values
   const currentAssets = 0

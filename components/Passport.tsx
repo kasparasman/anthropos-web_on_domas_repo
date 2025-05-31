@@ -22,7 +22,7 @@ export default function Passport({ id, nickname, gender, avatarUrl }: PassportPr
       {/* Info Section */}
       <div className="flex flex-col items-center sm:items-start text-white gap-3 relative ">
         <div className="flex justify-between items-center py-0.5 px-6 border rounded-full border-main">
-          <span className="text- tracking-wide text-main">Anthropos Citizen</span>
+          <span className="text- tracking-wide text-main whitespace-nowrap">Anthropos Citizen</span>
         </div>
         <div className="flex flex-col items-center sm:block">
           <span className="block text-sm text-dim_smoke">Nickname</span>
