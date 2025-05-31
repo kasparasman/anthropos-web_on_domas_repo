@@ -36,13 +36,28 @@ export default function AssetCarousel({
     return () => window.clearTimeout(raf)
   }, [autoplay, embla, speed])
 
+  // Create array of 5 cards, filling with placeholder assets if needed
+  const displayAssets = [...assets]
+  while (displayAssets.length < 5) {
+    displayAssets.push({
+      id: `placeholder-${displayAssets.length}`,
+      logoUrl: '/placeholder-logo.png', // You'll need to add this image
+      name: 'Coming Soon',
+      totalInvestment: 0,
+      tokenCount: 0
+    })
+  }
+
   return (
     <div className="w-full overflow-hidden" ref={emblaRef}>
       <div className="flex">
         {/* duplicate for seamless loop */}
-        {[...assets, ...assets].map((a, i) => (
+        {[...displayAssets, ...displayAssets].map((a, i) => (
           <div key={`${a.id}-${i}`} onClick={() => onSelectAsset?.(a.id)}>
-            <AssetCard asset={a} />
+            <AssetCard
+              asset={a}
+              isActive={!a.id.startsWith('placeholder')}
+            />
           </div>
         ))}
       </div>

@@ -31,7 +31,7 @@ export default function AvatarPlayer({ videoUrl }: AvatarPlayerProps) {
           {ended && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
               <button
-                className="flex flex-col items-center justify-center gap-2 bg-main text-black rounded-full px-8 py-5 shadow-[0_0_24px_0_rgba(254,212,138,0.5)] hover:shadow-[0_0_32px_4px_rgba(254,212,138,0.7)] hover:scale-105 transition-all duration-200 border-2 border-main focus:outline-none focus:ring-2 focus:ring-main"
+                className="flex flex-col items-center justify-center gap-2 bg-main text-black rounded-full p-4 shadow-[0_0_24px_0_rgba(254,212,138,0.5)] hover:shadow-[0_0_32px_4px_rgba(254,212,138,0.7)] hover:scale-105 transition-all duration-200 border-2 border-main focus:outline-none focus:ring-2 focus:ring-main"
                 onClick={() => {
                   setEnded(false)
                   if (videoRef.current) {
@@ -41,8 +41,7 @@ export default function AvatarPlayer({ videoUrl }: AvatarPlayerProps) {
                 }}
                 aria-label="Replay video"
               >
-                <RotateCcw size={32} className="mb-1" />
-                <span className="font-bold text-lg tracking-wide">Replay</span>
+                <RotateCcw size={32} className="mb-1 h-8 w-8" />              
               </button>
             </div>
           )}

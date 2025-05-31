@@ -59,26 +59,26 @@ export default function TopicItem({
       </div>
       {/* Absolute likes + open chat button */}
       <div className="absolute bottom-[-1px] right-[-1px] flex items-center gap-2 pl-5">
-            {/* 
+            
             <button
             onClick={e => {
               e.stopPropagation()
               toggleLike()
             }}
-            disabled={loading || likedByMe}
+            disabled={loading} // Allow unliking by removing `likedByMe` from disabled condition
             className="flex items-center gap-1 text-sm disabled:cursor-not-allowed"
             >
             <Heart
               size={18}
               className={
-              likedByMe
-                ? ' stroke-smoke'
-                : 'stroke-foreground hover:stroke-main'
+                likedByMe
+                  ? 'fill-smoke stroke-smoke' // Filled when liked
+                  : 'fill-none stroke-smoke hover:stroke-smoke hover:stroke-3' // Outline when not liked, with hover effect
               }
             />
             {count}
             </button>
-            */}
+            
             <button
               onClick={e => {
                 e.stopPropagation()

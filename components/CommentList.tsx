@@ -8,15 +8,19 @@ interface Props {
   onAddComment: (content: string, parentId?: string) => Promise<boolean>
   warn: any
   clearWarn: () => void
+  replyingToCommentId: string | null
+  setReplyingToCommentId: (id: string | null) => void
 }
 
-export default function CommentList({ 
-  comments, 
-  loading, 
-  topicId, 
-  onAddComment, 
-  warn, 
-  clearWarn 
+export default function CommentList({
+  comments,
+  loading,
+  topicId,
+  onAddComment,
+  warn,
+  clearWarn,
+  replyingToCommentId,
+  setReplyingToCommentId
 }: Props) {
   if (loading) return <p>Loading comments…</p>
   if (!comments.length) return <p className="italic text-stone-400">No comments yet.</p>
@@ -35,6 +39,8 @@ export default function CommentList({
           onAddComment={onAddComment}
           warn={warn}
           clearWarn={clearWarn}
+          replyingToCommentId={replyingToCommentId}
+          setReplyingToCommentId={setReplyingToCommentId}
         />
       ))}
     </div>

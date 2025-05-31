@@ -1,8 +1,13 @@
 {
-    "mcpServers": {
-      "Neon": {
-        "command": "npx",
-        "args": ["-y", "mcp-remote", "https://mcp.neon.tech/sse"]
-      }
+  "mcpServers": {
+    "Neon": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.neon.tech/sse"]
+    },
+
+    "Framelink Figma MCP": {
+      "command": "npx",
+      "args": ["-y", "figma-developer-mcp", "--figma-api-key=FIGMA_API_KEY", "--stdio"]
     }
   }
+} 
