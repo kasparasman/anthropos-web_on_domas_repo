@@ -20,6 +20,7 @@ model Profile {
   status         String    @default("PENDING_PAYMENT")
   rekFaceId      String?   @unique
   stripeCustomerId String?   @unique
+  tmpFaceUrl     String?
   createdAt      DateTime  @default(now()) @db.Timestamptz(6)
   lastModifiedAt DateTime  @updatedAt
   comments       Comment[]

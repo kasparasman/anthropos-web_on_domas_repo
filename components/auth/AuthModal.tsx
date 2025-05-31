@@ -5,7 +5,7 @@ import { Dialog } from '@headlessui/react'
 // import Image from 'next/image' // Not used, can be removed if not needed elsewhere
 import PaymentModal from '../PaymentModal'
 // import { StripeProvider } from '../StripeProvider'; // Assuming StripeProvider is <Elements> or similar. If it's just context, it's fine. If it's another Elements wrapper, it's redundant here. For now, I'll assume it's not an <Elements> wrapper.
-import { useAuthModalManager, AuthStep } from '../../hooks/useAuthModalManager'
+import { useAuthModalManager, AuthStep } from '../../contexts/AuthModalManagerContext'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js'
 

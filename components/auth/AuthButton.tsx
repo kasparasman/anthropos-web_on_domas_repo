@@ -1,14 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import AuthModal from './AuthModal'
 import { useAuthSync } from '../../hooks/useFirebaseNextAuth'
 
-export default function AuthButton() {
-  const { ready, user, signOutFirebase } = useAuthSync()   // Firebase state
+interface AuthButtonProps {
+  onLoginClick: () => void;
+}
+
+export default function AuthButton({ onLoginClick }: AuthButtonProps) {
+  const { ready, user } = useAuthSync()   // Firebase state
   const { data: session, status } = useSession()           // NextAuth state
-  const [open, setOpen] = useState(false)
 
   /* ------------- still loading either auth state ------------- */
   if (!ready || status === 'loading')
@@ -21,15 +22,11 @@ export default function AuthButton() {
 
   /* ------------- Logged-out ➜ show Sign-in / Sign-up -------------- */
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="px-4 py-1 bg-main text-background rounded"
-      >
-        Log in / Sign up
-      </button>
-
-      <AuthModal open={open} onClose={() => setOpen(false)} />
-    </>
+    <button
+      onClick={onLoginClick}
+      className="px-4 py-1 bg-main text-background rounded"
+    >
+      Log in / Sign up
+    </button>
   )
 }

@@ -53,4 +53,30 @@ export const getCurrentUserIdToken = async (): Promise<string | null> => {
 // Add other auth-related API calls here, e.g.:
 // - provisionalRegister
 // - completeRegistrationSession (if it becomes a direct API call)
-// - login (if you decide to wrap NextAuth's signIn with a direct API call for some reason) 
+// - login (if you decide to wrap NextAuth's signIn with a direct API call for some reason)
+
+export async function getCurrentUserProfileStatus() {
+  const user = firebaseAuth.currentUser;
+  if (!user) {
+    // This case should ideally be handled by the caller ensuring user is authenticated
+    console.warn('[AuthApiService] Attempted to get profile status, but no Firebase user found.');
+    return null;
+  }
+  const idToken = await user.getIdToken();
+
+  const response = await fetch('/api/user/profile-status', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${idToken}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    console.error('[AuthApiService] Failed to fetch profile status:', data.message || 'Unknown error');
+    // Optionally, throw an error or return a specific error object
+    return null; 
+  }
+  return data.profile; // Assuming data.profile contains { id, email, status, tmpFaceUrl }
+} 

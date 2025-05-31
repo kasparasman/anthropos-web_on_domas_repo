@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
-import { useAuthModalManager, AuthStep } from '../hooks/useAuthModalManager';
 
 // Load Stripe.js outside of a component's render to avoid
 // recreating the Stripe object on every render.
@@ -14,7 +13,6 @@ export default function PaymentCompletePage() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>('Processing payment...');
-  const { handlePaymentSuccess, resetToInitial, setCurrentStep, setMode } = useAuthModalManager();
 
   useEffect(() => {
     const clientSecret = searchParams.get('payment_intent_client_secret');
@@ -27,7 +25,13 @@ export default function PaymentCompletePage() {
       return;
     }
 
-    async function checkStatus() {
+    if (!provisionalUserIdFromQuery) {
+      setMessage('Error: Provisional user ID not found in URL. Cannot complete process.');
+      setStatus('error');
+      return;
+    }
+
+    async function verifyAndSetOutcome() {
       const stripe = await stripePromise;
       if (!stripe) {
         setMessage('Stripe.js has not loaded yet.');
@@ -35,61 +39,62 @@ export default function PaymentCompletePage() {
         return;
       }
 
-      const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret as string);
+      try {
+        const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret as string);
 
-      if (paymentIntent) {
-        switch (paymentIntent.status) {
-          case 'succeeded':
-            setMessage('Payment successful! Redirecting you to complete your profile...');
-            setStatus('succeeded');
-            // Mark payment as complete in our system
-            // This will trigger the AuthModal to move to the next step
-            // We use a flag in localStorage because AuthModal might not be mounted
-            // or its state might be lost if the user navigated away and came back.
-            localStorage.setItem('paymentCompletedForUser', provisionalUserIdFromQuery || 'unknown');
-            localStorage.setItem('paymentIntentId', paymentIntent.id);
-            // Directly call the success handler if possible (e.g., if modal is open)
-            // This is an optimistic update, localStorage is the primary mechanism
-            handlePaymentSuccess(); 
-            router.push('/'); // Redirect to home, AuthModal will pick up the status
-            break;
-          case 'processing':
-            setMessage("Payment processing. We'll update you when payment is received.");
-            setStatus('processing');
-            break;
-          case 'requires_payment_method':
-            setMessage('Payment failed. Please try another payment method.');
-            setStatus('requires_payment_method');
-            // Potentially redirect back to a payment page or show an error
-            localStorage.setItem('paymentFailedForUser', provisionalUserIdFromQuery || 'unknown');
-            router.push('/'); // Redirect to home, AuthModal might reopen or show error
-            break;
-          default:
-            setMessage('Something went wrong with your payment.');
-            setStatus('error');
-            localStorage.setItem('paymentFailedForUser', provisionalUserIdFromQuery || 'unknown');
-            router.push('/');
-            break;
+        if (paymentIntent) {
+          switch (paymentIntent.status) {
+            case 'succeeded':
+              setMessage('Payment successful! Redirecting...');
+              setStatus('succeeded');
+              localStorage.setItem('paymentCompletedForUser', provisionalUserIdFromQuery as string);
+              localStorage.setItem('paymentIntentId', paymentIntent.id);
+              router.push('/');
+              break;
+            case 'processing':
+              setMessage("Payment processing...");
+              setStatus('processing');
+              break;
+            case 'requires_payment_method':
+              setMessage('Payment failed. Please try another payment method.');
+              setStatus('requires_payment_method');
+              localStorage.setItem('paymentFailedForUser', provisionalUserIdFromQuery as string);
+              router.push('/');
+              break;
+            default:
+              setMessage('Something went wrong.');
+              setStatus('error');
+              localStorage.setItem('paymentFailedForUser', provisionalUserIdFromQuery as string);
+              router.push('/');
+              break;
+          }
+        } else {
+          setMessage('Could not retrieve payment intent.');
+          setStatus('error');
+          localStorage.setItem('paymentFailedForUser', provisionalUserIdFromQuery as string);
+          router.push('/');
         }
-      } else {
-        setMessage('Could not retrieve payment intent details.');
+      } catch (error) {
+        console.error("Error retrieving payment intent:", error);
+        setMessage('Error processing payment details.');
         setStatus('error');
+        localStorage.setItem('paymentFailedForUser', provisionalUserIdFromQuery as string);
+        router.push('/');
       }
     }
 
-    if (redirectStatus === 'succeeded' && clientSecret) {
-        // If Stripe already confirms success via redirect_status, proceed directly
-        // This can happen if 3DS was successful but the client-side check is also needed.
-        setMessage('Payment confirmed by redirect! Redirecting you to complete your profile...');
+    if (redirectStatus === 'succeeded') {
+        console.log('[PaymentCompletePage] Stripe redirect_status is succeeded.');
+        setMessage('Payment confirmed! Redirecting...');
         setStatus('succeeded');
-        localStorage.setItem('paymentCompletedForUser', provisionalUserIdFromQuery || 'unknown');
-        handlePaymentSuccess();
+        localStorage.setItem('paymentCompletedForUser', provisionalUserIdFromQuery as string);
         router.push('/');
-    } else if (clientSecret) {
-        checkStatus();
+    } else {
+        console.log('[PaymentCompletePage] No redirect_status=succeeded or other status. Verifying PaymentIntent...');
+        verifyAndSetOutcome();
     }
 
-  }, [searchParams, router, handlePaymentSuccess]);
+  }, [searchParams, router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background_dimmer text-text_white p-4">

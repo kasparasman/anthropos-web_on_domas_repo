@@ -9,7 +9,11 @@ import { useSession } from 'next-auth/react'
 import ProfileButton from '../components/ProfileButton'
 import AuthButton     from './auth/AuthButton'
 
-export default function Navbar() {
+interface NavbarProps {
+  onLoginClick: () => void;
+}
+
+export default function Navbar({ onLoginClick }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const path  = usePathname()
   const { data: session } = useSession()
@@ -35,7 +39,7 @@ export default function Navbar() {
         <div className="flex md:order-2 space-x-3 md:space-x-0">
           {/* Desktop auth/avatar */}
           <div className="hidden md:flex">
-            {session?.user ? <ProfileButton /> : <AuthButton />}
+            {session?.user ? <ProfileButton /> : <AuthButton onLoginClick={onLoginClick} />}
           </div>
 
           {/* Mobile hamburger */}
@@ -75,7 +79,7 @@ export default function Navbar() {
 
             {/* Mobile auth/avatar */}
             <li className="md:hidden ml-3">
-              {session?.user ? <ProfileButton /> : <AuthButton />}
+              {session?.user ? <ProfileButton /> : <AuthButton onLoginClick={onLoginClick} />}
             </li>
             </ul>
         </div>
