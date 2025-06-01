@@ -16,18 +16,16 @@ export default function TotalAssetIncome({
   }).format(value);
 
   return (
-    <div className="rounded-xl border border-[#403522] bg-[linear-gradient(-45deg,#1D180F_-20%,#020202_50%,#1D180F_120%)] p-2 w-full flex flex-col relative overflow-hidden">
-      <div className="flex flex-col gap-1 z-10">
-        <span className="text-dim_smoke text-sm font-medium">Total Asset Income</span>
+    <div className=" px-4 py-2 relative overflow-hidden ">
+      <div className="flex flex-row gap-2 items-center">
+        <span className="text-smoke text-xl font-regualr whitespace-nowrap">Total Asset Income:</span>
         
         {isLoading ? (
-          <div className="h-8 w-32 bg-[#1D180F] animate-pulse rounded"></div>
+          <div className="h-8 w-32 animate-pulse rounded"></div>
         ) : (
-          <span className="text-main text-2xl font-bold">{formattedValue}</span>
+          <span className="text-smoke text-xl font-semibold">{formattedValue}</span>
         )}
       </div>
-      
-      {/* Moving dots animation for the golden glow effect */}
     </div>
   );
 } 

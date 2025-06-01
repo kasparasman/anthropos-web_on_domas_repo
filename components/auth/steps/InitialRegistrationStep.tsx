@@ -70,7 +70,7 @@ export default function InitialRegistrationStep({
             disabled={isLoading || !selectedFile}
             className=" w-full rounded-full bg-main py-2 font-semibold text-black transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]"
           >
-            {isLoading ? 'Processing…' : 'REGISTER & PROCEED TO PAYMENT'}
+            {isLoading ? 'Processing…' : 'Next Step'}
           </button>
         </div>
         <div className="flex flex-col items-center h-36 w-36 order-first aspect-square ">
