@@ -75,7 +75,7 @@ function PaymentForm({ email, onPaymentSuccess, clientSecret, provisionalUserId 
   };
 
   return (
-    <div className="bg-black rounded-lg p-6 border border-main shadow mb-4">
+    <div className="bg-black flex flex-col h-auto overflow-y-sroll text-sans">
       <h2 className="text-xl font-bold mb-4 text-white">Enter payment details</h2>
       {error && <div className="text-red-500 mb-2">{error}</div>}
       <form onSubmit={handleSubmit}>
@@ -83,7 +83,7 @@ function PaymentForm({ email, onPaymentSuccess, clientSecret, provisionalUserId 
         <button
           type="submit"
           disabled={loading || !stripe || !elements}
-          className="mt-4 w-full bg-main text-black py-2 rounded font-semibold hover:bg-yellow-400 transition"
+          className="mt-4 w-full bg-main text-black py-2 rounded font-semibold transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]"
         >
           {loading ? 'Processing…' : 'Subscribe'}
         </button>
@@ -160,9 +160,9 @@ export default function PaymentModal({
       appearance: {
         theme: 'night',
         variables: {
-          colorPrimary: '#FFD700',
+          colorPrimary: '#E6E6E6',
           colorBackground: '#000000',
-          colorText: '#fff',
+          colorText: '#E6E6E6',
           colorDanger: '#ff4d4f',
           fontFamily: 'inherit',
           borderRadius: '12px',
@@ -175,17 +175,17 @@ export default function PaymentModal({
             fontFamily: 'inherit',
           },
           '.Input': {
-            border: '1px solid #FFD700',
+            border: '1px solid gray',
             backgroundColor: '#18181b',
             color: '#fff',
             fontFamily: 'inherit',
           },
           '.Label': {
-            color: '#FFD700',
+            color: 'B3B3B3',
             fontFamily: 'inherit',
           },
           '.Tab, .Tab--selected': {
-            color: '#FFD700',
+            color: '#E6E6E6',
             fontFamily: 'inherit',
           },
         },
@@ -194,8 +194,8 @@ export default function PaymentModal({
     : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="flex flex-col bg-black rounded-xl py-6 px-8 w-full h-full sm:w-auto sm:h-auto border items-center border-main shadow-xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-scroll no-scrollbar">
+      <div className="flex flex-col bg-black rounded-xl py-6 px-8 w-auto h-auto sm:w-auto sm:h-auto border items-center border-main shadow-xl relative ">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-main transition-colors p-2 rounded-full "
@@ -220,7 +220,7 @@ export default function PaymentModal({
                     </div>
                   </div>
                   <button
-                    className="bg-main text-black w-full py-2 rounded-full font-semibold transition mb-5"
+                    className="bg-main text-black w-full py-2 rounded-full font-semibold transition mb-5 transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]"
                     onClick={() => setSelectedPrice(price.id)}
                     disabled={loading}
                   >
@@ -251,7 +251,7 @@ export default function PaymentModal({
         )}
 
         {step === 'success' && (
-          <div className="text-center">
+          <div className="text-center bg-black">
             <h2 className="text-2xl font-bold mb-4 text-white">Payment Successful!</h2>
             <p className="text-main mb-4">Your subscription is now active. You can now register.</p>
             <button onClick={onClose} className="mt-4 bg-main text-black px-4 py-2 rounded font-semibold hover:bg-yellow-400 transition">Close</button>

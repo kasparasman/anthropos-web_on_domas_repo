@@ -74,11 +74,9 @@ export default function Home({
         </div>
 
         {/* Container for AssetsCounter (left) and TotalAssetIncome (right) */}
-        <div className="w-full flex justify-between items-start pt-4">
+        <div className="w-full flex flex-col justify-between items-center pt-4 relative">
           <AssetsCounter current={currentAssets} max={maxAssets} />
-          <div className="w-64 relative z-10"> {/* Added relative and z-10 */}
-            <TotalAssetIncome value={totalAssetIncome} />
-          </div>
+          <TotalAssetIncome value={totalAssetIncome} />
         </div>
         
         {/* Assets Carousel */}

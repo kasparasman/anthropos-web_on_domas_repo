@@ -149,7 +149,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     <Dialog as={Fragment} open={open}
         onClose={allowModalClose ? explicitClose : () => {}} // Disable ESC key during avatar setup
         initialFocus={cancelRef}>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           {/* Backdrop: click disabled during avatar setup */}
           <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={() => {}} aria-hidden="true" />
         <div
