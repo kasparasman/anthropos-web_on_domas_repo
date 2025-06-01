@@ -90,7 +90,7 @@ export default function AvatarNicknameStep({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <p className="text-center text-white mb-0">Payment Successful! Now, let's set up your avatar and nickname.</p>
+      <p className="text-center text-white mb-0">Payment Successful! Let's set up your avatar and nickname.</p>
       
       {/* Gender Selection (example) */}
       <div className="flex justify-center gap-3">
