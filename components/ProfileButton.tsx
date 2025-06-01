@@ -11,10 +11,11 @@ export default function ProfileButton() {
 
   if (!session?.user) return null               // rendered only when logged-in
 
-  const { image, nickname, email } = session.user as {
+  const { image, nickname, email, citizenId } = session.user as {
     image?: string | null
     nickname?: string | null
     email: string | null
+    citizenId?: number | null
   }
 
   return (
@@ -40,6 +41,7 @@ export default function ProfileButton() {
         avatarUrl={image}
         nickname={nickname}
         email={email}
+        citizenId={citizenId ?? undefined}
       />
     </>
   )

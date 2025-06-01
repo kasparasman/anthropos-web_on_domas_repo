@@ -14,6 +14,7 @@ model Profile {
   id             String    @id @unique
   email          String    @unique
   nickname       String?   @unique
+  citizenId      Int       @default(autoincrement()) @unique // Sequential citizenship number
   warnings       Int         @default(0)
   banned         Boolean     @default(false)
   avatarUrl      String?
@@ -28,6 +29,8 @@ model Profile {
   topicLikes     TopicLike[]
   banReason      String?
   bannedAt       DateTime?
+  deletedAt      DateTime?
+  deletionReason String?
 
   // Commenting out relations to undefined models for now
   // sentMessages     Message[] @relation("SentMessages")
@@ -38,7 +41,29 @@ model Profile {
   @@index([email])
   @@index([nickname])
   @@index([status])
+  @@index([citizenId])
   @@map("profiles")
+}
+
+/// ─────────────────────────────────────────────────────────────────────────────
+///   CITY ASSETS
+/// ─────────────────────────────────────────────────────────────────────────────
+model Asset {
+  id                String    @id @default(uuid())
+  name              String    @unique
+  description       String?
+  logoUrl           String
+  websiteUrl        String?
+  totalInvestment   Float     @default(0)
+  tokenCount        Float     @default(0)
+  order             Int       @default(0)  // For display order
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  lastModifiedAt    DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([order])
+  @@map("assets")
 }
 
 /// ─────────────────────────────────────────────────────────────────────────────

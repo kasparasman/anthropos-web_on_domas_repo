@@ -16,10 +16,10 @@ if (!FIREBASE_PRIVATE_KEY) {
   process.exit(1);
 }
 
-// Dynamically import firebase-admin AFTER env vars are confirmed
-const { admin } = await import('../lib/firebase-admin.js');
-
 async function deleteAllUsers(nextPageToken?: string) {
+  // Dynamically import firebase-admin
+  const { admin } = await import('../lib/firebase-admin.js');
+  
   const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
   const uids = listUsersResult.users.map((user: auth.UserRecord) => user.uid);
 
@@ -33,6 +33,14 @@ async function deleteAllUsers(nextPageToken?: string) {
   }
 }
 
-await deleteAllUsers();
-console.log('All Firebase users deleted!');
-process.exit(0);
+// Wrap in async IIFE to handle top-level await
+(async () => {
+  try {
+    await deleteAllUsers();
+    console.log('All Firebase users deleted!');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error deleting Firebase users:', error);
+    process.exit(1);
+  }
+})();

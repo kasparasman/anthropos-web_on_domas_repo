@@ -18,14 +18,33 @@ export default async function handler(
 
   // GET /api/profile
   if (req.method === 'GET') {
-    const profile = await prisma.profile.findUnique({
-      where: { id: uid },
-      select: { id: true, email: true, nickname: true, avatarUrl: true }
-    })
-    if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' } as ErrorResponse)
+    try {
+      // Use Prisma for most fields, but get citizenId through raw SQL if needed
+      const profile = await prisma.profile.findUnique({
+        where: { id: uid },
+        select: { id: true, email: true, nickname: true, avatarUrl: true }
+      })
+      
+      if (!profile) {
+        return res.status(404).json({ error: 'Profile not found' } as ErrorResponse)
+      }
+      
+      // Fetch citizenId using raw SQL
+      const citizenIdResult = await prisma.$queryRaw`
+        SELECT "citizenId" FROM profiles WHERE id = ${uid}
+      `
+      
+      // Combine results
+      const fullProfile = {
+        ...profile,
+        citizenId: citizenIdResult[0]?.citizenId || null
+      }
+      
+      return res.status(200).json(fullProfile)
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      return res.status(500).json({ error: 'Internal server error' } as ErrorResponse)
     }
-    return res.status(200).json(profile)
   }
 
   // POST /api/profile
@@ -54,7 +73,18 @@ export default async function handler(
       }
     })
 
-    return res.status(200).json(upserted)
+    // Fetch citizenId using raw SQL for the response
+    const citizenIdResult = await prisma.$queryRaw`
+      SELECT "citizenId" FROM profiles WHERE id = ${uid}
+    `
+    
+    // Add citizenId to response
+    const fullProfile = {
+      ...upserted,
+      citizenId: citizenIdResult[0]?.citizenId || null
+    }
+
+    return res.status(200).json(fullProfile)
   }
 
   // Method Not Allowed

@@ -11,7 +11,8 @@
     "lint": "next lint",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "clean-firebase": "npx tsx scripts/deleteFb.ts"
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.816.0",

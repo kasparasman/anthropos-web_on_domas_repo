@@ -6,7 +6,7 @@ import RightPanel from '../components/RightPanel'
 import AssetsCounter from '@/components/AssetCounter'
 import AssetCarousel from '../components/AssetCarousel'
 import GridWithRays from '@/components/GridWithRays'
-
+import TotalAssetIncome from '@/components/TotalAssetIncome'
 
 import { DexToolsResponse } from '../types/dex-tools'
 import { Topic } from '../types/topic'
@@ -17,10 +17,11 @@ import { Asset } from '../types/asset'
 /* ------------------------------------------------------------------ */
 interface HomeProps {
   dexData: DexToolsResponse
-    topics: Topic[]
+  topics: Topic[]
   assets: Asset[]
   currentAssets: number
   maxAssets: number
+  totalAssetIncome: number
 }
 
 /* ------------------------------------------------------------------ */
@@ -32,9 +33,10 @@ export default function Home({
   assets,
   currentAssets,
   maxAssets,
+  totalAssetIncome
 }: HomeProps) {
   return (
-    <main className=" realtive flex flex-col items-center p-4 md:p-6">
+    <main className=" relative flex flex-col items-center p-4 md:p-6">
       {/* Background */}
       <GridWithRays/>
 
@@ -71,9 +73,15 @@ export default function Home({
           <RightPanel topics={topics} />
         </div>
 
-        {/* ← Assets Counter */}
-        <AssetsCounter current={currentAssets} max={maxAssets} />
-
+        {/* Container for AssetsCounter (left) and TotalAssetIncome (right) */}
+        <div className="w-full flex justify-between items-start pt-4">
+          <AssetsCounter current={currentAssets} max={maxAssets} />
+          <div className="w-64 relative z-10"> {/* Added relative and z-10 */}
+            <TotalAssetIncome value={totalAssetIncome} />
+          </div>
+        </div>
+        
+        {/* Assets Carousel */}
         <AssetCarousel assets={assets} loop autoplay speed={2000} />
       </div>
       
@@ -89,6 +97,19 @@ import { authOptions } from '../lib/authOptions'
 import { prisma } from '../lib/prisma'
 import type { GetServerSidePropsContext } from 'next'
 
+interface RawTopic {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: Date;
+  videoUrl: string;
+  topicLikes: { userId: string | null }[];
+}
+
+interface RawTopicLike {
+  userId: string | null;
+}
+
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   /* 1) DexTools stats ------------------------------------------------ */
   const dexRes = await fetch(
@@ -101,40 +122,69 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const session = await getServerSession(ctx.req, ctx.res, authOptions)
   const userId = session?.user?.id ?? null
 
-  const raw = await prisma.topic.findMany({  // Changed: topic instead of topics
-    orderBy: { createdAt: 'desc' },         // Changed: createdAt instead of date
+  const raw: RawTopic[] = await prisma.topic.findMany({ 
+    orderBy: { createdAt: 'desc' },        
     select: {
       id: true,
       title: true,
-      body: true,           // Added
-      createdAt: true,      // Added  
-      videoUrl: true,                       // Changed: videoUrl instead of video_url
-      topicLikes: { select: { userId: true } }, // Changed: topicLikes instead of likes
+      body: true,          
+      createdAt: true,     
+      videoUrl: true,                      
+      topicLikes: { select: { userId: true } }, 
     },
   })
   
-  const topics: Topic[] = raw.map((t) => ({
+  const topics: Topic[] = raw.map((t: RawTopic) => ({
     id: t.id,
     title: t.title,
-    body: t.body,           // Added
-    createdAt: t.createdAt.toISOString(), // Convert Date to ISO string
+    body: t.body,          
+    createdAt: t.createdAt.toISOString(), 
     videoUrl: t.videoUrl,
     likes: t.topicLikes.length,
-    likedByUser: userId ? t.topicLikes.some((l) => l.userId === userId) : false,
+    likedByUser: userId ? t.topicLikes.some((l: RawTopicLike) => l.userId === userId) : false,
   }))
-  /* 3) Assets --------------------------------------------------------- */
-  // your real data or mock
-  const assets: Asset[] = [
-  /*{ id: 'zinzino',  logoUrl: '', name: 'Zinzino',     totalInvestment: 1562, tokenCount: 7_777_777_777 },
-    { id: 'alphacorp',logoUrl: '', name: 'AlphaCorp',   totalInvestment: 2300, tokenCount: 4_200_000_000 },
-    { id: 'betacorp', logoUrl: '', name: 'BetaCorp',    totalInvestment: 2300, tokenCount: 4_200_000_000 },
-    { id: 'gammatech',logoUrl: '', name: 'GammaTech',   totalInvestment: 1800, tokenCount: 3_500_000_000 },
-    { id: 'deltainc', logoUrl: '', name: 'DeltaInc',    totalInvestment: 2750, tokenCount: 5_100_000_000 },
-  */]
 
-  // ← your counter values
-  const currentAssets = 0
-  const maxAssets = 100
+  /* 3) Assets --------------------------------------------------------- */
+  
+  let assets: Asset[] = []
+  let currentAssets = 0
+  const maxAssets = 10 // Corrected to const as it's not reassigned
+  let totalAssetIncome = 0
+
+  try {
+    
+    const rawAssets = await prisma.$queryRaw<Asset[]>`
+      SELECT id, name, description, "logoUrl", "websiteUrl", 
+             "totalInvestment", "tokenCount", "order", "isActive"
+      FROM assets
+      WHERE "isActive" = true
+      ORDER BY "order" ASC
+    `;
+    
+    if (rawAssets && Array.isArray(rawAssets)) {
+      assets = rawAssets;
+      currentAssets = assets.length;
+      
+      totalAssetIncome = assets.reduce((sum, asset) => {
+        const investmentValue = asset.totalInvestment;
+        let numericInvestment = 0;
+
+        if (typeof investmentValue === 'number') {
+          numericInvestment = investmentValue;
+        } else if (typeof investmentValue === 'string') {
+          const parsed = parseFloat(investmentValue);
+          if (!isNaN(parsed)) {
+            numericInvestment = parsed;
+          }
+        } // If investmentValue is null, undefined, or a non-parseable string, numericInvestment remains 0.
+        
+        return sum + numericInvestment;
+      }, 0);
+    }
+  } catch (error) {
+    console.error('Error fetching assets:', error);
+    
+  }
 
   return {
     props: {
@@ -143,6 +193,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       assets,
       currentAssets,
       maxAssets,
+      totalAssetIncome
     },
   }
 }

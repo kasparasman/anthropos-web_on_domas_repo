@@ -10,6 +10,7 @@ type AppToken = JWT & {
   nickname?: string | null
   picture?: string
   banned?: boolean
+  citizenId?: number | null
 }
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
@@ -54,13 +55,14 @@ export const authOptions: NextAuthOptions = {
       if (t.id) {
         const profile = await prisma.profile.findUnique({
           where : { id: t.id },
-          select: { banned: true, nickname: true, avatarUrl: true },
+          select: { banned: true, nickname: true, avatarUrl: true, citizenId: true },
         })
 
         if (profile) {
           t.nickname = profile.nickname ?? null
           t.picture  = profile.avatarUrl ?? t.picture
           t.banned   = !!profile.banned
+          t.citizenId = profile.citizenId ?? null
         }
       }
       return t
@@ -82,6 +84,7 @@ export const authOptions: NextAuthOptions = {
           nickname: t.nickname ?? null,
           email   : session.user.email!,     // already present
           image   : t.picture,
+          citizenId: t.citizenId ?? null,
         }
       }
       return session

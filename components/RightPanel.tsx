@@ -24,7 +24,7 @@ export default function RightPanel({ topics }: RightPanelProps) {
     setHasPlayedVideo(false) // Reset played state
   }
 
-  // Handle video end - return to idle
+  // Handle video end - return to idle immediately
   const handleVideoEnd = () => {
     setIsIdle(true)
     setHasPlayedVideo(true) // Mark that topic video has played

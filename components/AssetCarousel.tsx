@@ -36,16 +36,21 @@ export default function AssetCarousel({
     return () => window.clearTimeout(raf)
   }, [autoplay, embla, speed])
 
-  // Create array of 5 cards, filling with placeholder assets if needed
+  // Create array of assets, filling with placeholder assets if needed
   const displayAssets = [...assets]
-  while (displayAssets.length < 5) {
-    displayAssets.push({
-      id: `placeholder-${displayAssets.length}`,
-      logoUrl: '/placeholder-logo.png', // You'll need to add this image
-      name: 'Coming Soon',
-      totalInvestment: 0,
-      tokenCount: 0
-    })
+  
+  // Only add placeholder if there are no real assets
+  if (displayAssets.length === 0) {
+    // Add placeholders if no assets exist
+    for (let i = 0; i < 5; i++) {
+      displayAssets.push({
+        id: `placeholder-${i}`,
+        logoUrl: '/assets/logos/placeholder.svg',
+        name: 'Coming Soon',
+        totalInvestment: 0,
+        tokenCount: 0
+      });
+    }
   }
 
   return (
