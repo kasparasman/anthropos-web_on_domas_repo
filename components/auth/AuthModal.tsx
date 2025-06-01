@@ -55,14 +55,14 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   ];
   
   const femaleStyles = [
-    { img: "https://your-r2-bucket.r2.dev/styles/female1.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female1-ref.jpg", label: "Classic" },
-    { img: "https://your-r2-bucket.r2.dev/styles/female2.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female2-ref.jpg", label: "Sporty" },
-    { img: "https://your-r2-bucket.r2.dev/styles/female3.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female3-ref.jpg", label: "Casual" },
-    { img: "https://your-r2-bucket.r2.dev/styles/female4.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female4-ref.jpg", label: "Hipster" },
-    { img: "https://your-r2-bucket.r2.dev/styles/female5.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female5-ref.jpg", label: "Elegant" },
-    { img: "https://your-r2-bucket.r2.dev/styles/female6.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female6-ref.jpg", label: "Adventurer" },
-    { img: "https://your-r2-bucket.r2.dev/styles/female7.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female7-ref.jpg", label: "Artist" },
-    { img: "https://your-r2-bucket.r2.dev/styles/female8.jpg", styleRef: "https://your-r2-bucket.r2.dev/styles/female8-ref.jpg", label: "Techie" }
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_30%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_30%20AM.png", label: "Classic" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_36%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_36%20AM.png", label: "Sporty" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2012_37_15%20PM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2012_37_15%20PM.png", label: "Casual" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_44%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_44%20AM.png", label: "Hipster" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_48%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_48%20AM.png", label: "Elegant" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_51%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_51%20AM.png", label: "Adventurer" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_54%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_54%20AM.png", label: "Artist" },
+    { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2012_36_58%20PM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2012_36_58%20PM.png", label: "Techie" }
   ];
 
   /* body scroll lock */

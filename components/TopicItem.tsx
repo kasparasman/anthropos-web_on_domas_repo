@@ -4,6 +4,7 @@ import { Eye, Heart } from 'lucide-react'
 import { Topic } from '../types/topic'
 import useLikes from '../hooks/useLikes'
 import { TopicWithBody } from '../types/topic-popup'
+import { useToast } from '../hooks/use-toast'
 
 interface TopicItemProps {
   topic: Topic
@@ -24,6 +25,7 @@ export default function TopicItem({
   /*  Likes hook – start with SSR data for instant paint            */
   /* -------------------------------------------------------------- */
   const { count, likedByMe, loading, toggleLike } = useLikes(topic.id)
+  const { toast } = useToast()
 
   /* -------------------------------------------------------------- */
   /*  Render                                                        */
@@ -76,9 +78,23 @@ export default function TopicItem({
       <div className="absolute bottom-[-1px] right-[-1px] flex items-center gap-2 pl-5">
             
             <button
-            onClick={e => {
+            onClick={async e => {
               e.stopPropagation()
-              toggleLike()
+              try {
+                await toggleLike()
+              } catch (err) {
+                if (err instanceof Error && err.message === 'Not authenticated') {
+                  toast({
+                    title: 'Login required',
+                    description: 'You must be logged in to like topics.',
+                  })
+                } else {
+                  toast({
+                    title: 'Error',
+                    description: 'Something went wrong. Please try again.',
+                  })
+                }
+              }
             }}
             disabled={loading} // Allow unliking by removing `likedByMe` from disabled condition
             className="flex items-center gap-1 text-sm disabled:cursor-not-allowed"

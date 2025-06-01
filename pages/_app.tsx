@@ -11,6 +11,7 @@ import MandatoryProfileCompletion from '../components/global/MandatoryProfileCom
 import AuthModal from '../components/auth/AuthModal'
 import { AuthModalManagerProvider, useAuthModalManager } from '../contexts/AuthModalManagerContext'
 import { useEffect } from 'react'
+import Toaster from '../components/Toaster'
 
 // Load Google fonts and assign to CSS variables
 const geistSans = Geist({
@@ -47,6 +48,7 @@ function AppContent({ Component, pageProps, router }: AppContentProps) {
         onClose={closeAuthModal} 
       />
       <Component {...pageProps} />
+      <Toaster />
     </>
   );
 }
