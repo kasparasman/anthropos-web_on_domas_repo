@@ -120,7 +120,7 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
   console.log('AvatarPlayer render:', { isIdle, videoUrl, topicVideoStarted })
 
   return (
-    <div className="w-full lg:w-[40%] h-96 bg-black rounded-xl overflow-hidden mx-auto flex items-center justify-center relative">
+    <div className="w-full lg:w-[40%] h-96 max-w-50 bg-black rounded-xl overflow-hidden mx-auto my-auto flex items-center justify-center relative">
       {/* Idle Video - always rendered with complementary opacity */}
       <video
         ref={idleVideoRef}

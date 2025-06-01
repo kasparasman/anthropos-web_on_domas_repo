@@ -97,7 +97,7 @@ export default function PaymentCompletePage() {
   }, [searchParams, router]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background_dimmer text-text_white p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-text_white p-4">
       <div className="bg-background p-8 rounded-lg shadow-xl max-w-md text-center">
         <h1 className="text-2xl font-bold mb-4">
           {status === 'succeeded' && 'Payment Successful!'}
