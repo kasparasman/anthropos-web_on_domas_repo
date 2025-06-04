@@ -1,6 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 import { useAuthSync } from '../../hooks/useFirebaseNextAuth'
 
 interface AuthButtonProps {
@@ -22,11 +23,19 @@ export default function AuthButton({ onLoginClick }: AuthButtonProps) {
 
   /* ------------- Logged-out ➜ show Sign-in / Sign-up -------------- */
   return (
-    <button
-      onClick={onLoginClick}
-      className="px-4 py-1 bg-main text-background rounded"
-    >
-      Log in / Sign up
-    </button>
+    <div className="flex space-x-2">
+      <button
+        onClick={onLoginClick}
+        className="px-4 py-1 bg-main text-background rounded"
+      >
+        Log in
+      </button>
+      <Link
+        href="/register"
+        className="px-4 py-1 bg-main text-background rounded"
+      >
+        Sign up
+      </Link>
+    </div>
   )
 }
