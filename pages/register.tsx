@@ -1,3 +1,6 @@
+import { useEffect } from 'react'
+import { useAuthModalManager } from '../contexts/AuthModalManagerContext'
+
 import { useState, useEffect } from 'react';
 import { PaymentElement, useStripe, useElements, Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -198,6 +201,10 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
 
 export default function RegisterPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+      const { setMode } = useAuthModalManager()
+  useEffect(() => {
+    setMode('register')
+  }, [setMode])
   return (
     <main className="min-h-screen bg-black text-white p-4">
       <h1 className="text-2xl font-bold mb-4 text-center">Register</h1>
