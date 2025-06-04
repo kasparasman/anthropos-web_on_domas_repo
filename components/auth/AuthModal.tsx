@@ -39,9 +39,9 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const [password, setPassword] = useState('')
   const [fileForUpload, setFileForUpload] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  
+
   const [selectedGender, setSelectedGender] = useState<'male' | 'female'>('male')
-  
+
   const cancelRef = useRef<HTMLButtonElement>(null)
 
   const maleStyles = [
@@ -54,7 +54,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_27_58%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20May%2027%2C%202025%2C%2009_27_58%20AM.png", label: "Socialist" },
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/e1ffaf29-cde4-4500-a451-009e29c23e24.jpg", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/tmp/ChatGPT%20Image%20May%2024%2C%202025%2C%2010_39_50%20AM.png", label: "Techie" }
   ];
-  
+
   const femaleStyles = [
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_30%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_30%20AM.png", label: "Classic" },
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_36%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_36%20AM.png", label: "Sporty" },
@@ -95,9 +95,9 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   /* ------- file selection handler ------- */
   const handleFileSelectForInitialScan = (selectedFile: File) => {
     setFileForUpload(selectedFile)
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+    }
     setPreviewUrl(URL.createObjectURL(selectedFile))
   }
 
@@ -132,14 +132,14 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
       modalTitle = 'Step 3/3 - Avatar & Profile'
     }
   }
-  
+
   const { isLoading, error: authError } = authState
   const currentStylesToDisplay = selectedGender === 'male' ? maleStyles : femaleStyles
 
   // Determine if modal should be closable - disabled during mandatory avatar setup
   const isAvatarSetupStep = authState.mode === 'register' && authState.currentStep === AuthStep.AvatarNicknameSetup;
   const allowModalClose = !isLoading && !isAvatarSetupStep; // No closing during avatar setup
-  
+
   // Stricter: only explicit buttons should close, and only if not loading and not in avatar setup.
   const explicitClose = () => {
     if (allowModalClose) {
@@ -152,23 +152,23 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   const isPaymentStep = authState.mode === 'register' && authState.currentStep === AuthStep.Payment;
 
   return (
-    <StripeProvider>  
-    <Dialog as={Fragment} open={open}
-        onClose={allowModalClose ? explicitClose : () => {}} // Disable ESC key during avatar setup
+    <StripeProvider>
+      <Dialog as={Fragment} open={open}
+        onClose={allowModalClose ? explicitClose : () => { }} // Disable ESC key during avatar setup
         initialFocus={cancelRef}>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-top justify-center p-4 h-auto overflow-y-scroll">
           {/* Backdrop: click disabled during avatar setup */}
-          <div className="fixed inset-0 bg-black/70 backdrop-blur" onClick={() => {}} aria-hidden="true" />
-        <div
-          onClick={e => e.stopPropagation()} // Prevent clicks inside modal from bubbling to backdrop
-            className={`flex flex-col relative z-10 rounded-xl bg-black border border-main 
+          <div className="fixed inset-0 bg-black/70 backdrop-blur h-full" onClick={() => { }} aria-hidden="true" />
+          <div
+            onClick={e => e.stopPropagation()} // Prevent clicks inside modal from bubbling to backdrop
+            className={`flex flex-col relative z-10 rounded-xl bg-black border border-main h-full overflow-y-auto no-scrollbar
                         ${isPaymentStep ? 'p-0 w-auto bg-transparent border-none' : `py-8 px-12 ${authState.mode === 'register' ? 'w-[600px]' : 'w-[450px]'}`}`}
-        >
+          >
             {/* Explicit X Close Button - Hidden during avatar setup */}
             {!isPaymentStep && !isAvatarSetupStep && (
-              <button 
+              <button
                 type="button"
-                onClick={explicitClose} 
+                onClick={explicitClose}
                 disabled={!allowModalClose}
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 disabled:opacity-50 z-20"
                 aria-label="Close modal"
@@ -188,24 +188,24 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
             {authState.currentStep !== AuthStep.Payment && (
               <>
                 {authState.mode === 'login' && (
-                  <LoginStep 
-                    email={authState.email} 
-                    onEmailChange={setAuthEmail} 
-                    onPasswordChange={setPassword} 
-                    onSubmit={handleSubmitLogin} 
-                    isLoading={isLoading} 
+                  <LoginStep
+                    email={authState.email}
+                    onEmailChange={setAuthEmail}
+                    onPasswordChange={setPassword}
+                    onSubmit={handleSubmitLogin}
+                    isLoading={isLoading}
                   />
                 )}
-                
+
                 {authState.mode === 'register' && authState.currentStep === AuthStep.InitialRegistration && (
-                  <InitialRegistrationStep 
-                    email={authState.email} 
-                    onEmailChange={setAuthEmail} 
-                    onPasswordChange={setPassword} 
-                    onFileSelect={handleFileSelectForInitialScan} 
-                    onSubmit={handleSubmitInitialRegistration} 
-                    isLoading={isLoading} 
-                    previewUrl={previewUrl} 
+                  <InitialRegistrationStep
+                    email={authState.email}
+                    onEmailChange={setAuthEmail}
+                    onPasswordChange={setPassword}
+                    onFileSelect={handleFileSelectForInitialScan}
+                    onSubmit={handleSubmitInitialRegistration}
+                    isLoading={isLoading}
+                    previewUrl={previewUrl}
                     selectedFile={fileForUpload}
                   />
                 )}
@@ -222,11 +222,11 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 )}
               </>
             )}
-            
+
             {/* PaymentModal: Rendered when it is the current step */}
             {isPaymentStep && (
               <PaymentModal
-                email={authState.email} 
+                email={authState.email}
                 open={true} // Controlled by currentStep now
                 onClose={handlePaymentModalClose}
                 onPaymentSuccess={handlePaymentSuccess}
@@ -236,7 +236,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 provisionalUserId={authState.provisionalUserId}
               />
             )}
-            
+
             {/* Toggle between Login/Register, only if not in Payment or AvatarSetup step */}
             {(authState.currentStep === AuthStep.InitialRegistration || authState.currentStep === AuthStep.Login) && (
               <button
@@ -260,9 +260,9 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 Cancel
               </button>
             )}*/}
+          </div>
         </div>
-      </div>
-    </Dialog>
-     </StripeProvider> 
+      </Dialog>
+    </StripeProvider>
   )
 }
