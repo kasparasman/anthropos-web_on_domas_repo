@@ -8,6 +8,7 @@ import PaymentModal from '../PaymentModal'
 import { useAuthModalManager, AuthStep } from '../../contexts/AuthModalManagerContext'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js'
+import { usePreloadImages } from '../../hooks/usePreloadImages'
 
 // Import Step Components
 import LoginStep from './steps/LoginStep'
@@ -64,6 +65,12 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_54%20AM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2011_54_54%20AM.png", label: "Artist" },
     { img: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2012_36_58%20PM.png", styleRef: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/ChatGPT%20Image%20Jun%201%2C%202025%2C%2012_36_58%20PM.png", label: "Techie" }
   ];
+
+  // Preload all style images for both genders
+  usePreloadImages([
+    ...maleStyles.map(s => s.img),
+    ...femaleStyles.map(s => s.img)
+  ])
 
   /* body scroll lock */
   useEffect(() => {
