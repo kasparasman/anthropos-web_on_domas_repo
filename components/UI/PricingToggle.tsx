@@ -1,7 +1,18 @@
-import { useState } from "react";
+import React from "react";
 
-export default function PricingToggle() {
-  const [isYearly, setIsYearly] = useState(true);
+interface PricingToggleProps {
+  onPlanChange: (plan: 'monthly' | 'yearly') => void;
+  disabled?: boolean;
+}
+
+export default function PricingToggle({ onPlanChange, disabled = false }: PricingToggleProps) {
+  const [isYearly, setIsYearly] = React.useState(true);
+
+  const handleToggle = (yearly: boolean) => {
+    if (disabled) return;
+    setIsYearly(yearly);
+    onPlanChange(yearly ? 'yearly' : 'monthly');
+  };
 
   // You can adjust these two strings to whatever you need:
   const yearlyPriceText = "9.99$";
@@ -23,24 +34,26 @@ export default function PricingToggle() {
       {/* ───────────── 2) TOGGLE + SAVE TEXT SECTION ───────────── */}
       <div className="flex flex-col items-center">
         {/*  ─────── PILL-STYLE TOGGLE ───────  */}
-        <div className="bg-gray rounded-full h-10 w-[220px] flex p-1">
+        <div className={`bg-gray rounded-full h-10 w-[220px] flex p-1 ${disabled ? 'opacity-50' : ''}`}>
           <button
-            onClick={() => setIsYearly(true)}
+            onClick={() => handleToggle(true)}
+            disabled={disabled}
             className={`flex-1 flex items-center justify-center rounded-full transition ${
               isYearly
                 ? "bg-main text-black"
                 : "text-white hover:bg-white/10"
-            }`}
+            } ${disabled ? 'cursor-not-allowed' : ''}`}
           >
             Yearly
           </button>
           <button
-            onClick={() => setIsYearly(false)}
+            onClick={() => handleToggle(false)}
+            disabled={disabled}
             className={`flex-1 flex items-center justify-center rounded-full transition ${
               !isYearly
                 ? "bg-main text-black"
                 : "text-white hover:bg-white/10"
-            }`}
+            } ${disabled ? 'cursor-not-allowed' : ''}`}
           >
             Monthly
           </button>

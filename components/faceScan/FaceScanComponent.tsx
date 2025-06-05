@@ -8,33 +8,58 @@ import {
   DrawingUtils,
 } from "@mediapipe/tasks-vision";
 
+// Props for the component
+interface FaceScanComponentProps {
+  onCapture: (imageFile: File) => void;
+  onCancel: () => void;
+}
+
 const VISION_TASK_FILES_PATH =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm";
 
-const FaceScanComponent: React.FC = () => {
+// Helper to convert data URI to File object
+function dataURItoFile(dataURI: string, filename: string): File {
+  const arr = dataURI.split(',');
+  // The first part of the array is the mime type
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  if (!mimeMatch) {
+    throw new Error('Could not find MIME type in data URI');
+  }
+  const mime = mimeMatch[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+}
+
+const FaceScanComponent: React.FC<FaceScanComponentProps> = ({ onCapture, onCancel }) => {
   const webcamRef = useRef<Webcam>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null); // Canvas for FaceLandmarker
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
-  const [isFaceDetected, setIsFaceDetected] = useState(false);
-  const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // State for capture readiness
+  const [isFaceSteady, setIsFaceSteady] = useState(false);
+  const steadyFaceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const animationFrameId = useRef<number | null>(null);
   const drawingUtilsRef = useRef<DrawingUtils | null>(null);
 
+  // --- Initialization and Cleanup ---
   useEffect(() => {
     const initializeFaceLandmarker = async () => {
       try {
-        const filesetResolver = await FilesetResolver.forVisionTasks(
-          VISION_TASK_FILES_PATH
-        );
+        const filesetResolver = await FilesetResolver.forVisionTasks(VISION_TASK_FILES_PATH);
         const landmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
           baseOptions: {
             modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
             delegate: "GPU",
           },
-          outputFaceBlendshapes: false, // Set true if you need expression data
+          outputFaceBlendshapes: false,
           runningMode: "VIDEO",
           numFaces: 1,
         });
@@ -43,27 +68,28 @@ const FaceScanComponent: React.FC = () => {
         setError(null);
       } catch (e) {
         console.error("Failed to initialize FaceLandmarker:", e);
-        setError(
-          "Failed to load face landmark model. Please ensure a stable internet connection and try again."
-        );
+        setError("Failed to load face detection model. Please check your connection and try again.");
         setIsModelLoaded(false);
       }
     };
     initializeFaceLandmarker();
 
     return () => {
+      // Cleanup on unmount
       animationFrameId.current && cancelAnimationFrame(animationFrameId.current);
       faceLandmarker?.close();
+      if (webcamRef.current?.stream) {
+        webcamRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+      if (steadyFaceTimeoutRef.current) {
+        clearTimeout(steadyFaceTimeoutRef.current);
+      }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const predictWebcam = useCallback(async () => {
-    if (
-      !faceLandmarker ||
-      !webcamRef.current?.video ||
-      webcamRef.current.video.readyState !== 4 // Video is ready
-    ) {
+    if (!faceLandmarker || !webcamRef.current?.video || webcamRef.current.video.readyState !== 4) {
       animationFrameId.current = requestAnimationFrame(predictWebcam);
       return;
     }
@@ -94,61 +120,24 @@ const FaceScanComponent: React.FC = () => {
     const results = faceLandmarker.detectForVideo(video, startTimeMs);
 
     if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-      setIsFaceDetected(true);
+      // --- Face is detected, manage steady timer ---
+      if (!steadyFaceTimeoutRef.current) {
+        steadyFaceTimeoutRef.current = setTimeout(() => {
+          setIsFaceSteady(true); // Enable capture after 1.5 seconds of continuous detection
+        }, 1500);
+      }
+      
       for (const landmarks of results.faceLandmarks) {
-        // --- Enhanced Tesselation (Main Mesh) ---
-        drawingUtilsRef.current.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-          { color: "rgba(0, 255, 255, 0.7)", lineWidth: 1 } // Brighter Cyan, slightly thicker
-        );
-
-        // --- Stylized Feature Outlines ---
-        // Face Oval
-        drawingUtilsRef.current.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-          { color: "rgba(255, 255, 255, 0.8)", lineWidth: 1.5 } // Bright White outline
-        );
-        // Lips
-        drawingUtilsRef.current.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_LIPS,
-          { color: "rgba(255, 0, 150, 0.8)", lineWidth: 1 } // Vibrant Pink/Magenta
-        );
-        // Eyes (Combined for simplicity, or draw left/right separately)
-        drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: "rgba(50, 205, 50, 0.9)", lineWidth: 1 }); // Lime Green
-        drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: "rgba(50, 205, 50, 0.9)", lineWidth: 1 });
-        drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "rgba(50, 205, 50, 0.7)", lineWidth: 1 });
-        drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: "rgba(50, 205, 50, 0.7)", lineWidth: 1 });
-        
-        // --- Enhanced Keypoints with Intense Glow ---
-        const keypointsIndices = [
-          // Key facial points: nose tip, chin, eye corners, lip corners, forehead center etc.
-          // These are just example indices, you might want to select more or different ones.
-          1, 4, 5, 8, // Nose, Forehead region
-          33, 263, // Left, Right Cheeks
-          61, 291, // Lip corners
-          130, 359, // Eye inner corners (approx)
-          70, 300, // Eyebrow outer (approx)
-          152, // Chin
-          10, 151 // Forehead top, bottom mid (approx)
-        ]; 
-        context.shadowColor = "rgba(0, 255, 255, 1)"; // Intense Cyan Glow Color
-        context.shadowBlur = 10; // Increased blur for a softer, larger glow
-
-        keypointsIndices.forEach(index => {
-          if (landmarks[index]) {
-            context.beginPath();
-            context.arc(landmarks[index].x * canvas.width, landmarks[index].y * canvas.height, 2.5, 0, 2 * Math.PI); // Slightly larger points
-            context.fillStyle = "rgba(0, 255, 255, 1)"; // Solid Bright Cyan for the point itself
-            context.fill();
-          }
-        });
-        context.shadowBlur = 0; // Reset shadow for other drawings
+        drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "rgba(0, 255, 255, 0.7)", lineWidth: 1 });
+        drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "rgba(255, 255, 255, 0.8)", lineWidth: 1.5 });
       }
     } else {
-      setIsFaceDetected(false);
+      // --- No face detected, reset steady timer ---
+      if (steadyFaceTimeoutRef.current) {
+        clearTimeout(steadyFaceTimeoutRef.current);
+        steadyFaceTimeoutRef.current = null;
+      }
+      setIsFaceSteady(false);
     }
 
     animationFrameId.current = requestAnimationFrame(predictWebcam);
@@ -165,87 +154,55 @@ const FaceScanComponent: React.FC = () => {
     };
   }, [isModelLoaded, faceLandmarker, predictWebcam]);
 
-  const handleCaptureButtonClick = async () => {
-    if (!webcamRef.current || !isFaceDetected || !isModelLoaded) return;
+  const handleCapture = () => {
+    if (!webcamRef.current || !isFaceSteady) return;
     
-    const newImages: string[] = [];
-    setCapturedImages([]); // Clear previous images first
-    for (let i = 0; i < 3; i++) {
-      const imageSrc = webcamRef.current.getScreenshot();
-      if (imageSrc) {
-        newImages.push(imageSrc);
-      }
-      if (i < 2) { // Only delay if not the last image
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (imageSrc) {
+      const imageFile = dataURItoFile(imageSrc, 'face-scan.jpg');
+      onCapture(imageFile); // Pass the File object up
+    } else {
+      setError("Could not capture image from webcam.");
     }
-    setCapturedImages(newImages);
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <h3>Face Scan with Landmarker</h3>
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
-      {!isModelLoaded && !error && <p>Loading face landmark model...</p>}
-      
-      <div style={{ position: "relative", width: "640px", height: "480px", border: "1px solid #555", background: "#000" }}>
+    <div className="w-full h-full flex flex-col items-center justify-center bg-black rounded-2xl">
+      <div className="relative w-full h-full">
+        {error && <p className="absolute top-2 left-1/2 -translate-x-1/2 text-red-500 bg-black p-2 rounded z-20">{error}</p>}
+        {!isModelLoaded && !error && <p className="absolute top-1/2 left-1/2 -translate-x-1/2 text-white z-20">Loading Model...</p>}
+
         <Webcam
           audio={false}
           ref={webcamRef}
           screenshotFormat="image/jpeg"
-          width={640}
-          height={480}
-          videoConstraints={{ facingMode: "user" }}
-          style={{
-            // Video fills the container but might be covered by canvas
-            // position: "absolute", top:0, left:0, // if canvas is not transparent
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
+          videoConstraints={{ facingMode: "user", width: 1280, height: 720 }}
+          className="absolute top-0 left-0 w-full h-full object-cover rounded-lg"
         />
         <canvas
           ref={canvasRef}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none", // Canvas doesn't block webcam interaction
-          }}
+          className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
         />
       </div>
-
-      <p style={{ marginTop: "10px" }}>Face Detected: {isFaceDetected ? "Yes" : "No"}</p>
       
-      {isModelLoaded && (
+      <div className="w-full p-4 flex flex-col items-center gap-2">
+        <p className="text-white text-sm">
+          {isFaceSteady ? "Ready!" : "Center your face..."}
+        </p>
         <button
-          onClick={handleCaptureButtonClick}
-          disabled={capturedImages.length >= 3 || !isFaceDetected}
-          style={{
-            padding: "10px 20px",
-            fontSize: "16px",
-            cursor: "pointer",
-            backgroundColor: (capturedImages.length >= 3 || !isFaceDetected) ? "#555" : "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            marginTop: "10px",
-            opacity: (capturedImages.length >= 3 || !isFaceDetected) ? 0.6 : 1,
-          }}
+          onClick={handleCapture}
+          disabled={!isFaceSteady}
+          className="w-full py-2 text-base font-semibold rounded-full transition-all
+                     bg-yellow-400 text-black 
+                     disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed
+                     hover:enabled:bg-yellow-300"
         >
-          {capturedImages.length >= 3 ? "3 Images Captured" : "Capture 3 Images"}
+          Capture
         </button>
-      )}
-      
-      {capturedImages.length > 0 && (
-        <div style={{ marginTop: "20px", display: "flex", gap: "10px", flexWrap: 'wrap', justifyContent: 'center' }}>
-          {capturedImages.map((src, index) => (
-            <img key={index} src={src} alt={`Captured frame ${index + 1}`} width={100} height={75} style={{border: "1px solid #ddd", borderRadius: "4px", objectFit: 'cover'}}/>
-          ))}
-        </div>
-      )}
+        <button onClick={onCancel} className="text-gray-400 text-sm hover:text-white transition-colors">
+          Cancel
+        </button>
+      </div>
     </div>
   );
 };
