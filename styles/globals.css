@@ -81,6 +81,11 @@
     from { transform: translateX(0) }
     to   { transform: translateX(calc(-100vw - 24px)) }
   }
+  @keyframes moveUpDown {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0); }
+  }
   .ray-right { animation: move-right var(--speed) linear var(--delay) infinite; }
   .ray-left  { animation: move-left  var(--speed) linear var(--delay) infinite; }
 

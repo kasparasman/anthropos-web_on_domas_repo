@@ -7,19 +7,20 @@ interface PassportProps {
   nickname: string
   gender: 'male' | 'female'
   avatarUrl: string
+  className?: string
 }
 
-export default function Passport({ id, citizenId, nickname, gender, avatarUrl }: PassportProps) {
+export default function Passport({ id, citizenId, nickname, gender, avatarUrl, className }: PassportProps) {
   // Format citizenId to 9 digits with leading zeros
-  const formattedCitizenId = citizenId ? 
-    String(citizenId).padStart(10, '0') : 
+  const formattedCitizenId = citizenId ?
+    String(citizenId).padStart(10, '0') :
     '0000000000';
-    
+
   // Format the ID with spaces for readability: 000 000 000
   const displayId = `${formattedCitizenId.substring(0, 1)} ${formattedCitizenId.substring(1, 4)} ${formattedCitizenId.substring(4, 7)} ${formattedCitizenId.substring(6, 9)}`;
 
   return (
-    <div className="flex  flex-col justify-center gap-3  bg-[linear-gradient(-45deg,#252014_0%,#000000_50%,#252014_100%)] border border-main rounded-[16px] p-4 ">
+    <div className={`flex  flex-col justify-center gap-3 bg-[linear-gradient(-45deg,#252014_0%,#000000_50%,#252014_100%)] border border-main rounded-[16px] p-4 ${className}`}>
       {/* Avatar Section */}
       <div className="w-60 h-60 rounded-lg overflow-hidden relative">
         <Image

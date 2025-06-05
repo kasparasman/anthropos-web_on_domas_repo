@@ -28,7 +28,7 @@ export default function GridWithRays() {
   }, []);
 
   return (
-    <div className="fixed mt-[-89px] overflow-hidden w-full h-full bg-grid z-[-2]">
+    <div className="fixed overflow-hidden w-full h-screen bg-grid z-[-2]">
       {rays.map((r, i) => {
         // spawn just off-screen
         const x = r.direction === 'right' ? -24 : window.innerWidth;

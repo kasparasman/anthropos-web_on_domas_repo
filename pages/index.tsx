@@ -45,7 +45,7 @@ export default function Home({
   totalAssetIncome
 }: HomeProps) {
   return (
-    <main className=" relative flex flex-col items-center p-4 md:p-6">
+    <main className=" relative flex flex-col items-center">
       {/* Background */}
       <GridWithRays/>
       
@@ -53,12 +53,12 @@ export default function Home({
         <img
           src="/BurjKalifa.png"
           alt="background"
-          className="hidden lg:block ml-[-100px] object-cover opacity-100 pointer-events-none"
+          className="hidden lg:block ml-[100px] object-cover opacity-100 pointer-events-none"
         />
         <img
           src="/Building2.png"
           alt="background"
-          className="hidden lg:block mr-[-500px] object-cover opacity-100 pointer-events-none"
+          className="hidden lg:block mr-[-700px] object-cover opacity-100 pointer-events-none"
         />
         <div
           className="w-full absolute z-[1] bottom-[-40px] left-0 pointer-events-none"
@@ -73,7 +73,7 @@ export default function Home({
         />
 
       </div>
-      <div className="max-w-5xl w-full space-y-10">
+      <div className="max-w-5xl w-full space-y-10 mt-6">
         <Banner />
 
         <div className="flex flex-col lg:flex-row gap-6 w-full flex-grow">
