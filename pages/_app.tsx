@@ -35,17 +35,21 @@ function AppContent({ Component, pageProps, router }: AppContentProps) {
     };
   }, []); 
 
+  const hideNavbarOn = ['/register2'];
+
   return (
     <>
-      <Navbar 
-        onLoginClick={() => {
-          setMode('login');
-        }}
-      />
+      {!hideNavbarOn.includes(router.pathname) && (
+        <Navbar
+          onLoginClick={() => {
+            setMode('login');
+          }}
+        />
+      )}
       <MandatoryProfileCompletion />
-      <AuthModal 
-        open={authModalState.isModalOpen} 
-        onClose={closeAuthModal} 
+      <AuthModal
+        open={authModalState.isModalOpen}
+        onClose={closeAuthModal}
       />
       <Component {...pageProps} />
       <Toaster />
