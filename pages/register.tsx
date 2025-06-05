@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useAuthModalManager } from '../contexts/AuthModalManagerContext'
 
 import { useState, useEffect } from 'react';
@@ -115,7 +114,7 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
       setProgress('Processing payment...');
       const { error: payErr } = await stripe.confirmPayment({
         elements,
-        confirmParams: { receipt_email: email },
+        confirmParams: { receipt_email: email, return_url: `${window.location.origin}/register` },
       });
       if (payErr) throw new Error(payErr.message);
 
@@ -151,57 +150,127 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md mx-auto p-4">
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        className="border px-3 py-2 rounded"
-        required
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        className="border px-3 py-2 rounded"
-        required
-      />
-      <input type="file" accept="image/*" onChange={e => setFaceFile(e.target.files?.[0] || null)} required />
-      <div className="flex gap-2">
-        {styleOptions.map(opt => (
-          <label key={opt.id} className="flex flex-col items-center text-center">
-            <input
-              type="radio"
-              name="style"
-              value={opt.id}
-              checked={style === opt.id}
-              onChange={() => setStyle(opt.id)}
-              className="mb-1"
-            />
-            <img src={opt.src} alt={opt.id} className="w-16 h-16 object-cover" />
-          </label>
-        ))}
+    <div className="flex flex-col items-center gap-10">
+      <div className="flex flex-col items-center gap-3">
+        <h1 className="text-2xl font-bold text-center">Become Anthropos Citizen!</h1>
+        <div className="w-64 h-80 bg-gray-800 rounded-lg flex items-center justify-center">
+          <p className="text-white">Passport Design Placeholder</p>
+        </div>
+        <div className="flex gap-4">
+          <div className="bg-gray-800 p-3 rounded-lg">Participation in Chat</div>
+          <div className="bg-gray-800 p-3 rounded-lg">Limitless Knowledge</div>
+          <div className="bg-gray-800 p-3 rounded-lg">Anthropos Avatar</div>
+        </div>
       </div>
-      {clientSecret && <PaymentElement />}
-      <button
-        type="submit"
-        disabled={!stripe || !elements || !clientSecret || progress !== null}
-        className="bg-main text-black py-2 rounded mt-2"
-      >
-        Generate my passport
-      </button>
-      {progress && <p className="mt-2">{progress}</p>}
-      {error && <p className="text-red-500">{error}</p>}
-      {done && <p className="text-green-500">Passport generated!</p>}
-    </form>
+
+      <div className="flex flex-col items-center gap-1.5">
+        <p className="text-base">Unlock your passport below</p>
+        <div className="w-5 h-5 bg-gray-600 rounded-full"></div>
+      </div>
+
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-black">1</div>
+            <div className="h-0.5 w-10 bg-yellow-400"></div>
+            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-white">2</div>
+            <div className="h-0.5 w-10 bg-gray-600"></div>
+            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-white">3</div>
+          </div>
+          <h2 className="text-xl font-semibold">Step 1: Email & face scan</h2>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md mx-auto p-4">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="border px-3 py-2 rounded bg-gray-800 text-white border-gray-700"
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="border px-3 py-2 rounded bg-gray-800 text-white border-gray-700"
+              required
+            />
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-full h-40 bg-gray-700 rounded-lg flex items-center justify-center text-white">
+                Face Scan Area Placeholder
+              </div>
+              <input type="file" accept="image/*" onChange={e => setFaceFile(e.target.files?.[0] || null)} required className="text-white" />
+              <button type="button" className="bg-yellow-400 text-black py-2 px-4 rounded-full font-semibold">Scan your face</button>
+            </div>
+          </form>
+        </div>
+
+        <div className="flex flex-col items-center gap-4 mt-8">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-green-400 rounded-full flex items-center justify-center text-black">
+              ✓
+            </div>
+            <div className="h-0.5 w-10 bg-green-400"></div>
+            <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-black">2</div>
+            <div className="h-0.5 w-10 bg-yellow-400"></div>
+            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-white">3</div>
+          </div>
+          <h2 className="text-xl font-semibold">Step 2: Payment</h2>
+          {clientSecret && <PaymentElement />}
+        </div>
+
+        <div className="flex flex-col items-center gap-4 mt-8">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-green-400 rounded-full flex items-center justify-center text-black">
+              ✓
+            </div>
+            <div className="h-0.5 w-10 bg-green-400"></div>
+            <div className="w-6 h-6 bg-green-400 rounded-full flex items-center justify-center text-black">
+              ✓
+            </div>
+            <div className="h-0.5 w-10 bg-green-400"></div>
+            <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-black">3</div>
+          </div>
+          <h2 className="text-xl font-semibold">Step 3: Passport Generation</h2>
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-base">Choose your style</p>
+            <div className="flex gap-2">
+              {styleOptions.map(opt => (
+                <label key={opt.id} className="flex flex-col items-center text-center">
+                  <input
+                    type="radio"
+                    name="style"
+                    value={opt.id}
+                    checked={style === opt.id}
+                    onChange={() => setStyle(opt.id)}
+                    className="mb-1"
+                  />
+                  <img src={opt.src} alt={opt.id} className="w-16 h-16 object-cover rounded-lg" />
+                </label>
+              ))}
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={!stripe || !elements || !clientSecret || progress !== null}
+            className="bg-yellow-400 text-black py-2 px-6 rounded-full mt-2 font-semibold"
+          >
+            Generate my passport
+          </button>
+        </div>
+
+      </div>
+
+      {progress && <p className="mt-4">{progress}</p>}
+      {error && <p className="text-red-500 mt-4">{error}</p>}
+      {done && <p className="text-green-500 mt-4">Passport generated!</p>}
+    </div>
   );
 }
 
 export default function RegisterPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-      const { setMode } = useAuthModalManager()
+  const { setMode } = useAuthModalManager()
   useEffect(() => {
     setMode('register')
   }, [setMode])

@@ -15,6 +15,9 @@
     --smoke:      #E6E6E6;
     --dim_smoke:  #B3B3B3;
     --gray:       #333333;
+    --white:      #ffffff;
+
+
   }
   body {
     @apply text-smoke;      /* every element that inherits color will now be smoke */
@@ -80,5 +83,21 @@
   }
   .ray-right { animation: move-right var(--speed) linear var(--delay) infinite; }
   .ray-left  { animation: move-left  var(--speed) linear var(--delay) infinite; }
+
+  h2 {
+    font-size: 1.5rem; /* Adjust the size as needed, 'rem' is relative to the root element's font size */
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0px;
+  }
+  h1 {
+    font-size: 2rem; /* Adjust the size as needed, 'rem' is relative to the root element's font size */
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0px;
+  }
+
 }
 
