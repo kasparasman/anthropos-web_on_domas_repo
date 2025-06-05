@@ -77,18 +77,19 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [plan, setPlan] = useState<'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
     if (!email) return;
     fetch('/api/stripe/create-payment-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, plan }),
     })
       .then(r => r.json())
       .then(d => setClientSecret(d.clientSecret))
       .catch(() => setError('Failed to init payment'));
-  }, [email]);
+  }, [email, plan]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,8 +144,13 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
 
       setDone(true);
       setProgress(null);
-    } catch (err: any) {
-      setError(err.message || 'Error during registration');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setError((err as any).message as string);
+      } else {
+        setError('Error during registration');
+      }
       setProgress(null);
     }
   };

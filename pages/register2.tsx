@@ -70,7 +70,7 @@ const Register2 = () => {
       typeof window !== "undefined" &&
       window.matchMedia("(min-width: 1024px)").matches
     ) {
-      document.body.style.zoom = "125%";
+      document.body.style.zoom = "140%";
     }
 
     // Cleanup: reset zoom when unmounting
@@ -119,7 +119,7 @@ const Register2 = () => {
         <img
           src="/Building2.png"
           alt="background"
-          className="hidden lg:block mr-[-300px] object-cover opacity-100 pointer-events-none"
+          className="hidden lg:block mr-[-300px] lg:mr-[-200px] object-cover opacity-100 pointer-events-none"
         />
       </div>
 
