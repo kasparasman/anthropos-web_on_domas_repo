@@ -9,7 +9,7 @@ INPUTS
 • LIMITLESS_CREST_B64       (the shaka PNG)
 
 OUTPUT
-• 3000 × 3000 px PNG  • transparent 5 % safety margin
+• 3000 × 3000 px PNG
 • Crop: top of head ↘ mid-upper-chest (no arms)
 • Metadata JSON: { "archetype":"creator","version":"1.0","palette_locked":true }
 
@@ -60,6 +60,7 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
 
 TASK  
 "Transform USER_SELFIE_B64 into the Creator-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -121,6 +122,7 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Sage-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -137,7 +139,7 @@ INPUTS
 • LIMITLESS_CREST_B64       (the shaka PNG)
 
 OUTPUT
-• 3000 × 3000 px PNG  • transparent 5 % safety margin
+• 3000 × 3000 px PNG 
 • Crop: top of head ↘ mid-upper-chest (no arms)
 • Metadata JSON: { "archetype":"leader","version":"1.0","palette_locked":true }
 
@@ -187,6 +189,7 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Leader-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -203,7 +206,7 @@ INPUTS
 • LIMITLESS_CREST_B64       (the shaka PNG)
 
 OUTPUT
-• 3000 × 3000 px PNG  • transparent 5 % safety margin
+• 3000 × 3000 px PNG
 • Crop: top of head ↘ mid-upper-chest (no arms)
 • Metadata JSON: { "archetype":"guardian","version":"1.0","palette_locked":true }
 
@@ -253,6 +256,7 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Guardian-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -269,7 +273,7 @@ INPUTS
 • LIMITLESS_CREST_B64       (the shaka PNG)
 
 OUTPUT
-• 3000 × 3000 px PNG  • transparent 5 % safety margin
+• 3000 × 3000 px PNG
 • Crop: top of head ↘ mid-upper-chest (no arms)
 • Metadata JSON: { "archetype":"nurturer","version":"1.0","palette_locked":true }
 
@@ -319,6 +323,7 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Nurturer-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -336,7 +341,7 @@ INPUTS
 • LIMITLESS_CREST_B64       (the shaka PNG)
 
 OUTPUT
-• 3000 × 3000 px PNG  • transparent 5 % safety margin
+• 3000 × 3000 px PNG
 • Crop: top of head ↘ mid-upper-chest (no arms)
 • Metadata JSON: { "archetype":"explorer","version":"1.0","palette_locked":true }
 
@@ -386,6 +391,7 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Explorer-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -396,8 +402,12 @@ ANTHROPOS CITY – INNOVATOR ARCHETYPE
 Futurist Portrait • 1 : 1 Square • Shoulders-Up
 ========================================
 
-- Emphasize overall brightness: The Innovator avatar should appear more glowing and well-lit, avoiding dark or muddy lighting. Use luminous gradients, rim-lights, and high-key lighting to ensure the portrait feels vibrant and illuminated.
-- Limitless Crest customization: The LIMITLESS_CREST_B64 (shaka sign) must be visually customized to match the Innovator theme and color palette. Adjust the outline, inner-glow, and any accent effects to harmonize with the Innovator's visual identity, ensuring the crest feels fully integrated and on-brand.
+- Emphasize overall brightness: The Innovator avatar must appear glowing, well-lit, and vibrant, with no dark or muddy lighting. Use luminous gradients, rim-lights, and high-key lighting to create a sense of illumination and energy.
+- Limitless Crest customization: The LIMITLESS_CREST_B64 (shaka sign) must be visually customized to match the Innovator theme and color palette. Adjust the outline, inner-glow, and accent effects to harmonize with the Innovator's visual identity, ensuring the crest feels fully integrated and on-brand.
+- **Facial Color Fidelity (MANDATORY):** The avatar's facial skin tones must accurately match natural human skin colors as seen in the user's selfie. Only allow color shifts caused by environmental or scene lighting (such as colored rim-lights or ambient glows from the background or FX), but do not stylize, exaggerate, or replace the base skin color with non-human hues. The result must always be recognizably human, with lighting effects layered on top of realistic skin tones.
+- **Crest Orientation (MANDATORY):** The LIMITLESS_CREST_B64 (shaka sign) must be displayed in the exact orientation and rotation as provided in the input PNG. Do not alter, flip, rotate, mirror, or otherwise change the crest's original angle or direction. The crest must appear on the avatar exactly as it appears in the input image, preserving its intended pose and alignment.
+- **Aspect Ratio (MANDATORY):** The final portrait must strictly maintain a 1:1 aspect ratio at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format. All elements, including the face, crest, background, and effects, must be composed and rendered within a perfect square frame.
+- **Vector AI Art Style (MANDATORY):** The entire avatar, including the face, hair, clothing, background, and all effects, must be rendered in a clean, modern vector AI art style. This means using crisp, uniform line art, flat color fills or simple gradients, geometric highlights, and no painterly, raster, or photorealistic textures. The result should be visually consistent with high-quality vector illustrations created by professional AI art tools.
 
 INPUTS
 • USER_SELFIE_B64 = "${SELFIE_B64}"        # shoulders-up, neutral light
@@ -405,7 +415,7 @@ INPUTS
 • LIMITLESS_CREST_B64       (the shaka PNG)
 
 OUTPUT
-• 3000 × 3000 px PNG  • transparent 5 % safety margin
+• 3000 × 3000 px PNG 
 • Crop: top of head ↘ mid-upper-chest (no arms)
 • Metadata JSON: { "archetype":"innovator","version":"1.0","palette_locked":true }
 
@@ -426,14 +436,16 @@ STYLE LOCKS
   – Do **not** draw any vertical scanlines or full-frame halo circles.
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
-  – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – The crest must be placed in the exact orientation and rotation as provided in the input PNG. Do not distort, mirror, rotate, or the crest; keep its original alignment. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
 • Emotion: neutral curiosity (brows relaxed, mouth neutral)
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
-  – Crisp, uniform line art (2–4 px stroke); corners slightly rounded for modern SVG look.
-  – Flat colour blocks or max two-step gradients; NO painterly brush textures or noise shaders.
-  – Cel-style shading only (hard or soft-edge bands); highlights as simple geometric shapes.
-  – Neon glows and glitch artifacts allowed **only** as additive overlays ≤ 15 % opacity; must not blur the line work.
+  – The entire portrait must be rendered in a vector AI art style:
+      • Crisp, uniform line art (2–4 px stroke); corners slightly rounded for modern SVG look.
+      • Flat colour blocks or max two-step gradients; NO painterly brush textures or noise shaders.
+      • Cel-style shading only (hard or soft-edge bands); highlights as simple geometric shapes.
+      • Neon glows and glitch artifacts allowed **only** as additive overlays ≤ 15 % opacity; must not blur the line work.
+      • No photorealistic, raster, or bitmap effects; all elements must be vector-based and visually consistent with professional AI-generated vector art.
 
 • BACKGROUND LOGIC  (MANDATORY — replace {} braces)
 
@@ -445,7 +457,7 @@ STYLE LOCKS
         • Background skyline fading toward horizon colour
 
   3. **LIGHTING** – raise key-light to mid-value; add cyan–magenta rim-lights for high-tech clarity (face shadows ≤ 40 %).
- cast long, stylised shadows for drama.
+     Cast long, stylised shadows for drama.
 
   4. **ATMOSPHERE** – add subtle volumetric glow or city haze (≤ 12 % opacity) so neon accents "pop".
 
@@ -466,9 +478,13 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+6. **The LIMITLESS_CREST_B64 (shaka sign) must be rendered in the exact orientation and rotation as provided in the input PNG, with no changes to its angle, direction, or alignment.**
+7. **The portrait must strictly maintain a 1:1 aspect ratio at all times. No stretching, padding, or compositional changes are allowed that would alter the square format.**
+8. **The entire avatar must be rendered in a clean, modern vector AI art style, with no raster, painterly, or photorealistic elements.**
 
 TASK
-"Transform USER_SELFIE_B64 into the Innovator-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
+"Transform USER_SELFIE_B64 into the Innovator-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above, ensuring the LIMITLESS_CREST_B64 (shaka sign) appears in the exact orientation and rotation as provided in the input, that the final image strictly maintains a 1:1 aspect ratio, and that the entire portrait is rendered in a clean, modern vector AI art style."
 ========================================
 
 ========================================
@@ -482,7 +498,7 @@ INPUTS
 • LIMITLESS_CREST_B64       (the shaka PNG)
 
 OUTPUT
-• 3000 × 3000 px PNG  • transparent 5 % safety margin
+• 3000 × 3000 px PNG
 • Crop: top of head ↘ mid-upper-chest (no arms)
 • Metadata JSON: { "archetype":"harmonizer","version":"1.0","palette_locked":true }
 
@@ -532,6 +548,7 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Harmonizer-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -598,6 +615,7 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Trader-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."

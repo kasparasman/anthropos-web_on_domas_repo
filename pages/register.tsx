@@ -75,18 +75,19 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [plan, setPlan] = useState<'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
     if (!email) return;
     fetch('/api/stripe/create-payment-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, plan }),
     })
       .then(r => r.json())
       .then(d => setClientSecret(d.clientSecret))
       .catch(() => setError('Failed to init payment'));
-  }, [email]);
+  }, [email, plan]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +113,11 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
       setProgress('Processing payment...');
       const { error: payErr } = await stripe.confirmPayment({
         elements,
-        confirmParams: { receipt_email: email },
+        redirect: 'if_required',
+        confirmParams: {
+          receipt_email: email,
+          return_url: `${window.location.origin}/payment-complete`,
+        },
       });
       if (payErr) throw new Error(payErr.message);
 
@@ -141,8 +146,13 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
 
       setDone(true);
       setProgress(null);
-    } catch (err: any) {
-      setError(err.message || 'Error during registration');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setError((err as any).message as string);
+      } else {
+        setError('Error during registration');
+      }
       setProgress(null);
     }
   };
@@ -181,13 +191,35 @@ function RegistrationForm({ clientSecret, setClientSecret }: RegistrationFormPro
           </label>
         ))}
       </div>
+      <div className="flex gap-4">
+        <label className="flex items-center gap-1">
+          <input
+            type="radio"
+            name="plan"
+            value="monthly"
+            checked={plan === 'monthly'}
+            onChange={() => setPlan('monthly')}
+          />
+          <span>Monthly (0.99$)</span>
+        </label>
+        <label className="flex items-center gap-1">
+          <input
+            type="radio"
+            name="plan"
+            value="yearly"
+            checked={plan === 'yearly'}
+            onChange={() => setPlan('yearly')}
+          />
+          <span>Yearly (9.99$)</span>
+        </label>
+      </div>
       {clientSecret && <PaymentElement />}
       <button
         type="submit"
         disabled={!stripe || !elements || !clientSecret || progress !== null}
         className="bg-main text-black py-2 rounded mt-2"
       >
-        Generate my passport
+        {progress ? 'Processing...' : 'Generate my passport'}
       </button>
       {progress && <p className="mt-2">{progress}</p>}
       {error && <p className="text-red-500">{error}</p>}
