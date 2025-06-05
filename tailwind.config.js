@@ -18,6 +18,7 @@ module.exports = {
         smoke: 'var(--smoke)',
         dim_smoke: 'var(--dim_smoke)',
         gray: 'var(--gray)',
+        white: 'var(--white)',
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'Montserrat', ...defaultTheme.fontFamily.sans],

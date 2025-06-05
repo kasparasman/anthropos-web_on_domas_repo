@@ -1,3 +1,7 @@
 .btn-blue {
   @apply bg-blue-500 text-white font-bold py-2 px-4 rounded;
 }
+
+h2 {
+  @apply text-2xl font-sans;
+}

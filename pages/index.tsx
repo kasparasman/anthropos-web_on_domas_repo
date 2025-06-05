@@ -8,6 +8,15 @@ import AssetCarousel from '../components/AssetCarousel'
 import GridWithRays from '@/components/GridWithRays'
 import TotalAssetIncome from '@/components/TotalAssetIncome'
 
+import Input from '@/components/UI/input'
+import MainButton from '@/components/UI/button'
+import PricingToggle from '@/components/UI/PricingToggle'
+
+
+
+
+import Passport from '@/components/Passport'
+
 import { DexToolsResponse } from '../types/dex-tools'
 import { Topic } from '../types/topic'
 import { Asset } from '../types/asset'
@@ -39,7 +48,6 @@ export default function Home({
     <main className=" relative flex flex-col items-center p-4 md:p-6">
       {/* Background */}
       <GridWithRays/>
-
       
       <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
         <img
@@ -94,6 +102,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../lib/authOptions'
 import { prisma } from '../lib/prisma'
 import type { GetServerSidePropsContext } from 'next'
+import Button from '@/components/UI/button'
 
 interface RawTopic {
   id: string;
