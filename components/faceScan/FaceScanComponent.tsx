@@ -167,42 +167,31 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({ onCapture, onCanc
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-black rounded-2xl">
-      <div className="relative w-full h-full">
-        {error && <p className="absolute top-2 left-1/2 -translate-x-1/2 text-red-500 bg-black p-2 rounded z-20">{error}</p>}
-        {!isModelLoaded && !error && <p className="absolute top-1/2 left-1/2 -translate-x-1/2 text-white z-20">Loading Model...</p>}
-
-        <Webcam
-          audio={false}
-          ref={webcamRef}
-          screenshotFormat="image/jpeg"
-          videoConstraints={{ facingMode: "user", width: 1280, height: 720 }}
-          className="absolute top-0 left-0 w-full h-full object-cover rounded-lg"
-        />
-        <canvas
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
-        />
-      </div>
+    <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden">
+      {error && <p className="absolute top-4 left-1/2 -translate-x-1/2 text-red-500 bg-black/80 p-2 rounded z-20">{error}</p>}
+      {!isModelLoaded && !error && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white z-20 bg-black/80 p-2 rounded">
+          Loading Model...
+        </div>
+      )}
       
-      <div className="w-full p-4 flex flex-col items-center gap-2">
-        <p className="text-white text-sm">
-          {isFaceSteady ? "Ready!" : "Center your face..."}
-        </p>
-        <button
-          onClick={handleCapture}
-          disabled={!isFaceSteady}
-          className="w-full py-2 text-base font-semibold rounded-full transition-all
-                     bg-yellow-400 text-black 
-                     disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed
-                     hover:enabled:bg-yellow-300"
-        >
-          Capture
-        </button>
-        <button onClick={onCancel} className="text-gray-400 text-sm hover:text-white transition-colors">
-          Cancel
-        </button>
-      </div>
+      {isFaceSteady && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 text-green-400 bg-black/80 p-2 rounded z-20 text-sm">
+          Face detected and steady!
+        </div>
+      )}
+      
+      <Webcam
+        audio={false}
+        ref={webcamRef}
+        screenshotFormat="image/jpeg"
+        videoConstraints={{ facingMode: "user", width: 1280, height: 720 }}
+        className="absolute top-0 left-0 w-full h-full object-cover rounded-2xl"
+      />
+      <canvas
+        ref={canvasRef}
+        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 rounded-2xl"
+      />
     </div>
   );
 };
