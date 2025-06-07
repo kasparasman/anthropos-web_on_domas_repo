@@ -404,7 +404,7 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
             mirrored={true}
             onUserMedia={handleUserMedia}
             onUserMediaError={handleWebcamError}
-            className={`w-full h-full object-cover rounded-2xl transition-opacity duration-500 ${isModelLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-full rounded-2xl transition-opacity duration-500 ${isModelLoaded ? 'opacity-100' : 'opacity-0'}`}
           />
           
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full rounded-2xl pointer-events-none transform -scale-x-100" />
