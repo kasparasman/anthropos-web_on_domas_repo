@@ -15,6 +15,13 @@ import Passport from '@/components/Passport';
 import FaceScanComponent from "@/components/faceScan/FaceScanComponent";
 import Benefits from "@/components/UI/benefits";
 import GridWithRays from "@/components/GridWithRays";
+import benefitsStyles from "@/components/UI/benefits.module.css";
+import burjKalifa from "@/public/BurjKalifa.png";
+import building2 from "@/public/Building2.png";
+import step1 from "@/public/step1.png";
+import step2 from "@/public/step2.png";
+import step3 from "@/public/step3.png";
+import mask from "@/public/mask.png";
 
 // --- Services & Config ---
 import { registerClient } from '../lib/firebase-client';
@@ -161,8 +168,8 @@ const RegistrationFlow = ({
      <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white p-4">
        <GridWithRays />
         <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
-         <img src="/BurjKalifa.png" alt="background" className="hidden lg:block object-cover opacity-100 pointer-events-none" />
-         <img src="/Building2.png" alt="background" className="hidden lg:block mr-[-300px] lg:mr-[-200px] object-cover opacity-100 pointer-events-none" />
+         <Image src={burjKalifa} alt="background" className="hidden lg:block object-cover opacity-100 pointer-events-none" />
+         <Image src={building2} alt="background" className="hidden lg:block mr-[-300px] lg:mr-[-200px] object-cover opacity-100 pointer-events-none" />
        </div>
 
        <div className="flex flex-col items-center mt-10 gap-6">
@@ -183,7 +190,7 @@ const RegistrationFlow = ({
        <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 1 ? "opacity-100" : "opacity-40"}`}>
          <div className="flex flex-col items-center">
            <h2 className="">Step 1: Face Scan</h2>
-           <img src="/step1.png" alt="Step 1 visual" className="mb-6" />
+           <Image src={step1} alt="Step 1 visual" className="mb-6" />
          </div>
          <div 
            className="min-w-80 w-80 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
@@ -203,7 +210,7 @@ const RegistrationFlow = ({
                  />
              ) : (
                   <>
-                     <img src="/mask.png" alt="Face scan mask" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
+                     <Image src={mask} alt="Face scan mask" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
                      <MainButton className="z-10" onClick={() => setIsScanning(true)} disabled={isLoading}>Scan Your Face</MainButton>
                  </>
              )}
@@ -216,7 +223,7 @@ const RegistrationFlow = ({
        <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
          <div className="flex flex-col items-center">
            <h2 className="">Step 2: Payment & Account</h2>
-           <img src="/step2.png" alt="Step 2 visual" className="mb-6" />
+           <Image src={step2} alt="Step 2 visual" className="mb-6" />
          </div>
          
          {/* Email and Password inputs - now in step 2 */}
@@ -257,7 +264,7 @@ const RegistrationFlow = ({
        <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
          <div className="flex flex-col items-center">
            <h2 className="">Step 3: Passport Generation</h2>
-           <img src="/step3.png" alt="Step 3 visual" className="mb-6" />
+           <Image src={step3} alt="Step 3 visual" className="mb-6" />
          </div>
          <div className="flex gap-2">
            <MainButton variant={gender === 'male' ? "solid" : "outline"} onClick={() => setGender("male")}>Male</MainButton>
@@ -536,35 +543,22 @@ const Register2Page = () => {
 
             const MOCK_FACE_UNIQUE = process.env.NEXT_PUBLIC_MOCK_FACE_UNIQUE_CHECK === 'true';
 
-            if (MOCK_FACE_UNIQUE) {
-                console.log("--- MOCKING FACE UNIQUENESS CHECK (SUCCESS) ---");
-                try {
-                    // Simulate the upload by creating a local URL for the file
-                    // instead of calling the real upload service.
-                    const faceUrl = URL.createObjectURL(faceFile);
-                    setUploadedFaceUrl(faceUrl);
-                    
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    setIsFaceUnique(true);
-                    toast({ title: 'Face Verified (Mock)', description: 'Your face is unique! Proceeding to the next step.' });
-                } catch (err) {
-                    const message = err instanceof Error ? err.message : 'An error occurred during mock face check.';
-                    setFaceCheckError(message);
-                    setIsFaceUnique(false);
-                    toast({ title: 'Verification Error (Mock)', description: message, duration: 9000 });
-                } finally {
-                    setIsFaceChecking(false);
-                }
-                return;
-            }
-
             try {
-                // First, upload the file to get a URL
+                // Step 1: Upload the file to get a persistent URL. This is now
+                // required for both mock and real flows so the webhook can access it.
                 const faceUrl = await uploadFileToStorage(faceFile);
                 setUploadedFaceUrl(faceUrl);
 
-                // Now, call our new API endpoint to check for uniqueness
+                if (MOCK_FACE_UNIQUE) {
+                    console.log("--- MOCKING FACE UNIQUENESS CHECK (SUCCESS) ---");
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    setIsFaceUnique(true);
+                    toast({ title: 'Face Verified (Mock)', description: 'Your face is unique! Proceeding to the next step.' });
+                    setIsFaceChecking(false);
+                    return; // Exit mock flow here
+                }
+
+                // Step 2: Call our API endpoint to check for uniqueness
                 const response = await fetch('/api/auth/check-face-uniqueness', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
