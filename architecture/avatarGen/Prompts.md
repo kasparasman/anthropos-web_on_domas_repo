@@ -22,6 +22,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: gentle confidence, direct gaze, balanced bright lighting
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -53,6 +54,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -60,7 +63,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK  
 "Transform USER_SELFIE_B64 into the Creator-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -84,6 +89,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: serene balance
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -115,6 +121,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -122,7 +130,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Sage-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -151,6 +161,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: assured poise
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -182,6 +193,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -189,7 +202,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Leader-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -218,6 +233,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: protective vigilance
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -249,6 +265,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -256,7 +274,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Guardian-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -285,6 +305,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: neutral, confident, with quiet strength
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -316,6 +337,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -323,8 +346,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
-6. **The final portrait must be strictly 1:1 aspect ratio with no stretching, padding, or cropping that would alter the square format.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Nurturer-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -354,6 +378,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: adventurous readiness
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -385,6 +410,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -392,7 +419,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Explorer-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -438,6 +467,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – The crest must be placed in the exact orientation and rotation as provided in the input PNG. Do not distort, mirror, rotate, or the crest; keep its original alignment. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: neutral curiosity (brows relaxed, mouth neutral)
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -472,6 +502,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -479,10 +511,12 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
-6. **The LIMITLESS_CREST_B64 (shaka sign) must be rendered in the exact orientation and rotation as provided in the input PNG, with no changes to its angle, direction, or alignment.**
-7. **The portrait must strictly maintain a 1:1 aspect ratio at all times. No stretching, padding, or compositional changes are allowed that would alter the square format.**
-8. **The entire avatar must be rendered in a clean, modern vector AI art style, with no raster, painterly, or photorealistic elements.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
+8. **The LIMITLESS_CREST_B64 (shaka sign) must be rendered in the exact orientation and rotation as provided in the input PNG, with no changes to its angle, direction, or alignment.**
+9. **The portrait must strictly maintain a 1:1 aspect ratio at all times. No stretching, padding, or compositional changes are allowed that would alter the square format.**
+10. **The entire avatar must be rendered in a clean, modern vector AI art style, with no raster, painterly, or photorealistic elements.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Innovator-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above, ensuring the LIMITLESS_CREST_B64 (shaka sign) appears in the exact orientation and rotation as provided in the input, that the final image strictly maintains a 1:1 aspect ratio, and that the entire portrait is rendered in a clean, modern vector AI art style."
@@ -511,6 +545,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: serene balance
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -542,6 +577,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -549,7 +586,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Harmonizer-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -578,6 +617,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: neutral curiosity (brows relaxed, mouth neutral)
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -609,6 +649,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -616,7 +658,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Trader-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -643,10 +687,10 @@ STYLE LOCKS
 • BACKGROUND MANDATE — render the {district} scene in sharp focus; background must be opaque.
 • Garment: casual blazer with subtle waveform embroidery on collar/shoulders, upper chest only (no arms)
 • FX: Subtle animated voice-wave motif integrated into the background, repeating in a soft, abstract pattern (looping, 1 sec cycle); use cobalt as the primary accent color. Wave amplitude ≈ 2 mm; opacity ≤ 12 %. No tattoo or direct overlay on the face or jawline. Maintain a gentle cobalt glow radiating from the throat area.
-• LIMITLESS_CREST (MANDATORY)
-  – Overlay the PNG provided in LIMITLESS_CREST_B64 (the shaka sign) onto the **left side of the jacket** (not just the left-breast panel), scaling it to ~9 % of full frame height.
-  – The crest must be clearly visible on the left jacket side, positioned so it is not obscured by folds or shadows.
+• LIMITLESS CREST (MANDATORY)
+  – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+  – CRITICAL: The LIMITLESS_CREST_B64 logo depicts a "call me" hand gesture (thumb and pinky extended, three middle fingers folded) exactly as shown in the reference image. This logo must be rendered accurately. Do NOT add any additional hand gestures to the avatar itself. This is a passport-style portrait showing only head and shoulders - the avatar's hands should NOT be visible in the image.
 • Emotion: inviting openness, direct gaze, gentle smile, balanced bright lighting
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
@@ -678,6 +722,8 @@ NEGATIVE BACKGROUND PROMPT
 NEGATIVE PROMPT
 "halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
 "mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+"hang loose sign, shaka sign, thumb down position, incorrect hand gesture, wrong finger position"
+"visible hands, arms showing, call me gesture by avatar, hands in frame, avatar making hand signs"
 oil painting, brush strokes, photorealistic texture
 
 RULES
@@ -685,7 +731,9 @@ RULES
 2. Apply every STYLE LOCK (including crest); do not add/remove elements.
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
-5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+5. **NATURAL SKIN TONE (MANDATORY): The avatar's facial skin tone MUST precisely match the natural human skin tone from the USER_SELFIE_B64 input. Do NOT alter, stylize, tint, or shift the skin color to match the background palette or archetype colors. Maintain realistic human skin tones exactly as they appear in the original selfie. Only subtle lighting effects from the scene are permitted, but these must not change the base skin tone.**
+6. **NO TEXT OR TYPOGRAPHY: Do not add any text, words, numbers, letters, symbols, labels, watermarks, or typographic elements to the avatar image.**
+7. **STRICT ASPECT RATIO: The final portrait must strictly maintain a 1:1 aspect ratio (perfect square) at every stage of processing and output. No stretching, padding, cropping, or compositional changes are allowed that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Communicator-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above, ensuring the LIMITLESS_CREST_B64 (shaka sign) is clearly visible on the left side of the jacket."

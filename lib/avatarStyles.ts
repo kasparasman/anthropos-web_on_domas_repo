@@ -60,13 +60,49 @@ export const maleStyles: StyleItem[] = [
 ];
 
 export const femaleStyles: StyleItem[] = [
-    { id: "f1", src: "/images/female1.jpg", alt: "Female Style 1" },
-    { id: "f2", src: "/images/female2.jpg", alt: "Female Style 2" },
-    { id: "f3", src: "/images/female3.jpg", alt: "Female Style 3" },
-    { id: "f4", src: "/images/female4.jpg", alt: "Female Style 4" },
-    { id: "f5", src: "/images/female5.jpg", alt: "Female Style 5" },
-    { id: "f6", src: "/images/female6.jpg", alt: "Female Style 6" },
-    { id: "f7", src: "/images/female7.jpg", alt: "Female Style 7" },
-    { id: "f8", src: "/images/female8.jpg", alt: "Female Style 8" },
-    { id: "f9", src: "/images/female9.jpg", alt: "Female Style 9" },
-]; 
+    {
+        id: "f1",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_creator.png",
+        alt: "Female Creator Style"
+    },
+    {
+        id: "f2",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_trader.png",
+        alt: "Female Trader Style"
+    },
+    {
+        id: "f3",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_explorer.png",
+        alt: "Female Explorer Style"
+    },
+    {
+        id: "f4",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_harmonizer.png",
+        alt: "Female Harmonizer Style"
+    },
+    {
+        id: "f5",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_innovator.png",
+        alt: "Female Innovator Style"
+    },
+    {
+        id: "f6",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_leader.png",
+        alt: "Female Leader Style"
+    },
+    {
+        id: "f7",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_communicator.png",
+        alt: "Female Communicator Style"
+    },
+    {
+        id: "f8",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_sage.png",
+        alt: "Female Sage Style"
+    },
+    {
+        id: "f9",
+        src: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_guardian.png",
+        alt: "Female Guardian Style"
+    }
+];
