@@ -539,7 +539,9 @@ const Register2Page = () => {
             if (MOCK_FACE_UNIQUE) {
                 console.log("--- MOCKING FACE UNIQUENESS CHECK (SUCCESS) ---");
                 try {
-                    const faceUrl = await uploadFileToStorage(faceFile);
+                    // Simulate the upload by creating a local URL for the file
+                    // instead of calling the real upload service.
+                    const faceUrl = URL.createObjectURL(faceFile);
                     setUploadedFaceUrl(faceUrl);
                     
                     await new Promise(resolve => setTimeout(resolve, 1500));
