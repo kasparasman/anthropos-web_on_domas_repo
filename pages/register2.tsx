@@ -117,6 +117,7 @@ interface RegistrationFlowProps {
         description?: React.ReactNode;
         duration?: number;
     }) => void;
+    setIsPaymentDetailsComplete: (complete: boolean) => void;
 }
 
 interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
@@ -157,6 +158,7 @@ const RegistrationFlow = ({
     webcamAspectRatio,
     setWebcamAspectRatio,
     toast,
+    setIsPaymentDetailsComplete,
 }: RegistrationFlowProps) => {
     return (
      <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white p-4">
@@ -240,16 +242,8 @@ const RegistrationFlow = ({
          
          <PricingToggle plan={plan} onPlanChange={setPlan} disabled={isLoading || isFaceUnique === false} />
                    <div className="min-w-80 w-80 p-4 bg-gray-900 rounded-lg">
-              {clientSecret ? <PaymentElement onReady={() => { if (currentStep === 2 && email && password) setCurrentStep(3); }} /> : <p className="text-center text-gray-400">Initializing payment...</p>}
+              {clientSecret ? <PaymentElement onChange={(e) => setIsPaymentDetailsComplete(e.complete)} /> : <p className="text-center text-gray-400">Initializing payment...</p>}
           </div>
-          
-          {/* Auto-transition message */}
-          {currentStep === 2 && email && password && clientSecret && (
-            <div className="text-center mt-2">
-              <p className="text-yellow-400">Payment information ready</p>
-              <p className="text-gray-300 text-sm">Proceeding to passport generation...</p>
-            </div>
-          )}
        </div>
 
        <div className="w-[120px] h-0 border-t border-gray-700 my-4"></div>
@@ -460,6 +454,7 @@ const Register2Page = () => {
     const [isFaceUnique, setIsFaceUnique] = useState<boolean | null>(null);
     const [faceCheckError, setFaceCheckError] = useState<string | null>(null);
     const [uploadedFaceUrl, setUploadedFaceUrl] = useState<string | null>(null);
+    const [isPaymentDetailsComplete, setIsPaymentDetailsComplete] = useState(false);
 
     // --- Final Passport State ---
     const [isGenerated, setIsGenerated] = useState(false);
@@ -608,6 +603,23 @@ const Register2Page = () => {
         }
     }, [isBrowser, isFaceUnique, currentStep, clientSecret, isLoading, createSetupIntent]);
 
+    // Effect to advance to step 3 once step 2 is complete
+    useEffect(() => {
+        const isEmailValid = email.trim().length > 5 && email.includes('@');
+        const isPasswordValid = password.length >= 6;
+
+        if (
+            isBrowser &&
+            isFaceUnique === true &&
+            currentStep === 2 &&
+            isEmailValid &&
+            isPasswordValid &&
+            isPaymentDetailsComplete
+        ) {
+            setCurrentStep(3);
+        }
+    }, [isBrowser, isFaceUnique, currentStep, email, password, isPaymentDetailsComplete]);
+
     useEffect(() => {
         if (!faceFile) {
             setUploadedFaceUrl(null);
@@ -634,6 +646,7 @@ const Register2Page = () => {
         webcamAspectRatio,
         setWebcamAspectRatio,
         toast,
+        setIsPaymentDetailsComplete,
     };
 
     const appearance = {
@@ -661,7 +674,7 @@ const Register2Page = () => {
 
     // Render Step 1 if we are not processing a payment yet
     if (currentStep < 2) {
-        return <RegistrationFlow {...props} />;
+        return <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />;
     }
 
     // If we are on step 2+, we need a client secret. If we don't have one, show a loading state.
