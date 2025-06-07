@@ -25,6 +25,7 @@ model Profile {
   stripePriceId      String?
   stripeCurrentPeriodEnd DateTime?
   tmpFaceUrl     String?
+  styleUrl       String?
   gender         String?
   createdAt      DateTime  @default(now()) @db.Timestamptz(6)
   lastModifiedAt DateTime  @updatedAt

@@ -3,7 +3,6 @@ import { Stripe } from 'stripe';
 import { createStripeClient } from '@/lib/stripe/factory';
 import { verifyIdToken } from '@/lib/firebase-admin';
 import { prisma } from '@/lib/prisma';
-import { generateAvatar } from '@/lib/services/avatarService';
 
 // Map plan names to Stripe Price IDs
 const PRICE_IDS: Record<string, string> = {
@@ -74,19 +73,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             items: [{ price: priceId }],
         });
 
-        // Step 3: Generate the user's avatar
-        const avatarUrl = await generateAvatar(faceUrl, styleUrl);
-
-        // Step 4: Create the user profile in your database
+        // Step 3: Create the user profile in your database
         await prisma.profile.create({
             data: {
                 id: uid,
                 email: email,
                 nickname,
                 gender,
-                avatarUrl: avatarUrl,
                 tmpFaceUrl: faceUrl, 
-                status: 'ACTIVE',
+                styleUrl: styleUrl,
+                status: 'PENDING_PAYMENT',
                 stripeCustomerId: customer.id,
                 stripeSubscriptionId: subscription.id,
                 stripePriceId: priceId,
@@ -96,8 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         res.status(200).json({
             success: true,
-            subscriptionId: subscription.id,
-            avatarUrl: avatarUrl,
+            userId: uid,
         });
 
     } catch (error) {
@@ -111,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             message = error.message;
         }
         
-        console.error('Finalize registration error:', error);
+        console.error('Setup registration error:', error);
         res.status(statusCode).json({ message });
     }
 } 

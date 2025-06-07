@@ -332,39 +332,31 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         props.setIsGenerated(true);
         setTimeout(() => props.setShowPopup(true), 10);
 
+        let idToken = ''; // Keep idToken in a wider scope
 
         try {
             // Step 1: Validate payment form
             setProgressMessage('Validating payment information...');
             const { error: submitError } = await elements.submit();
-            if (submitError) {
-                throw new Error(submitError.message || "Payment form validation failed.");
-            }
-            
+            if (submitError) throw new Error(submitError.message || "Payment form validation failed.");
+
             // Step 2: Confirm the card setup
             setProgressMessage('Securing payment method...');
             const { error: setupError, setupIntent } = await stripe.confirmSetup({
                 elements,
                 redirect: 'if_required',
             });
-            if (setupError) {
-                throw new Error(setupError.message || "Failed to secure payment method.");
-            }
-            if (setupIntent?.status !== 'succeeded' || !setupIntent.payment_method) {
-                throw new Error("Could not verify your payment method. Please try again.");
-            }
+            if (setupError) throw new Error(setupError.message || "Failed to secure payment method.");
+            if (setupIntent?.status !== 'succeeded' || !setupIntent.payment_method) throw new Error("Could not verify payment method.");
 
             // Step 3: Create Firebase user
             setProgressMessage('Creating your citizen account...');
             const cred = await registerClient(email, password);
-            const idToken = await cred.user.getIdToken();
+            idToken = await cred.user.getIdToken(); // Assign to wider scope variable
 
-            // Step 4: Prepare data for finalization
-            const nickname = email.split('@')[0];
-
-            // Step 5: Call the backend to finalize everything
-            setProgressMessage('Finalizing your passport and subscription...');
-            const finalResponse = await fetch('/api/auth/finalize-registration', {
+            // Step 4: Call the backend to SETUP everything (but not finalize)
+            setProgressMessage('Submitting registration...');
+            const setupResponse = await fetch('/api/auth/setup-registration', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -374,29 +366,48 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
                     idToken,
                     faceUrl: uploadedFaceUrl,
                     styleUrl: stylesToShow.find(s => s.id === selectedStyleId)?.src,
-                    nickname,
+                    nickname: email.split('@')[0],
                     gender: props.gender,
                 }),
             });
 
-            const finalData = await finalResponse.json();
-            if (!finalResponse.ok) {
-                throw new Error(finalData.message || "An error occurred during final registration.");
-            }
+            const setupData = await setupResponse.json();
+            if (!setupResponse.ok) throw new Error(setupData.message || "An error occurred during registration setup.");
 
-            // Step 6: Sign in with NextAuth to create the session
-            setProgressMessage('Logging you in...');
-            const signInResult = await signIn('credentials', {
-                idToken,
-                redirect: false, // We will handle the redirect manually after showing the passport
-            });
+            // Step 5: Start polling for activation status
+            setProgressMessage('Awaiting payment confirmation...');
+            const userId = setupData.userId;
+            const pollInterval = setInterval(async () => {
+                try {
+                    const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
+                    const statusData = await statusResponse.json();
 
-            if (signInResult?.error) {
-                throw new Error(`Login failed after registration: ${signInResult.error}`);
-            }
+                    if (statusData.status === 'ACTIVE') {
+                        clearInterval(pollInterval);
+                        
+                        setProgressMessage('Logging you in...');
+                        const signInResult = await signIn('credentials', {
+                            idToken,
+                            redirect: false,
+                        });
 
-            // Success!
-            setFinalPassport({ nickname, avatarUrl: finalData.avatarUrl });
+                        if (signInResult?.error) {
+                            throw new Error(`Login failed after registration: ${signInResult.error}`);
+                        }
+
+                        // Success!
+                        setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl });
+                        setProgressMessage(null);
+                        setIsLoading(false);
+                    }
+                    // If status is still 'PENDING_PAYMENT', do nothing and let it poll again.
+
+                } catch (pollError) {
+                    // Stop polling on error
+                    clearInterval(pollInterval);
+                    throw new Error("Failed to check registration status. Please try logging in later.");
+                }
+            }, 3000); // Poll every 3 seconds
 
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "An unknown error occurred.";
@@ -407,15 +418,9 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
                 props.setIsGenerated(false);
             }, 500); // Animation duration
 
-            toast({
-                title: 'Registration Failed',
-                description: message,
-                duration: 9000
-            });
-        } finally {
+            toast({ title: 'Registration Failed', description: message, duration: 9000 });
             setIsLoading(false);
             setProgressMessage(null);
-            // Registration flow is complete, regardless of success or failure
             setRegistrationInProgress(false);
         }
     };
