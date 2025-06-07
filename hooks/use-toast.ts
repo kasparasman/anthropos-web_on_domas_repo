@@ -6,7 +6,7 @@ import * as React from 'react';
 //import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 1000; // 1 second
 
 type ToasterToast = {
   id: string;
@@ -15,6 +15,7 @@ type ToasterToast = {
   action?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  duration?: number;
 };
 
 const actionTypes = {
@@ -55,22 +56,23 @@ interface State {
   toasts: ToasterToast[];
 }
 
-const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const removeToastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const dismissToastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 const addToRemoveQueue = (toastId: string) => {
-  if (toastTimeouts.has(toastId)) {
+  if (removeToastTimeouts.has(toastId)) {
     return;
   }
 
   const timeout = setTimeout(() => {
-    toastTimeouts.delete(toastId);
+    removeToastTimeouts.delete(toastId);
     dispatch({
       type: 'REMOVE_TOAST',
       toastId: toastId,
     });
   }, TOAST_REMOVE_DELAY);
 
-  toastTimeouts.set(toastId, timeout);
+  removeToastTimeouts.set(toastId, timeout);
 };
 
 export const reducer = (state: State, action: Action): State => {
@@ -92,8 +94,6 @@ export const reducer = (state: State, action: Action): State => {
     case 'DISMISS_TOAST': {
       const { toastId } = action;
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId);
       } else {
@@ -149,7 +149,14 @@ function toast({ ...props }: Toast) {
       type: 'UPDATE_TOAST',
       toast: { ...props, id },
     });
-  const dismiss = () => dispatch({ type: 'DISMISS_TOAST', toastId: id });
+    
+  const dismiss = () => {
+    if (dismissToastTimeouts.has(id)) {
+      clearTimeout(dismissToastTimeouts.get(id)!);
+      dismissToastTimeouts.delete(id);
+    }
+    dispatch({ type: 'DISMISS_TOAST', toastId: id });
+  };
 
   dispatch({
     type: 'ADD_TOAST',
@@ -162,6 +169,12 @@ function toast({ ...props }: Toast) {
       },
     },
   });
+
+  const dismissTimeout = setTimeout(() => {
+    dismiss();
+  }, props.duration || 5000); // Default 5 seconds
+
+  dismissToastTimeouts.set(id, dismissTimeout);
 
   return {
     id: id,
@@ -181,7 +194,7 @@ function useToast() {
         listeners.splice(index, 1);
       }
     };
-  }, [state]);
+  }, []);
 
   return {
     ...state,

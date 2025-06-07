@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, NextRouter } from "next/router";
 import Image from "next/image";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { useToast } from "@/hooks/use-toast";
+import { signIn } from "next-auth/react";
+import { useRegistrationStatus } from '@/hooks/useRegistrationStatus';
 
 // --- UI Components ---
 import Input from '@/components/UI/input';
@@ -18,6 +21,7 @@ import { registerClient } from '../lib/firebase-client';
 import { checkFaceDuplicate } from '../lib/services/authApiService';
 import { uploadFileToStorage } from '../lib/services/fileUploadService';
 import { maleStyles, femaleStyles, StyleItem } from "@/lib/avatarStyles";
+import { blobToBase64, fileToBase64 } from "@/lib/base64";
 
 // --- Helper: Generate Avatar (with MOCKING) ---
 async function generateAvatar(selfieB64: string, styleB64: string): Promise<string> {
@@ -60,28 +64,16 @@ async function generateAvatar(selfieB64: string, styleB64: string): Promise<stri
     return url;
 }
 
-
-// --- Other Helpers ---
-function fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = () => reject(new Error('Failed to read file as base64'));
-        reader.readAsDataURL(file);
-    });
-}
-
-function blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = () => reject(new Error('Failed to read blob as base64'));
-        reader.readAsDataURL(blob);
-    });
-}
-
 // --- Stripe Promise ---
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+let stripePromise: ReturnType<typeof loadStripe> | null = null;
+
+// Initialize Stripe only on client side
+const getStripe = () => {
+  if (!stripePromise && typeof window !== 'undefined') {
+    stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+  }
+  return stripePromise;
+};
 
 interface RegistrationFlowProps {
     email: string;
@@ -100,6 +92,9 @@ interface RegistrationFlowProps {
     showPopup: boolean;
     finalPassport: { nickname: string; avatarUrl: string } | null;
     stylesToShow: StyleItem[];
+    isFaceChecking: boolean;
+    isFaceUnique: boolean | null;
+    faceCheckError: string | null;
     setEmail: (value: string) => void;
     setPassword: (value: string) => void;
     setFaceFile: (file: File | null) => void;
@@ -109,18 +104,32 @@ interface RegistrationFlowProps {
     setCurrentStep: (step: number) => void;
     setClientSecret: (secret: string | null) => void;
     setIsScanning: (isScanning: boolean) => void;
-    handleProceedToPayment: () => Promise<void>;
     handleGeneratePassport: () => Promise<void>;
     setShowPopup: (show: boolean) => void;
     router: NextRouter;
+    handleRescan: () => void;
+    scanKey: number;
+    webcamAspectRatio: number | null;
+    setWebcamAspectRatio: (ratio: number | null) => void;
+    toast: (options: {
+        title?: React.ReactNode;
+        description?: React.ReactNode;
+        duration?: number;
+    }) => void;
 }
 
 interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
-    setErrorMessage: (message: string | null) => void;
+    uploadedFaceUrl: string | null;
     setIsLoading: (loading: boolean) => void;
     setProgressMessage: (message: string | null) => void;
     setFinalPassport: (passport: { nickname: string; avatarUrl: string } | null) => void;
     setIsGenerated: (generated: boolean) => void;
+    setRegistrationInProgress: (inProgress: boolean) => void;
+    toast: (options: {
+        title?: React.ReactNode;
+        description?: React.ReactNode;
+        duration?: number;
+    }) => void;
 }
 
 // --- The Main Registration Component (Now Dumb) ---
@@ -128,16 +137,25 @@ const RegistrationFlow = ({
     // State
     email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
     isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
+    isFaceChecking, isFaceUnique, faceCheckError,
 
     // Setters
     setEmail, setPassword, setFaceFile, setPlan, setGender, setSelectedStyleId, setCurrentStep,
     setClientSecret, setIsScanning,
 
     // Handlers
-    handleProceedToPayment, handleGeneratePassport,
+    handleGeneratePassport, handleRescan,
     
     // Final Passport Popup
-    setShowPopup, router
+    setShowPopup, router,
+    
+    // Key for remounting
+    scanKey,
+
+    // Webcam Aspect Ratio
+    webcamAspectRatio,
+    setWebcamAspectRatio,
+    toast,
 }: RegistrationFlowProps) => {
     return (
      <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white p-4">
@@ -164,34 +182,32 @@ const RegistrationFlow = ({
        {/* step1 */}
        <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 1 ? "opacity-100" : "opacity-40"}`}>
          <div className="flex flex-col items-center">
-           <h2 className="">Step 1: Email & face scan</h2>
+           <h2 className="">Step 1: Face Scan</h2>
            <img src="/step1.png" alt="Step 1 visual" className="mb-6" />
          </div>
-         <div className="flex flex-col gap-4 min-w-80 ">
-           <Input placeholder="Email" type="email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} disabled={isLoading || currentStep > 1} />
-           <Input placeholder="Password" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} disabled={isLoading || currentStep > 1} />
-         </div>
-         <div className="aspect-video min-w-80 w-80 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center">
-              {isScanning ? (
-                 <FaceScanComponent onCapture={(file) => { setFaceFile(file); setIsScanning(false); }} onCancel={() => setIsScanning(false)} />
-             ) : faceFile ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                     <Image src={URL.createObjectURL(faceFile)} alt="Captured face" width={200} height={200} className="rounded-lg object-cover"/>
-                     <p className="mt-2 text-green-400 font-semibold">Face Captured!</p>
-                      <MainButton variant="outline" className="mt-4" onClick={() => setIsScanning(true)} disabled={isLoading}>Rescan</MainButton>
-                  </div>
+         <div 
+           className="min-w-80 w-80 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
+           style={{ aspectRatio: webcamAspectRatio || '16/9' }}
+         >
+              {(isScanning || faceFile) ? (
+                 <FaceScanComponent 
+                   key={scanKey}
+                   onCapture={(file) => { setFaceFile(file); setIsScanning(false); }} 
+                   onRescan={handleRescan}
+                   capturedImage={faceFile}
+                   isFaceChecking={isFaceChecking}
+                   isFaceUnique={isFaceUnique}
+                   faceCheckError={faceCheckError}
+                   isLoading={isLoading}
+                   onVideoReady={setWebcamAspectRatio}
+                 />
              ) : (
                   <>
                      <img src="/mask.png" alt="Face scan mask" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
-                     <MainButton className="z-10" onClick={() => setIsScanning(true)} disabled={!email || !password || isLoading}>Scan Your Face</MainButton>
+                     <MainButton className="z-10" onClick={() => setIsScanning(true)} disabled={isLoading}>Scan Your Face</MainButton>
                  </>
              )}
          </div>
-         {faceFile && currentStep === 1 && (
-             <MainButton variant="solid" onClick={handleProceedToPayment} disabled={isLoading}>
-                 Continue to Payment
-             </MainButton>
-         )}
        </div>
 
        <div className="w-[120px] h-0 border-t border-gray-700 my-4"></div>
@@ -199,13 +215,40 @@ const RegistrationFlow = ({
        {/* step2 */}
        <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
          <div className="flex flex-col items-center">
-           <h2 className="">Step 2: Payment</h2>
+           <h2 className="">Step 2: Payment & Account</h2>
            <img src="/step2.png" alt="Step 2 visual" className="mb-6" />
          </div>
-         <PricingToggle onPlanChange={setPlan} disabled={isLoading || currentStep > 2} />
-         <div className="min-w-80 w-80 p-4 bg-gray-900 rounded-lg">
-              {clientSecret ? <PaymentElement onReady={() => { if(currentStep === 2) setCurrentStep(3)} } /> : <p className="text-center text-gray-400">Initializing...</p>}
-         </div>
+         
+         {/* Email and Password inputs - now in step 2 */}
+                   <div className="flex flex-col gap-4 min-w-80">
+            <Input 
+              placeholder="Email" 
+              type="email" 
+              value={email} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} 
+              disabled={isLoading || isFaceUnique === false} 
+            />
+            <Input 
+              placeholder="Password" 
+              type="password" 
+              value={password} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} 
+              disabled={isLoading || isFaceUnique === false} 
+            />
+          </div>
+         
+         <PricingToggle plan={plan} onPlanChange={setPlan} disabled={isLoading || isFaceUnique === false} />
+                   <div className="min-w-80 w-80 p-4 bg-gray-900 rounded-lg">
+              {clientSecret ? <PaymentElement onReady={() => { if (currentStep === 2 && email && password) setCurrentStep(3); }} /> : <p className="text-center text-gray-400">Initializing payment...</p>}
+          </div>
+          
+          {/* Auto-transition message */}
+          {currentStep === 2 && email && password && clientSecret && (
+            <div className="text-center mt-2">
+              <p className="text-yellow-400">Payment information ready</p>
+              <p className="text-gray-300 text-sm">Proceeding to passport generation...</p>
+            </div>
+          )}
        </div>
 
        <div className="w-[120px] h-0 border-t border-gray-700 my-4"></div>
@@ -228,22 +271,34 @@ const RegistrationFlow = ({
                  </div>
              ))}
          </div>
-         <MainButton variant="solid" onClick={handleGeneratePassport} disabled={!selectedStyleId || isLoading || currentStep !== 3}>
+         <MainButton variant="solid" onClick={handleGeneratePassport} disabled={!selectedStyleId || isLoading || currentStep !== 3 || !email || !password}>
              {isLoading ? "Processing..." : "Generate Passport"}
          </MainButton>
        </div>
 
        {/* --- Final Passport Popup --- */}
-       {isGenerated && finalPassport && (
+       {isGenerated && (
          <div className="fixed inset-0 z-50 overflow-hidden">
            <div className="absolute inset-0 bg-black/70" />
            <div className={`absolute bottom-0 left-0 w-full h-full bg-black flex flex-col items-center justify-center transform transition-transform duration-500 gap-6 ${showPopup ? "translate-y-0" : "translate-y-full"}`}>
-             <h1 className="text-3xl font-bold">Your Passport is Ready!</h1>
-             <div className="relative flex items-center justify-center">
-                <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[80px]"></div>
-                <Passport className="z-1" nickname={finalPassport.nickname} gender={gender} avatarUrl={finalPassport.avatarUrl} />
-             </div>
-             <MainButton variant="solid" onClick={() => router.push("/")}>Enter the City</MainButton>
+            {finalPassport ? (
+                <>
+                    <h1 className="text-3xl font-bold">Your Passport is Ready!</h1>
+                    <div className="relative flex items-center justify-center">
+                        <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[80px]"></div>
+                        <Passport className="z-1" nickname={finalPassport.nickname} gender={gender} avatarUrl={finalPassport.avatarUrl} />
+                    </div>
+                    <MainButton variant="solid" onClick={() => router.push("/")}>Enter the City</MainButton>
+                </>
+            ) : (
+                <>
+                    <h1 className="text-3xl font-bold">Forging Your Passport...</h1>
+                    <div className="relative w-64 h-96 flex items-center justify-center">
+                        <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[100px] animate-pulse"></div>
+                        <p className="z-10 text-white/80 max-w-xs text-center">{progressMessage || 'Please wait, this may take a moment.'}</p>
+                    </div>
+                </>
+            )}
            </div>
          </div>
        )}
@@ -254,123 +309,116 @@ const RegistrationFlow = ({
 // This new component will be wrapped in <Elements> and can use Stripe hooks
 const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     const {
-        email, password, faceFile, selectedStyleId, stylesToShow, clientSecret,
-        setErrorMessage, setIsLoading, setProgressMessage, setFinalPassport,
-        setIsGenerated, setClientSecret, setCurrentStep, isGenerated, router
+        email, password, faceFile, selectedStyleId, stylesToShow, clientSecret, uploadedFaceUrl,
+        setIsLoading, setProgressMessage, setFinalPassport,
+        setIsGenerated, setRegistrationInProgress, toast
     } = props;
 
     const stripe = useStripe();
     const elements = useElements();
 
-    const finalizeRegistration = React.useCallback(async (idToken: string, selfieB64: string, styleB64: string, nickname: string) => {
-        try {
-            setProgressMessage('Generating your unique avatar...');
-            const avatarUrl = await generateAvatar(selfieB64, styleB64);
-
-            setProgressMessage('Finalizing passport...');
-            await fetch('/api/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                body: JSON.stringify({ nickname, avatarUrl }),
-            });
-
-            setFinalPassport({ nickname, avatarUrl });
-            setIsGenerated(true);
-
-        } catch (err: unknown) {
-            if (err instanceof Error) setErrorMessage(err.message);
-            else setErrorMessage("An unknown error occurred during finalization.");
-        } finally {
-            setIsLoading(false);
-            setProgressMessage(null);
-        }
-    }, [setErrorMessage, setIsLoading, setIsGenerated, setProgressMessage, setFinalPassport]);
-
-    useEffect(() => {
-        if (!stripe) return;
-
-        const handleRedirect = async () => {
-            const secret = new URLSearchParams(window.location.search).get('payment_intent_client_secret');
-            const savedStateJSON = sessionStorage.getItem('registrationState');
-
-            if (secret && savedStateJSON) {
-                setIsLoading(true);
-                const savedState = JSON.parse(savedStateJSON);
-
-                const { paymentIntent } = await stripe.retrievePaymentIntent(secret);
-                if (paymentIntent?.status === 'succeeded') {
-                    setCurrentStep(3);
-                    setClientSecret(secret);
-                    router.replace('/register2', undefined, { shallow: true });
-                    await finalizeRegistration(savedState.idToken, savedState.selfieB64, savedState.styleB64, savedState.nickname);
-                } else {
-                    setErrorMessage("Payment was not successful after returning. Please try again.");
-                    setIsLoading(false);
-                }
-                sessionStorage.removeItem('registrationState');
-            }
-        };
-        handleRedirect();
-    }, [stripe, router, setClientSecret, setCurrentStep, setErrorMessage, setIsLoading, finalizeRegistration]);
-
     const handleGeneratePassport = async () => {
-        if (!stripe || !elements || !clientSecret || !selectedStyleId || !faceFile) {
-            setErrorMessage("Please complete all previous steps.");
+        if (!stripe || !elements || !clientSecret || !selectedStyleId || !faceFile || !email || !password || !uploadedFaceUrl || !props.plan) {
+            toast({
+                title: "Incomplete Form",
+                description: "Please complete all steps, including email, password, and style selection.",
+                duration: 5000
+            });
             return;
         }
 
         setIsLoading(true);
-        setErrorMessage(null);
+        setProgressMessage('Initializing...');
+        props.setIsGenerated(true);
+        setTimeout(() => props.setShowPopup(true), 10);
+
 
         try {
-            setProgressMessage('Creating user account...');
+            // Step 1: Validate payment form
+            setProgressMessage('Validating payment information...');
+            const { error: submitError } = await elements.submit();
+            if (submitError) {
+                throw new Error(submitError.message || "Payment form validation failed.");
+            }
+            
+            // Step 2: Confirm the card setup
+            setProgressMessage('Securing payment method...');
+            const { error: setupError, setupIntent } = await stripe.confirmSetup({
+                elements,
+                redirect: 'if_required',
+            });
+            if (setupError) {
+                throw new Error(setupError.message || "Failed to secure payment method.");
+            }
+            if (setupIntent?.status !== 'succeeded' || !setupIntent.payment_method) {
+                throw new Error("Could not verify your payment method. Please try again.");
+            }
+
+            // Step 3: Create Firebase user
+            setProgressMessage('Creating your citizen account...');
             const cred = await registerClient(email, password);
             const idToken = await cred.user.getIdToken();
 
-            setProgressMessage('Uploading face...');
-            const uploadedFaceUrl = await uploadFileToStorage(faceFile!);
-
-            setProgressMessage('Verifying uniqueness...');
-            await checkFaceDuplicate({ imageUrl: uploadedFaceUrl, email });
-
-            const selfieB64 = await fileToBase64(faceFile);
-            const styleImg = stylesToShow.find((s: StyleItem) => s.id === selectedStyleId)!;
-            const styleBlob = await fetch(styleImg.src).then(r => r.blob());
-            const styleB64 = await blobToBase64(styleBlob);
+            // Step 4: Prepare data for finalization
             const nickname = email.split('@')[0];
 
-            const stateToSave = { idToken, uploadedFaceUrl, selfieB64, styleB64, nickname };
-            sessionStorage.setItem('registrationState', JSON.stringify(stateToSave));
-
-            setProgressMessage('Confirming payment...');
-            const { error } = await stripe.confirmPayment({
-                elements,
-                clientSecret,
-                confirmParams: { return_url: `${window.location.origin}/register2` },
-                redirect: 'if_required',
+            // Step 5: Call the backend to finalize everything
+            setProgressMessage('Finalizing your passport and subscription...');
+            const finalResponse = await fetch('/api/auth/finalize-registration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    plan: props.plan,
+                    paymentMethodId: setupIntent.payment_method,
+                    idToken,
+                    faceUrl: uploadedFaceUrl,
+                    styleUrl: stylesToShow.find(s => s.id === selectedStyleId)?.src,
+                    nickname,
+                    gender: props.gender,
+                }),
             });
 
-            if (error) {
-                sessionStorage.removeItem('registrationState');
-                throw new Error(error.message || "An unexpected payment error occurred.");
+            const finalData = await finalResponse.json();
+            if (!finalResponse.ok) {
+                throw new Error(finalData.message || "An error occurred during final registration.");
             }
 
-            sessionStorage.removeItem('registrationState');
-            await finalizeRegistration(idToken, selfieB64, styleB64, nickname);
+            // Step 6: Sign in with NextAuth to create the session
+            setProgressMessage('Logging you in...');
+            const signInResult = await signIn('credentials', {
+                idToken,
+                redirect: false, // We will handle the redirect manually after showing the passport
+            });
+
+            if (signInResult?.error) {
+                throw new Error(`Login failed after registration: ${signInResult.error}`);
+            }
+
+            // Success!
+            setFinalPassport({ nickname, avatarUrl: finalData.avatarUrl });
 
         } catch (err: unknown) {
-            if (err instanceof Error) setErrorMessage(err.message);
-            else setErrorMessage("An unknown error occurred");
+            const message = err instanceof Error ? err.message : "An unknown error occurred.";
+            
+            // On error, hide the popup and show a toast
+            props.setShowPopup(false);
+            setTimeout(() => {
+                props.setIsGenerated(false);
+            }, 500); // Animation duration
+
+            toast({
+                title: 'Registration Failed',
+                description: message,
+                duration: 9000
+            });
+        } finally {
             setIsLoading(false);
             setProgressMessage(null);
+            // Registration flow is complete, regardless of success or failure
+            setRegistrationInProgress(false);
         }
     };
-
-    useEffect(() => {
-        if (isGenerated) {
-            setTimeout(() => props.setShowPopup(true), 10);
-        }
-    }, [isGenerated, props.setShowPopup]);
 
     return <RegistrationFlow {...props} handleGeneratePassport={handleGeneratePassport} />;
 }
@@ -378,6 +426,8 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 // This is the main stateful component for the page
 const Register2Page = () => {
     const router = useRouter();
+    const { toast } = useToast();
+    const { setRegistrationInProgress } = useRegistrationStatus();
 
     // --- Core Data State ---
     const [email, setEmail] = useState('');
@@ -394,6 +444,16 @@ const Register2Page = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [progressMessage, setProgressMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [scanKey, setScanKey] = useState(0);
+
+    // --- New State for Webcam Aspect Ratio ---
+    const [webcamAspectRatio, setWebcamAspectRatio] = useState<number | null>(null);
+
+    // --- New State for Early Face Validation ---
+    const [isFaceChecking, setIsFaceChecking] = useState(false);
+    const [isFaceUnique, setIsFaceUnique] = useState<boolean | null>(null);
+    const [faceCheckError, setFaceCheckError] = useState<string | null>(null);
+    const [uploadedFaceUrl, setUploadedFaceUrl] = useState<string | null>(null);
 
     // --- Final Passport State ---
     const [isGenerated, setIsGenerated] = useState(false);
@@ -402,32 +462,50 @@ const Register2Page = () => {
 
     const stylesToShow = gender === "male" ? maleStyles : femaleStyles;
 
+    // Use client-side only features
+    const [isBrowser, setIsBrowser] = useState(false);
+    useEffect(() => {
+        setIsBrowser(true);
+        // Signal that registration is in progress as soon as the page loads
+        setRegistrationInProgress(true);
+
+        return () => {
+            // Signal that registration is no longer in progress when leaving the page
+            setRegistrationInProgress(false);
+        };
+    }, [setRegistrationInProgress]);
+
     // This effect runs on initial load to check for a redirect from Stripe
     // It must be in the top-level component to correctly set the initial state
     useEffect(() => {
-        const secret = new URLSearchParams(window.location.search).get('payment_intent_client_secret');
-        if (secret) {
-            setClientSecret(secret);
-            setCurrentStep(2); // Or 3, depending on where the user should land
+        if (typeof window !== 'undefined') {
+            const secret = new URLSearchParams(window.location.search).get('payment_intent_client_secret');
+            if (secret) {
+                setClientSecret(secret);
+                setCurrentStep(2); // Or 3, depending on where the user should land
+            }
         }
     }, []);
 
-    const handleProceedToPayment = async () => {
-        if (!email || !password || !faceFile) {
-            setErrorMessage("Please fill in all details and capture your face.");
-            return;
-        }
+    const handleRescan = () => {
+        setFaceFile(null);
+        setIsScanning(true);
+        setScanKey(prev => prev + 1);
+        setWebcamAspectRatio(null); // Reset aspect ratio
+        setClientSecret(null); // Critical: Reset client secret
+        setCurrentStep(1); // Go back to step 1
+    };
+
+    const createSetupIntent = useCallback(async () => {
         setIsLoading(true);
         setErrorMessage(null);
         try {
-            setProgressMessage('Initializing payment...');
-            const res = await fetch('/api/stripe/create-payment-intent', {
+            setProgressMessage('Preparing payment form...');
+            const res = await fetch('/api/stripe/create-setup-intent', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, plan }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Failed to create payment intent');
+            if (!res.ok) throw new Error(data.message || 'Failed to initialize payment form');
 
             setClientSecret(data.clientSecret);
             setCurrentStep(2);
@@ -439,17 +517,128 @@ const Register2Page = () => {
             setIsLoading(false);
             setProgressMessage(null);
         }
-    };
+    }, []);
+
+    // Effect 1: Check face uniqueness when a new face is scanned
+    useEffect(() => {
+        if (!faceFile || uploadedFaceUrl) return; // Only run on new face scan
+
+        const checkFaceUniqueness = async () => {
+            setIsFaceChecking(true);
+            setFaceCheckError(null);
+            setIsFaceUnique(null);
+            setErrorMessage(null);
+
+            const MOCK_FACE_UNIQUE = process.env.NEXT_PUBLIC_MOCK_FACE_UNIQUE_CHECK === 'true';
+
+            if (MOCK_FACE_UNIQUE) {
+                console.log("--- MOCKING FACE UNIQUENESS CHECK (SUCCESS) ---");
+                try {
+                    const faceUrl = await uploadFileToStorage(faceFile);
+                    setUploadedFaceUrl(faceUrl);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    setIsFaceUnique(true);
+                    toast({ title: 'Face Verified (Mock)', description: 'Your face is unique! Proceeding to the next step.' });
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : 'An error occurred during mock face check.';
+                    setFaceCheckError(message);
+                    setIsFaceUnique(false);
+                    toast({ title: 'Verification Error (Mock)', description: message, duration: 9000 });
+                } finally {
+                    setIsFaceChecking(false);
+                }
+                return;
+            }
+
+            try {
+                // First, upload the file to get a URL
+                const faceUrl = await uploadFileToStorage(faceFile);
+                setUploadedFaceUrl(faceUrl);
+
+                // Now, call our new API endpoint to check for uniqueness
+                const response = await fetch('/api/auth/check-face-uniqueness', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl: faceUrl }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // Handle non-2xx responses
+                    if (response.status === 409) { // 409 Conflict for duplicate
+                        setIsFaceUnique(false);
+                        const errorMsg = data.message || 'This face is already registered.';
+                        setFaceCheckError(errorMsg);
+                        const errorToast = { title: 'Registration Blocked', description: errorMsg, duration: 10000 };
+                        toast(errorToast);
+                    } else {
+                        throw new Error(data.error || `Server responded with ${response.status}`);
+                    }
+                } else {
+                    // Handle successful response
+                    if (data.isDuplicate) {
+                         setIsFaceUnique(false);
+                         const errorMsg = data.message || 'This face is already registered.';
+                         setFaceCheckError(errorMsg);
+                         const errorToast = { title: 'Registration Blocked', description: errorMsg, duration: 10000 };
+                         toast(errorToast);
+                    } else {
+                        setIsFaceUnique(true);
+                        const successToast = { title: 'Face Verified', description: 'Your face is unique! Proceeding to the next step.' };
+                        toast(successToast);
+                    }
+                }
+
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'An unknown error occurred during face check.';
+                setFaceCheckError(message);
+                setIsFaceUnique(false); // Assume failure means not unique or error
+                const errorToast = { title: 'Verification Error', description: message };
+                toast(errorToast);
+            } finally {
+                setIsFaceChecking(false);
+            }
+        };
+
+        checkFaceUniqueness();
+    }, [faceFile, uploadedFaceUrl, toast]);
+
+    // Effect 2: Create setup intent after face is confirmed unique
+    useEffect(() => {
+        if (isBrowser && isFaceUnique === true && currentStep === 1 && !clientSecret && !isLoading) {
+            createSetupIntent();
+        }
+    }, [isBrowser, isFaceUnique, currentStep, clientSecret, isLoading, createSetupIntent]);
+
+    useEffect(() => {
+        if (!faceFile) {
+            setUploadedFaceUrl(null);
+            setIsFaceUnique(null);
+            setFaceCheckError(null);
+            setClientSecret(null);
+            if (currentStep !== 1) {
+                setCurrentStep(1);
+            }
+        }
+    }, [faceFile, currentStep]);
 
     const props = {
         email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
         isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
+        isFaceChecking, isFaceUnique, faceCheckError,
         setEmail, setPassword, setFaceFile, setPlan, setGender, setSelectedStyleId, setCurrentStep,
         setClientSecret, setIsScanning, setIsLoading, setErrorMessage, setProgressMessage,
         setIsGenerated, setShowPopup, setFinalPassport,
-        handleProceedToPayment,
-        handleGeneratePassport: async () => { }, // Placeholder, real one is in CheckoutAndFinalize
-        router
+        handleGeneratePassport: async () => {}, // Placeholder, will be overridden
+        router,
+        handleRescan,
+        scanKey,
+        webcamAspectRatio,
+        setWebcamAspectRatio,
+        toast,
     };
 
     const appearance = {
@@ -464,6 +653,16 @@ const Register2Page = () => {
             colorTextPlaceholder: '#9ca3af',
         },
     } as const;
+
+    // Server-side rendering safe version - avoids hydration errors
+    if (!isBrowser) {
+        return (
+            <main className="relative flex flex-col items-center justify-center min-h-screen text-white">
+                <GridWithRays />
+                <p className="text-yellow-400 my-4 z-10">Loading...</p>
+            </main>
+        );
+    }
 
     // Render Step 1 if we are not processing a payment yet
     if (currentStep < 2) {
@@ -483,8 +682,8 @@ const Register2Page = () => {
 
     // Once we have a clientSecret, wrap the rest of the flow in the Elements provider
     return (
-        <Elements stripe={stripePromise} options={{ clientSecret, appearance }} key={clientSecret}>
-            <CheckoutAndFinalize {...props} />
+        <Elements stripe={getStripe()} options={{ clientSecret, appearance }} key={clientSecret}>
+            <CheckoutAndFinalize {...props} uploadedFaceUrl={uploadedFaceUrl} setRegistrationInProgress={setRegistrationInProgress} />
         </Elements>
     );
 }

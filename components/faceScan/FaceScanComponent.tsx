@@ -7,11 +7,19 @@ import {
   FilesetResolver,
   DrawingUtils,
 } from "@mediapipe/tasks-vision";
+import Image from "next/image";
+import MainButton from "@/components/UI/button";
 
 // Props for the component
 interface FaceScanComponentProps {
   onCapture: (imageFile: File) => void;
-  onCancel: () => void;
+  onRescan: () => void;
+  capturedImage: File | null;
+  isFaceChecking: boolean;
+  isFaceUnique: boolean | null;
+  faceCheckError: string | null;
+  isLoading: boolean;
+  onVideoReady?: (aspectRatio: number) => void;
 }
 
 const VISION_TASK_FILES_PATH =
@@ -35,7 +43,16 @@ function dataURItoFile(dataURI: string, filename: string): File {
   return new File([u8arr], filename, { type: mime });
 }
 
-const FaceScanComponent: React.FC<FaceScanComponentProps> = ({ onCapture, onCancel }) => {
+const FaceScanComponent: React.FC<FaceScanComponentProps> = ({ 
+  onCapture, 
+  onRescan,
+  capturedImage,
+  isFaceChecking,
+  isFaceUnique,
+  faceCheckError,
+  isLoading,
+  onVideoReady,
+}) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
@@ -44,15 +61,40 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({ onCapture, onCanc
   
   // State for capture readiness
   const [isFaceSteady, setIsFaceSteady] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);   // 3-2-1 overlay
+  const hasCapturedRef = useRef(false);                              // block double capture
   const steadyFaceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const animationFrameId = useRef<number | null>(null);
   const drawingUtilsRef = useRef<DrawingUtils | null>(null);
+  
+  // Track if component is mounted
+  const isMountedRef = useRef(true);
+
+  // --- Image URL State ---
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (capturedImage) {
+      const url = URL.createObjectURL(capturedImage);
+      setImageUrl(url);
+      
+      return () => {
+        URL.revokeObjectURL(url);
+        setImageUrl(null);
+      };
+    }
+  }, [capturedImage]);
 
   // --- Initialization and Cleanup ---
   useEffect(() => {
+    if (capturedImage) return; // Don't initialize if we are just showing the result
+
+    isMountedRef.current = true;
+    
     const initializeFaceLandmarker = async () => {
       try {
+        setError(null);
         const filesetResolver = await FilesetResolver.forVisionTasks(VISION_TASK_FILES_PATH);
         const landmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
           baseOptions: {
@@ -63,47 +105,84 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({ onCapture, onCanc
           runningMode: "VIDEO",
           numFaces: 1,
         });
-        setFaceLandmarker(landmarker);
-        setIsModelLoaded(true);
-        setError(null);
+        
+        if (isMountedRef.current) {
+          setFaceLandmarker(landmarker);
+          setIsModelLoaded(true);
+        } else {
+          // Component was unmounted during initialization
+          landmarker.close();
+        }
       } catch (e) {
         console.error("Failed to initialize FaceLandmarker:", e);
-        setError("Failed to load face detection model. Please check your connection and try again.");
-        setIsModelLoaded(false);
+        if (isMountedRef.current) {
+          setError("Failed to load face detection model. Please refresh and try again.");
+          setIsModelLoaded(false);
+        }
       }
     };
+    
     initializeFaceLandmarker();
 
     return () => {
-      // Cleanup on unmount
-      animationFrameId.current && cancelAnimationFrame(animationFrameId.current);
-      faceLandmarker?.close();
-      if (webcamRef.current?.stream) {
-        webcamRef.current.stream.getTracks().forEach(track => track.stop());
+      isMountedRef.current = false;
+      
+      // Cancel animation frame
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
       }
+      
+      // Clear timeouts
       if (steadyFaceTimeoutRef.current) {
         clearTimeout(steadyFaceTimeoutRef.current);
+        steadyFaceTimeoutRef.current = null;
+      }
+      
+      // Close MediaPipe model
+      if (faceLandmarker) {
+        faceLandmarker.close();
+      }
+      
+      // Stop webcam streams - let react-webcam handle this mostly
+      try {
+        if (webcamRef.current && webcamRef.current.video) {
+          const video = webcamRef.current.video;
+          if (video.srcObject) {
+            const stream = video.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+          }
+        }
+      } catch (err) {
+        console.warn('Error stopping webcam streams:', err);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [capturedImage]);
 
-  const predictWebcam = useCallback(async () => {
+  const predictWebcam = useCallback(() => {
+    if (capturedImage || !isMountedRef.current) return;
+    
     if (!faceLandmarker || !webcamRef.current?.video || webcamRef.current.video.readyState !== 4) {
-      animationFrameId.current = requestAnimationFrame(predictWebcam);
+      if (isMountedRef.current) {
+        animationFrameId.current = requestAnimationFrame(predictWebcam);
+      }
       return;
     }
 
     const video = webcamRef.current.video;
     const canvas = canvasRef.current;
     if (!canvas) {
-      animationFrameId.current = requestAnimationFrame(predictWebcam);
+      if (isMountedRef.current) {
+        animationFrameId.current = requestAnimationFrame(predictWebcam);
+      }
       return;
     }
     
     const context = canvas.getContext("2d");
     if (!context) {
-      animationFrameId.current = requestAnimationFrame(predictWebcam);
+      if (isMountedRef.current) {
+        animationFrameId.current = requestAnimationFrame(predictWebcam);
+      }
       return;
     }
 
@@ -111,51 +190,102 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({ onCapture, onCanc
       drawingUtilsRef.current = new DrawingUtils(context);
     }
     
-    if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
-    if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
+    // Resize canvas only when dimensions change
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
     
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    const startTimeMs = performance.now();
-    const results = faceLandmarker.detectForVideo(video, startTimeMs);
+    try {
+      const startTimeMs = performance.now();
+      const results = faceLandmarker.detectForVideo(video, startTimeMs);
 
-    if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-      // --- Face is detected, manage steady timer ---
-      if (!steadyFaceTimeoutRef.current) {
-        steadyFaceTimeoutRef.current = setTimeout(() => {
-          setIsFaceSteady(true); // Enable capture after 1.5 seconds of continuous detection
-        }, 1500);
+      if (results.faceLandmarks?.length) {
+        const landmarks = results.faceLandmarks[0];
+        const SAFE_MARGIN_RATIO = 0.12;
+        const STEADY_MS         = 700;
+
+        // Bounding-box calculation (optimized)
+        let minX = video.videoWidth, maxX = 0, minY = video.videoHeight, maxY = 0;
+        for (const point of landmarks) {
+            const x = point.x * video.videoWidth;
+            const y = point.y * video.videoHeight;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+        }
+        
+        const marginX = video.videoWidth * SAFE_MARGIN_RATIO;
+        const marginY = video.videoHeight * SAFE_MARGIN_RATIO;
+        
+        const isCentered =
+          minX > marginX &&
+          maxX < video.videoWidth  - marginX &&
+          minY > marginY &&
+          maxY < video.videoHeight - marginY;
+
+        // Only set state if "steady" really changes
+        if (isCentered) {
+          if (!steadyFaceTimeoutRef.current && isMountedRef.current) {
+            steadyFaceTimeoutRef.current = setTimeout(() => {
+              if (!isFaceSteady && isMountedRef.current) {
+                setIsFaceSteady(true);
+              }
+            }, STEADY_MS);
+          }
+        } else {
+          if (steadyFaceTimeoutRef.current) {
+            clearTimeout(steadyFaceTimeoutRef.current);
+            steadyFaceTimeoutRef.current = null;
+          }
+          // Only clear if was previously "steady"
+          if (isFaceSteady) {
+            setIsFaceSteady(false);
+            setCountdown(null);
+          }
+        }
+        
+        for (const landmarks of results.faceLandmarks) {
+          drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "rgba(0, 255, 255, 0.7)", lineWidth: 1 });
+          drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "rgba(255, 255, 255, 0.8)", lineWidth: 1.5 });
+        }
+      } else {
+        // No face → reset state only if needed
+        if (steadyFaceTimeoutRef.current) {
+          clearTimeout(steadyFaceTimeoutRef.current);
+          steadyFaceTimeoutRef.current = null;
+        }
+        if (isFaceSteady) {
+          setIsFaceSteady(false);
+          setCountdown(null);
+        }
       }
-      
-      for (const landmarks of results.faceLandmarks) {
-        drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "rgba(0, 255, 255, 0.7)", lineWidth: 1 });
-        drawingUtilsRef.current.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "rgba(255, 255, 255, 0.8)", lineWidth: 1.5 });
-      }
-    } else {
-      // --- No face detected, reset steady timer ---
-      if (steadyFaceTimeoutRef.current) {
-        clearTimeout(steadyFaceTimeoutRef.current);
-        steadyFaceTimeoutRef.current = null;
-      }
-      setIsFaceSteady(false);
+    } catch (err) {
+      console.warn('Error in face detection:', err);
     }
 
-    animationFrameId.current = requestAnimationFrame(predictWebcam);
-  }, [faceLandmarker]);
+    if (isMountedRef.current) {
+      animationFrameId.current = requestAnimationFrame(predictWebcam);
+    }
+  }, [faceLandmarker, isFaceSteady]);
 
   useEffect(() => {
-    if (isModelLoaded && faceLandmarker) {
+    if (isModelLoaded && faceLandmarker && isMountedRef.current) {
       animationFrameId.current = requestAnimationFrame(predictWebcam);
     }
     return () => {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
       }
     };
   }, [isModelLoaded, faceLandmarker, predictWebcam]);
 
   const handleCapture = () => {
-    if (!webcamRef.current || !isFaceSteady) return;
+    if (!webcamRef.current || !isFaceSteady || !isMountedRef.current) return;
     
     const imageSrc = webcamRef.current.getScreenshot();
     if (imageSrc) {
@@ -166,32 +296,137 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({ onCapture, onCanc
     }
   };
 
+  /* ⬇️  When `isFaceSteady` flips true, start a 3-2-1 countdown */
+  useEffect(() => {
+    if (isFaceSteady && !hasCapturedRef.current && isMountedRef.current) {
+      setCountdown(3);
+      const tick = setInterval(() => {
+        setCountdown(c => {
+          if (c === null || !isMountedRef.current) return null;
+          if (c === 1) {
+            clearInterval(tick);
+            hasCapturedRef.current = true;
+            handleCapture();
+            return null;
+          }
+          return c - 1;
+        });
+      }, 1000);
+      return () => clearInterval(tick);
+    }
+  }, [isFaceSteady]);
+
+  const handleUserMedia = () => {
+    // A small delay is sometimes necessary for video dimensions to be available.
+    setTimeout(() => {
+      if (onVideoReady && webcamRef.current?.video) {
+        const video = webcamRef.current.video;
+        if (video.videoWidth > 0) {
+          onVideoReady(video.videoWidth / video.videoHeight);
+        }
+      }
+    }, 100);
+  };
+
+  // Handle webcam errors with more specific error messages
+  const handleWebcamError = (error: string | DOMException) => {
+    console.error("Webcam Error:", error);
+    if (isMountedRef.current) {
+        setError("Could not access the camera. Please check permissions and ensure no other application is using it.");
+    }
+  };
+
+  const StatusOverlay = () => {
+    if (isFaceChecking) {
+        return (
+            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white p-4">
+                <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-lg font-semibold">Verifying uniqueness...</p>
+            </div>
+        );
+    }
+
+    if (isFaceUnique === true) {
+        return (
+            <div className="absolute inset-0 bg-green-500/50 flex flex-col items-center justify-center text-white p-4">
+                <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="mt-2 text-xl font-bold">Face Verified</p>
+            </div>
+        );
+    }
+
+    if (isFaceUnique === false) {
+        return (
+            <div className="absolute inset-0 bg-red-800/80 flex flex-col items-center justify-center text-white text-center p-4">
+                 <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                 </svg>
+                <p className="mt-2 text-xl font-bold">Registration Blocked</p>
+                <p className="mt-1 text-base max-w-xs">{faceCheckError || 'This face is already registered.'}</p>
+            </div>
+        );
+    }
+
+    return null;
+  };
+
+  // --- Render Logic ---
   return (
-    <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden">
-      {error && <p className="absolute top-4 left-1/2 -translate-x-1/2 text-red-500 bg-black/80 p-2 rounded z-20">{error}</p>}
-      {!isModelLoaded && !error && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white z-20 bg-black/80 p-2 rounded">
-          Loading Model...
-        </div>
+    <div className="w-full h-full relative bg-black rounded-2xl">
+      {imageUrl && capturedImage ? (
+        // --- CAPTURED VIEW ---
+        <>
+          <Image src={imageUrl} alt="Captured face" layout="fill" className="object-cover rounded-2xl" />
+          <StatusOverlay />
+          <div className="absolute top-4 right-4 z-10">
+            <MainButton variant="outline" onClick={onRescan} disabled={isLoading}>
+              Rescan
+            </MainButton>
+          </div>
+        </>
+      ) : (
+        // --- SCANNING VIEW ---
+        <>
+          {error && <div className="absolute inset-0 flex items-center justify-center bg-black p-4 text-center text-red-400 z-30">{error}</div>}
+          
+          {!error && !isModelLoaded && (
+            <div className="flex flex-col items-center justify-center text-white h-full">
+              <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4">Loading face model...</p>
+            </div>
+          )}
+          
+          <Webcam
+            ref={webcamRef}
+            audio={false}
+            mirrored={true}
+            onUserMedia={handleUserMedia}
+            onUserMediaError={handleWebcamError}
+            className={`w-full h-full object-cover rounded-2xl transition-opacity duration-500 ${isModelLoaded ? 'opacity-100' : 'opacity-0'}`}
+          />
+          
+          <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full rounded-2xl pointer-events-none transform -scale-x-100" />
+
+          {isModelLoaded && !error && (
+            <>
+              {isFaceSteady && countdown === null && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 text-green-400 bg-black/80 p-2 rounded z-20 text-sm">
+                  Face steady – hold still…
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                {countdown !== null && (
+                  <span className="text-6xl font-bold text-white" style={{ textShadow: '0 0 15px black' }}>
+                    {countdown}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </>
       )}
-      
-      {isFaceSteady && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 text-green-400 bg-black/80 p-2 rounded z-20 text-sm">
-          Face detected and steady!
-        </div>
-      )}
-      
-      <Webcam
-        audio={false}
-        ref={webcamRef}
-        screenshotFormat="image/jpeg"
-        videoConstraints={{ facingMode: "user", width: 1280, height: 720 }}
-        className="absolute top-0 left-0 w-full h-full object-cover rounded-2xl"
-      />
-      <canvas
-        ref={canvasRef}
-        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 rounded-2xl"
-      />
     </div>
   );
 };

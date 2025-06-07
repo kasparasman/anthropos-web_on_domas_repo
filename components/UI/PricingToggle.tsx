@@ -1,23 +1,23 @@
 import React from "react";
 
 interface PricingToggleProps {
+  plan: 'monthly' | 'yearly';
   onPlanChange: (plan: 'monthly' | 'yearly') => void;
   disabled?: boolean;
 }
 
-export default function PricingToggle({ onPlanChange, disabled = false }: PricingToggleProps) {
-  const [isYearly, setIsYearly] = React.useState(true);
-
-  const handleToggle = (yearly: boolean) => {
+export default function PricingToggle({ plan, onPlanChange, disabled = false }: PricingToggleProps) {
+  const handleToggle = (newPlan: 'monthly' | 'yearly') => {
     if (disabled) return;
-    setIsYearly(yearly);
-    onPlanChange(yearly ? 'yearly' : 'monthly');
+    onPlanChange(newPlan);
   };
+
+  const isYearly = plan === 'yearly';
 
   // You can adjust these two strings to whatever you need:
   const yearlyPriceText = "9.99$";
   const monthlyPriceText = "0.99$";
-
+  
   return (
     // A wrapping grid: first row = price + toggle, second row = save-text (aligned under toggle)
     <div className="flex flex-row items-center gap-4">
@@ -36,7 +36,7 @@ export default function PricingToggle({ onPlanChange, disabled = false }: Pricin
         {/*  ─────── PILL-STYLE TOGGLE ───────  */}
         <div className={`bg-gray rounded-full h-10 w-[220px] flex p-1 ${disabled ? 'opacity-50' : ''}`}>
           <button
-            onClick={() => handleToggle(true)}
+            onClick={() => handleToggle('yearly')}
             disabled={disabled}
             className={`flex-1 flex items-center justify-center rounded-full transition ${
               isYearly
@@ -47,7 +47,7 @@ export default function PricingToggle({ onPlanChange, disabled = false }: Pricin
             Yearly
           </button>
           <button
-            onClick={() => handleToggle(false)}
+            onClick={() => handleToggle('monthly')}
             disabled={disabled}
             className={`flex-1 flex items-center justify-center rounded-full transition ${
               !isYearly
@@ -60,8 +60,7 @@ export default function PricingToggle({ onPlanChange, disabled = false }: Pricin
         </div>
 
         {/*  ─────── SAVE NOTE (only when Yearly is active) ───────  */}
-        
-        <div className="mt-0.5 text-sm text-white">
+        <div className={`mt-0.5 text-sm text-white transition-opacity duration-300 ${isYearly ? 'opacity-100' : 'opacity-0'}`}>
             Save 20% with yearly plan
         </div>
         

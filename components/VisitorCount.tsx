@@ -1,26 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useVisitorCount } from "@/hooks/useVisitorCount";
 
 export default function VisitorCount() {
-  const [count, setCount] = useState<string | number>("…");
+  const { count, isLoading, error } = useVisitorCount();
 
-  useEffect(() => {
-    fetch(
-      "https://anthroposcity-tokens.anthroposcity.workers.dev/visitorCount",
-      { method: "GET" }
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error(res.statusText);
-        return res.json();
-      })
-      .then((data: { count: number }) => setCount(data.count))
-      .catch(() => setCount("Failed to load"));
-  }, []);
+  let content;
+  if (isLoading) {
+    content = "…";
+  } else if (error) {
+    content = "Failed to load";
+  } else {
+    content = count;
+  }
 
   return (
     <span className="text-yellow-400 font-semibold">
-      {count}
+      {content}
     </span>
   );
 }

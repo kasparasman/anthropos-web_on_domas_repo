@@ -10,12 +10,12 @@ export function useVisitorCount() {
     async function fetchCount() {
       try {
         setLoading(true)
-        // TODO: replace with real fetch, e.g.:
-        // cores = await fetch('/api/visitor-count')
-        // const data = await res.json()
-        // setCount(data.count)
-        await new Promise((r) => setTimeout(r, 500))  // simulate network
-        setCount(123)                                 // mock value
+        const res = await fetch('https://anthroposcity-tokens.anthroposcity.workers.dev/visitorCount')
+        if (!res.ok) {
+          throw new Error(`Failed to fetch: ${res.statusText}`);
+        }
+        const data = await res.json()
+        setCount(data.count)
       } catch (err: any) {
         setError(err)
       } finally {

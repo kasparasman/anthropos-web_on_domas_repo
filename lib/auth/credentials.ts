@@ -53,7 +53,7 @@ export async function authorize(
       throw new Error('PAYMENT_PENDING')
     }
     
-    if (profile.status !== 'ACTIVE_PENDING_PROFILE_SETUP' && profile.status !== 'ACTIVE_COMPLETE') {
+    if (profile.status !== 'ACTIVE' && profile.status !== 'ACTIVE_PENDING_PROFILE_SETUP' && profile.status !== 'ACTIVE_COMPLETE') {
         console.log('[Auth Credentials] User login denied - invalid status for login:', email, profile.status)
         throw new Error('INVALID_USER_STATUS_FOR_LOGIN')
     }
@@ -68,22 +68,28 @@ export async function authorize(
       image: profile.avatarUrl ?? undefined,
     }
 
-  } catch (err: any) {
-    console.error('[Auth Credentials] Authorization failed during login:', err.message)
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+        console.error('[Auth Credentials] Authorization failed during login:', err.message)
 
-    const knownErrors = [
-      'PROFILE_NOT_FOUND',
-      'ACCOUNT_BANNED',
-      'PAYMENT_PENDING',
-      'INVALID_USER_STATUS_FOR_LOGIN'
-    ]
+        const knownErrors = [
+          'PROFILE_NOT_FOUND',
+          'ACCOUNT_BANNED',
+          'PAYMENT_PENDING',
+          'INVALID_USER_STATUS_FOR_LOGIN'
+        ]
 
-    if (knownErrors.includes(err.message)) {
-      throw err // Re-throw known errors to be handled by NextAuth
+        if (knownErrors.includes(err.message)) {
+          throw err // Re-throw known errors to be handled by NextAuth
+        }
+        
+        // For unknown errors that are actual Errors, log them.
+        console.error('[Auth Credentials] Unknown error during authorize():', err)
+    } else {
+        // Handle cases where a non-Error was thrown
+        console.error('[Auth Credentials] An unexpected non-Error was thrown:', err);
     }
-
-    // For unknown errors, log and return null to prevent login.
-    console.error('[Auth Credentials] Unknown error during authorize():', err)
+    
     return null
   }
 }

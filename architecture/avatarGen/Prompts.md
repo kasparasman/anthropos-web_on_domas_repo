@@ -285,7 +285,7 @@ STYLE LOCKS
 • LIMITLESS CREST (MANDATORY)
   – Overlay the PNG provided in LIMITLESS_CREST_B64 onto the left-breast panel, scaling it to ~9 % of full frame height.
   – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
-• Emotion: warm compassion with quiet strength
+• Emotion: neutral, confident, with quiet strength
 • Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
 • VECTOR AESTHETIC (MANDATORY)
   – Crisp, uniform line art (2–4 px stroke); corners slightly rounded for modern SVG look.
@@ -324,6 +324,7 @@ RULES
 3. Keep 1 : 1 aspect; nothing below upper chest.
 4. Deliver PNG + metadata JSON.
 5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+6. **The final portrait must be strictly 1:1 aspect ratio with no stretching, padding, or cropping that would alter the square format.**
 
 TASK
 "Transform USER_SELFIE_B64 into the Nurturer-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
@@ -620,3 +621,73 @@ RULES
 TASK
 "Transform USER_SELFIE_B64 into the Trader-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above."
 ========================================
+
+========================================
+ANTHROPOS CITY – COMMUNICATOR ARCHETYPE
+Futurist Portrait • 1 : 1 Square • Shoulders-Up
+========================================
+
+INPUTS
+• USER_SELFIE_B64 = "${SELFIE_B64}"        # shoulders-up, neutral light
+• STYLE_REFERENCE_B64 = "${STYLE_B64}"     # Communicator archetype card
+• LIMITLESS_CREST_B64       (the shaka PNG)
+
+OUTPUT
+• 3000 × 3000 px PNG
+• Crop: top of head ↘ mid-upper-chest (no arms)
+• Metadata JSON: { "archetype":"communicator","version":"1.0","palette_locked":true }
+
+STYLE LOCKS
+• Art Method: clean vector-cel shading; smooth gradients; **no** photoreal texture
+• Palette: Peach #FFC9A0 primary, Cobalt #004FE0 accent, soft coral and sky blue gradients
+• BACKGROUND MANDATE — render the {district} scene in sharp focus; background must be opaque.
+• Garment: casual blazer with subtle waveform embroidery on collar/shoulders, upper chest only (no arms)
+• FX: Subtle animated voice-wave motif integrated into the background, repeating in a soft, abstract pattern (looping, 1 sec cycle); use cobalt as the primary accent color. Wave amplitude ≈ 2 mm; opacity ≤ 12 %. No tattoo or direct overlay on the face or jawline. Maintain a gentle cobalt glow radiating from the throat area.
+• LIMITLESS_CREST (MANDATORY)
+  – Overlay the PNG provided in LIMITLESS_CREST_B64 (the shaka sign) onto the **left side of the jacket** (not just the left-breast panel), scaling it to ~9 % of full frame height.
+  – The crest must be clearly visible on the left jacket side, positioned so it is not obscured by folds or shadows.
+  – Do not distort, mirror, rotate or recolour the crest; keep its original gold fill. Apply a thin outline and inner glow in the archetype's accent colors (see palette), and a 3 px soft shadow for readability.
+• Emotion: inviting openness, direct gaze, gentle smile, balanced bright lighting
+• Expression — match the user's facial expression and mood exactly as seen in USER_SELFIE_B64 (mirror eyebrow position, eye openness, mouth curve, etc.).
+• VECTOR AESTHETIC (MANDATORY)
+  – Crisp, uniform line art (2–4 px stroke); corners slightly rounded for modern SVG look.
+  – Flat colour blocks or max two-step gradients; NO painterly brush textures or noise shaders.
+  – Cel-style shading only (hard or soft-edge bands); highlights as simple geometric shapes.
+  – Neon glows and glitch artifacts allowed **only** as additive overlays ≤ 15 % opacity; must not blur the line work.
+
+• BACKGROUND LOGIC  (MANDATORY — replace {} braces)
+
+  1. **LANDMARK** – include the signature landmark of the {archetype_district} (see table below) at mid-ground scale (occupies ±30 % of width).
+
+  2. **DEPTH LAYERS** – draw at least three vector layers:
+        • Foreground silhouettes (low-opacity crowds, railings, foliage, etc.)
+        • Mid-ground with the landmark & neighbouring structures
+        • Background skyline fading toward horizon colour
+
+  3. **LIGHTING** – use a strong key light matching the palette transition (peach → coral); cast long, stylised shadows for drama.
+
+  4. **ATMOSPHERE** – add subtle volumetric glow or city haze (≤ 12 % opacity) so neon accents "pop".
+
+  5. **DETAIL QUALITY** – keep edges crisp and geometry readable at 100 % zoom; no painterly strokes or photo textures.
+
+  • Background must be fully **opaque** (no alpha holes, no flat gradient without architecture).
+
+NEGATIVE BACKGROUND PROMPT  
+"empty gradient, blank backdrop, generic shapes, photo texture, photographic city"
+
+NEGATIVE PROMPT
+"halo, nimbus, angel ring, circular glow behind head, transparent background, checkerboard, alpha background, blank gradient background, missing crest"
+"mirrored shaka, left-pointing shaka, upside-down shaka, thumbs-down, rock sign, peace sign, finger bars left"
+oil painting, brush strokes, photorealistic texture
+
+RULES
+1. Exact facial likeness; reproduce selfie accessories precisely.
+2. Apply every STYLE LOCK (including crest); do not add/remove elements.
+3. Keep 1 : 1 aspect; nothing below upper chest.
+4. Deliver PNG + metadata JSON.
+5. **Facial skin color must remain within the range of natural human skin tones as seen in the user's selfie, with only lighting effects from the scene allowed to influence color. Do not stylize or replace the base skin color with non-human hues.**
+
+TASK
+"Transform USER_SELFIE_B64 into the Communicator-archetype futurist passport portrait according to STYLE_REFERENCE_B64 and the rules above, ensuring the LIMITLESS_CREST_B64 (shaka sign) is clearly visible on the left side of the jacket."
+========================================
+

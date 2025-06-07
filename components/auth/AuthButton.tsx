@@ -31,7 +31,7 @@ export default function AuthButton({ onLoginClick }: AuthButtonProps) {
         Log in
       </button>
       <Link
-        href="/register"
+        href="/register2"
         className="px-4 py-1 bg-main text-background rounded"
       >
         Sign up

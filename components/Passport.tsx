@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import QRCode from 'react-qr-code';
 
 interface PassportProps {
   id?: number
@@ -19,6 +20,8 @@ export default function Passport({ id, citizenId, nickname, gender, avatarUrl, c
   // Format the ID with spaces for readability: 000 000 000
   const displayId = `${formattedCitizenId.substring(0, 1)} ${formattedCitizenId.substring(1, 4)} ${formattedCitizenId.substring(4, 7)} ${formattedCitizenId.substring(6, 9)}`;
 
+  const profileUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/users/${nickname}`;
+
   return (
     <div className={`flex  flex-col justify-center gap-3 bg-[linear-gradient(-45deg,#252014_0%,#000000_50%,#252014_100%)] border border-main rounded-[16px] p-4 ${className}`}>
       {/* Avatar Section */}
@@ -30,13 +33,15 @@ export default function Passport({ id, citizenId, nickname, gender, avatarUrl, c
           height={600}
           className="w-60 h-60 object-cover"
         />
-        <Image
-          src={'/qr.png'}
-          alt={`${nickname}'s avatar`}
-          width={128}
-          height={128}
-          className="w-12 h-12 object-cover absolute bottom-2 right-2 rounded-md"
-        />
+        <div className="absolute bottom-2 right-2 bg-white p-1 rounded-md">
+          <QRCode
+            value={profileUrl}
+            size={40}
+            bgColor="#FFFFFF"
+            fgColor="#000000"
+            level="L"
+          />
+        </div>
       </div>
 
       {/* Info Section */}
