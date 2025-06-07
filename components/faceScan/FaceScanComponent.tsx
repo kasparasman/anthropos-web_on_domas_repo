@@ -317,15 +317,27 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
   }, [isFaceSteady]);
 
   const handleUserMedia = () => {
-    // A small delay is sometimes necessary for video dimensions to be available.
-    setTimeout(() => {
-      if (onVideoReady && webcamRef.current?.video) {
-        const video = webcamRef.current.video;
-        if (video.videoWidth > 0) {
-          onVideoReady(video.videoWidth / video.videoHeight);
-        }
+    const video = webcamRef.current?.video;
+    if (!onVideoReady || !video) {
+      return;
+    }
+
+    const pollForDimensions = () => {
+      // Stop polling if the component has been unmounted
+      if (!isMountedRef.current) {
+        return;
       }
-    }, 100);
+      
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        // Once dimensions are available, we can set the aspect ratio
+        onVideoReady(video.videoWidth / video.videoHeight);
+      } else {
+        // If not ready, try again on the next available frame
+        requestAnimationFrame(pollForDimensions);
+      }
+    };
+
+    pollForDimensions();
   };
 
   // Handle webcam errors with more specific error messages
