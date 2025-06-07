@@ -34,7 +34,7 @@ export default function PricingToggle({ plan, onPlanChange, disabled = false }: 
       {/* ───────────── 2) TOGGLE + SAVE TEXT SECTION ───────────── */}
       <div className="flex flex-col items-center">
         {/*  ─────── PILL-STYLE TOGGLE ───────  */}
-        <div className={`bg-gray rounded-full h-10 w-[220px] flex p-1 ${disabled ? 'opacity-50' : ''}`}>
+        <div className={`bg-[#262626] rounded-full h-10 w-[220px] flex p-1 ${disabled ? 'opacity-50' : ''}`}>
           <button
             onClick={() => handleToggle('yearly')}
             disabled={disabled}
@@ -60,7 +60,7 @@ export default function PricingToggle({ plan, onPlanChange, disabled = false }: 
         </div>
 
         {/*  ─────── SAVE NOTE (only when Yearly is active) ───────  */}
-        <div className={`mt-0.5 text-sm text-white transition-opacity duration-300 ${isYearly ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`mt-0.5 text-sm text-white transition-opacity duration-300`}>
             Save 20% with yearly plan
         </div>
         

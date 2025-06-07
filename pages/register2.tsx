@@ -29,18 +29,18 @@ import { blobToBase64, fileToBase64 } from "@/lib/base64";
 async function generateAvatar(selfieB64: string, styleB64: string): Promise<string> {
   const MOCK_AVATAR_GEN = process.env.NEXT_PUBLIC_MOCK_AVATAR_GEN === 'true';
 
-    if (MOCK_AVATAR_GEN) {
-        console.log("--- MOCKING AVATAR GENERATION ---");
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
-        
-        // Determine if we should use female or male styles based on the styleB64
-        const isFemaleStyle = styleB64.includes("female");
-        const stylesArray = isFemaleStyle ? femaleStyles : maleStyles;
-        
-        // Get a random style from the appropriate gender array
-        const randomIndex = Math.floor(Math.random() * stylesArray.length);
-        return stylesArray[randomIndex].src;
-    }
+  if (MOCK_AVATAR_GEN) {
+    console.log("--- MOCKING AVATAR GENERATION ---");
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
+
+    // Determine if we should use female or male styles based on the styleB64
+    const isFemaleStyle = styleB64.includes("female");
+    const stylesArray = isFemaleStyle ? femaleStyles : maleStyles;
+
+    // Get a random style from the appropriate gender array
+    const randomIndex = Math.floor(Math.random() * stylesArray.length);
+    return stylesArray[randomIndex].src;
+  }
 
   const res = await fetch('/api/avatar-gen', {
     method: 'POST',
@@ -84,47 +84,47 @@ const getStripe = () => {
 };
 
 interface RegistrationFlowProps {
-    email: string;
-    password: string;
-    faceFile: File | null;
-    plan: 'monthly' | 'yearly';
-    gender: 'male' | 'female';
-    selectedStyleId: string | null;
-    currentStep: number;
-    clientSecret: string | null;
-    isScanning: boolean;
-    isLoading: boolean;
-    progressMessage: string | null;
-    errorMessage: string | null;
-    isGenerated: boolean;
-    showPopup: boolean;
-    finalPassport: { nickname: string; avatarUrl: string } | null;
-    stylesToShow: StyleItem[];
-    isFaceChecking: boolean;
-    isFaceUnique: boolean | null;
-    faceCheckError: string | null;
-    setEmail: (value: string) => void;
-    setPassword: (value: string) => void;
-    setFaceFile: (file: File | null) => void;
-    setPlan: (plan: 'monthly' | 'yearly') => void;
-    setGender: (gender: 'male' | 'female') => void;
-    setSelectedStyleId: (id: string | null) => void;
-    setCurrentStep: (step: number) => void;
-    setClientSecret: (secret: string | null) => void;
-    setIsScanning: (isScanning: boolean) => void;
-    handleGeneratePassport: () => Promise<void>;
-    setShowPopup: (show: boolean) => void;
-    router: NextRouter;
-    handleRescan: () => void;
-    scanKey: number;
-    webcamAspectRatio: number | null;
-    setWebcamAspectRatio: (ratio: number | null) => void;
-    toast: (options: {
-        title?: React.ReactNode;
-        description?: React.ReactNode;
-        duration?: number;
-    }) => void;
-    setIsPaymentDetailsComplete: (complete: boolean) => void;
+  email: string;
+  password: string;
+  faceFile: File | null;
+  plan: 'monthly' | 'yearly';
+  gender: 'male' | 'female';
+  selectedStyleId: string | null;
+  currentStep: number;
+  clientSecret: string | null;
+  isScanning: boolean;
+  isLoading: boolean;
+  progressMessage: string | null;
+  errorMessage: string | null;
+  isGenerated: boolean;
+  showPopup: boolean;
+  finalPassport: { nickname: string; avatarUrl: string } | null;
+  stylesToShow: StyleItem[];
+  isFaceChecking: boolean;
+  isFaceUnique: boolean | null;
+  faceCheckError: string | null;
+  setEmail: (value: string) => void;
+  setPassword: (value: string) => void;
+  setFaceFile: (file: File | null) => void;
+  setPlan: (plan: 'monthly' | 'yearly') => void;
+  setGender: (gender: 'male' | 'female') => void;
+  setSelectedStyleId: (id: string | null) => void;
+  setCurrentStep: (step: number) => void;
+  setClientSecret: (secret: string | null) => void;
+  setIsScanning: (isScanning: boolean) => void;
+  handleGeneratePassport: () => Promise<void>;
+  setShowPopup: (show: boolean) => void;
+  router: NextRouter;
+  handleRescan: () => void;
+  scanKey: number;
+  webcamAspectRatio: number | null;
+  setWebcamAspectRatio: (ratio: number | null) => void;
+  toast: (options: {
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+    duration?: number;
+  }) => void;
+  setIsPaymentDetailsComplete: (complete: boolean) => void;
 }
 
 interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
@@ -161,19 +161,27 @@ const RegistrationFlow = ({
   // Key for remounting
   scanKey,
 
-    // Webcam Aspect Ratio
-    webcamAspectRatio,
-    setWebcamAspectRatio,
-    toast,
-    setIsPaymentDetailsComplete,
+  // Webcam Aspect Ratio
+  webcamAspectRatio,
+  setWebcamAspectRatio,
+  toast,
+  setIsPaymentDetailsComplete,
 }: RegistrationFlowProps) => {
-    return (
-     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white p-4">
-       <GridWithRays />
-        <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
-         <Image src="/BurjKalifa.png" alt="background" width={800} height={800} className="hidden lg:block object-cover opacity-100 pointer-events-none" />
-         <Image src="/Building2.png" alt="background" width={800} height={800} className="hidden lg:block mr-[-300px] lg:mr-[-200px] object-cover opacity-100 pointer-events-none" />
-       </div>
+  return (
+    <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
+      <GridWithRays />
+      <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
+      <img
+          src="/BurjKalifa.png"
+          alt="background"
+          className="hidden lg:block ml-[-100px] opacity-100 pointer-events-none"
+        />
+        <img
+          src="/Building2.png"
+          alt="background"
+          className="hidden lg:block mr-[-600px] opacity-100 pointer-events-none"
+        />
+      </div>
 
       <div className="flex flex-col items-center mt-10 gap-6">
         <h1>Become Anthropos Citizen!</h1>
@@ -189,95 +197,95 @@ const RegistrationFlow = ({
       {isLoading && progressMessage && <div className="text-yellow-400 my-4">{progressMessage}</div>}
       {errorMessage && <div className="text-red-500 bg-red-900/50 p-3 rounded-lg max-w-md text-center my-4">{errorMessage}</div>}
 
-       {/* step1 */}
-       <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 1 ? "opacity-100" : "opacity-40"}`}>
-         <div className="flex flex-col items-center">
-           <h2 className="">Step 1: Face Scan</h2>
-           <Image src="/Step1.png" alt="Step 1 visual" width={200} height={50} className="mb-6" />
-         </div>
-         <div 
-           className="min-w-80 w-80 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
-           style={{ aspectRatio: webcamAspectRatio || '16/9' }}
-         >
-              {(isScanning || faceFile) ? (
-                 <FaceScanComponent 
-                   key={scanKey}
-                   onCapture={(file) => { setFaceFile(file); setIsScanning(false); }} 
-                   onRescan={handleRescan}
-                   capturedImage={faceFile}
-                   isFaceChecking={isFaceChecking}
-                   isFaceUnique={isFaceUnique}
-                   faceCheckError={faceCheckError}
-                   isLoading={isLoading}
-                   onVideoReady={setWebcamAspectRatio}
-                 />
-             ) : (
-                  <>
-                     <Image src="/Mask.png" alt="Face scan mask" layout="fill" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
-                     <MainButton className="z-10" onClick={() => setIsScanning(true)} disabled={isLoading}>Scan Your Face</MainButton>
-                 </>
-             )}
-         </div>
-       </div>
-
-       <div className="w-[120px] h-0 border-t border-gray-700 my-4"></div>
-
-       {/* step2 */}
-       <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
-         <div className="flex flex-col items-center">
-           <h2 className="">Step 2: Payment & Account</h2>
-           <Image src="/Step2.png" alt="Step 2 visual" width={200} height={50} className="mb-6" />
-         </div>
-         
-         {/* Email and Password inputs - now in step 2 */}
-                   <div className="flex flex-col gap-4 min-w-80">
-            <Input 
-              placeholder="Email" 
-              type="email" 
-              value={email} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} 
-              disabled={isLoading || isFaceUnique === false} 
+      {/* step1 */}
+      <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 1 ? "opacity-100" : "opacity-40"}`}>
+        <div className="flex flex-col items-center">
+          <h2 className="">Step 1: Face Scan</h2>
+          <Image src="/Step1.png" alt="Step 1 visual" width={120} height={32} className="mb-6" />
+        </div>
+        <div
+          className="min-w-80 w-80 h-60 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
+          style={{ aspectRatio: webcamAspectRatio || '16/9' }}
+        >
+          {(isScanning || faceFile) ? (
+            <FaceScanComponent
+              key={scanKey}
+              onCapture={(file) => { setFaceFile(file); setIsScanning(false); }}
+              onRescan={handleRescan}
+              capturedImage={faceFile}
+              isFaceChecking={isFaceChecking}
+              isFaceUnique={isFaceUnique}
+              faceCheckError={faceCheckError}
+              isLoading={isLoading}
+              onVideoReady={setWebcamAspectRatio}
             />
-            <Input 
-              placeholder="Password" 
-              type="password" 
-              value={password} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} 
-              disabled={isLoading || isFaceUnique === false} 
-            />
-          </div>
-         
-         <PricingToggle plan={plan} onPlanChange={setPlan} disabled={isLoading || isFaceUnique === false} />
-                   <div className="min-w-80 w-80 p-4 bg-gray-900 rounded-lg">
-              {clientSecret ? <PaymentElement onChange={(e) => setIsPaymentDetailsComplete(e.complete)} /> : <p className="text-center text-gray-400">Initializing payment...</p>}
-          </div>
-       </div>
+          ) : (
+            <>
+              <Image src="/Mask.png" alt="Face scan mask" layout="fill" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
+              <MainButton className="z-10" onClick={() => setIsScanning(true)} disabled={isLoading}>Scan Your Face</MainButton>
+            </>
+          )}
+        </div>
+      </div>
+
+      <Lock imgSrc={currentStep >= 2 ? '/unlock.png' : '/lock.png'} hideLines={currentStep >= 2} />
+
+      {/* step2 */}
+      <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
+        <div className="flex flex-col items-center">
+          <h2 className="">Step 2: Payment & Account</h2>
+          <Image src="/Step2.png" alt="Step 2 visual" width={120} height={32} className="mb-6" />
+        </div>
+
+        {/* Email and Password inputs - now in step 2 */}
+        <div className="flex flex-col gap-4 min-w-80">
+          <Input
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+            disabled={isLoading || isFaceUnique === false}
+          />
+          <Input
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+            disabled={isLoading || isFaceUnique === false}
+          />
+        </div>
+
+        <PricingToggle plan={plan} onPlanChange={setPlan} disabled={isLoading || isFaceUnique === false} />
+        <div className="min-w-80 w-80 ">
+          {clientSecret ? <PaymentElement onChange={(e) => setIsPaymentDetailsComplete(e.complete)} /> : <p className="text-center text-gray-400">Initializing payment...</p>}
+        </div>
+      </div>
 
       {/* Lock */}
       <Lock imgSrc={currentStep >= 3 ? '/unlock.png' : '/lock.png'} hideLines={currentStep >= 3} />
 
-       {/* step3 */}
-       <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
-         <div className="flex flex-col items-center">
-           <h2 className="">Step 3: Passport Generation</h2>
-           <Image src="/Step3.png" alt="Step 3 visual" width={200} height={50} className="mb-6" />
-         </div>
-         <div className="flex gap-2">
-           <MainButton variant={gender === 'male' ? "solid" : "outline"} onClick={() => setGender("male")}>Male</MainButton>
-           <MainButton variant={gender === 'female' ? "solid" : "outline"} onClick={() => setGender("female")}>Female</MainButton>
-         </div>
-         <div className="w-80 grid grid-cols-3 gap-2">
-             {stylesToShow.map((item: StyleItem) => (
-                 <div key={item.id} onClick={() => setSelectedStyleId(item.id)} className={`relative cursor-pointer rounded-lg overflow-hidden transition ${selectedStyleId === item.id ? "ring-4 ring-yellow-400" : "ring-2 ring-transparent hover:ring-gray-500"}`}>
-                     <Image src={item.src} width={100} height={100} alt={item.alt} className="object-cover" />
-                      {selectedStyleId === item.id && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold">✓</div></div>}
-                 </div>
-             ))}
-         </div>
-         <MainButton variant="solid" onClick={handleGeneratePassport} disabled={!selectedStyleId || isLoading || currentStep !== 3 || !email || !password}>
-             {isLoading ? "Processing..." : "Generate Passport"}
-         </MainButton>
-       </div>
+      {/* step3 */}
+      <div className={`flex mb-16 flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
+        <div className="flex flex-col items-center">
+          <h2 className="">Step 3: Passport Generation</h2>
+          <Image src="/Step3.png" alt="Step 3 visual" width={120} height={32} className="mb-6" />
+        </div>
+        <div className="flex gap-2">
+          <MainButton variant={gender === 'male' ? "solid" : "outline"} onClick={() => setGender("male")}>Male</MainButton>
+          <MainButton variant={gender === 'female' ? "solid" : "outline"} onClick={() => setGender("female")}>Female</MainButton>
+        </div>
+        <div className="w-80 grid grid-cols-3 gap-2">
+          {stylesToShow.map((item: StyleItem) => (
+            <div key={item.id} onClick={() => setSelectedStyleId(item.id)} className={`relative cursor-pointer rounded-lg overflow-hidden transition ${selectedStyleId === item.id ? "ring-2 ring-main" : "ring-2 ring-transparent hover:ring-gray-500"}`}>
+              <Image src={item.src} width={100} height={100} alt={item.alt} className="object-cover" loading="eager" />
+              {selectedStyleId === item.id && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-main text-black flex items-center justify-center font-bold">✓</div></div>}
+            </div>
+          ))}
+        </div>
+        <MainButton variant="solid" onClick={handleGeneratePassport} disabled={!selectedStyleId || isLoading || currentStep !== 3 || !email || !password}>
+          {isLoading ? "Processing..." : "Generate Passport"}
+        </MainButton>
+      </div>
 
       {/* --- Final Passport Popup --- */}
       {isGenerated && (
@@ -286,6 +294,7 @@ const RegistrationFlow = ({
           <div className={`absolute bottom-0 left-0 w-full h-full bg-black flex flex-col items-center justify-center transform transition-transform duration-500 gap-6 ${showPopup ? "translate-y-0" : "translate-y-full"}`}>
             {finalPassport ? (
               <>
+                <GridWithRays/>
                 <h1 className="text-3xl font-bold">Your Passport is Ready!</h1>
                 <div className="relative flex items-center justify-center">
                   <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[80px]"></div>
@@ -457,12 +466,12 @@ const Register2Page = () => {
   // --- New State for Webcam Aspect Ratio ---
   const [webcamAspectRatio, setWebcamAspectRatio] = useState<number | null>(null);
 
-    // --- New State for Early Face Validation ---
-    const [isFaceChecking, setIsFaceChecking] = useState(false);
-    const [isFaceUnique, setIsFaceUnique] = useState<boolean | null>(null);
-    const [faceCheckError, setFaceCheckError] = useState<string | null>(null);
-    const [uploadedFaceUrl, setUploadedFaceUrl] = useState<string | null>(null);
-    const [isPaymentDetailsComplete, setIsPaymentDetailsComplete] = useState(false);
+  // --- New State for Early Face Validation ---
+  const [isFaceChecking, setIsFaceChecking] = useState(false);
+  const [isFaceUnique, setIsFaceUnique] = useState<boolean | null>(null);
+  const [faceCheckError, setFaceCheckError] = useState<string | null>(null);
+  const [uploadedFaceUrl, setUploadedFaceUrl] = useState<string | null>(null);
+  const [isPaymentDetailsComplete, setIsPaymentDetailsComplete] = useState(false);
 
   // --- Final Passport State ---
   const [isGenerated, setIsGenerated] = useState(false);
@@ -470,6 +479,23 @@ const Register2Page = () => {
   const [finalPassport, setFinalPassport] = useState<{ nickname: string, avatarUrl: string } | null>(null);
 
   const stylesToShow = gender === "male" ? maleStyles : femaleStyles;
+
+  // 1) Zoom effect: apply 125% on mount, only if desktop (≥1024px)
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1024px)").matches
+    ) {
+      document.body.style.zoom = "125%";
+    }
+
+    // Cleanup: reset zoom when unmounting
+    return () => {
+      if (typeof window !== "undefined") {
+        document.body.style.zoom = "100%";
+      }
+    };
+  }, []);
 
   // Use client-side only features
   const [isBrowser, setIsBrowser] = useState(false);
@@ -540,27 +566,27 @@ const Register2Page = () => {
 
       const MOCK_FACE_UNIQUE = process.env.NEXT_PUBLIC_MOCK_FACE_UNIQUE_CHECK === 'true';
 
-            try {
-                // Step 1: Upload the file to get a persistent URL. This is now
-                // required for both mock and real flows so the webhook can access it.
-                const faceUrl = await uploadFileToStorage(faceFile);
-                setUploadedFaceUrl(faceUrl);
+      try {
+        // Step 1: Upload the file to get a persistent URL. This is now
+        // required for both mock and real flows so the webhook can access it.
+        const faceUrl = await uploadFileToStorage(faceFile);
+        setUploadedFaceUrl(faceUrl);
 
-                if (MOCK_FACE_UNIQUE) {
-                    console.log("--- MOCKING FACE UNIQUENESS CHECK (SUCCESS) ---");
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    setIsFaceUnique(true);
-                    toast({ title: 'Face Verified (Mock)', description: 'Your face is unique! Proceeding to the next step.' });
-                    setIsFaceChecking(false);
-                    return; // Exit mock flow here
-                }
+        if (MOCK_FACE_UNIQUE) {
+          console.log("--- MOCKING FACE UNIQUENESS CHECK (SUCCESS) ---");
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          setIsFaceUnique(true);
+          toast({ title: 'Face Verified (Mock)', description: 'Your face is unique! Proceeding to the next step.' });
+          setIsFaceChecking(false);
+          return; // Exit mock flow here
+        }
 
-                // Step 2: Call our API endpoint to check for uniqueness
-                const response = await fetch('/api/auth/check-face-uniqueness', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageUrl: faceUrl }),
-                });
+        // Step 2: Call our API endpoint to check for uniqueness
+        const response = await fetch('/api/auth/check-face-uniqueness', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl: faceUrl }),
+        });
 
         const data = await response.json();
 
@@ -604,29 +630,29 @@ const Register2Page = () => {
     checkFaceUniqueness();
   }, [faceFile, uploadedFaceUrl, toast]);
 
-    // Effect 2: Create setup intent after face is confirmed unique
-    useEffect(() => {
-        if (isBrowser && isFaceUnique === true && currentStep === 1 && !clientSecret && !isLoading) {
-            createSetupIntent();
-        }
-    }, [isBrowser, isFaceUnique, currentStep, clientSecret, isLoading, createSetupIntent]);
+  // Effect 2: Create setup intent after face is confirmed unique
+  useEffect(() => {
+    if (isBrowser && isFaceUnique === true && currentStep === 1 && !clientSecret && !isLoading) {
+      createSetupIntent();
+    }
+  }, [isBrowser, isFaceUnique, currentStep, clientSecret, isLoading, createSetupIntent]);
 
-    // Effect to advance to step 3 once step 2 is complete
-    useEffect(() => {
-        const isEmailValid = email.trim().length > 5 && email.includes('@');
-        const isPasswordValid = password.length >= 6;
+  // Effect to advance to step 3 once step 2 is complete
+  useEffect(() => {
+    const isEmailValid = email.trim().length > 5 && email.includes('@');
+    const isPasswordValid = password.length >= 6;
 
-        if (
-            isBrowser &&
-            isFaceUnique === true &&
-            currentStep === 2 &&
-            isEmailValid &&
-            isPasswordValid &&
-            isPaymentDetailsComplete
-        ) {
-            setCurrentStep(3);
-        }
-    }, [isBrowser, isFaceUnique, currentStep, email, password, isPaymentDetailsComplete]);
+    if (
+      isBrowser &&
+      isFaceUnique === true &&
+      currentStep === 2 &&
+      isEmailValid &&
+      isPasswordValid &&
+      isPaymentDetailsComplete
+    ) {
+      setCurrentStep(3);
+    }
+  }, [isBrowser, isFaceUnique, currentStep, email, password, isPaymentDetailsComplete]);
 
   useEffect(() => {
     if (!faceFile) {
@@ -640,22 +666,22 @@ const Register2Page = () => {
     }
   }, [faceFile, currentStep]);
 
-    const props = {
-        email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
-        isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
-        isFaceChecking, isFaceUnique, faceCheckError,
-        setEmail, setPassword, setFaceFile, setPlan, setGender, setSelectedStyleId, setCurrentStep,
-        setClientSecret, setIsScanning, setIsLoading, setErrorMessage, setProgressMessage,
-        setIsGenerated, setShowPopup, setFinalPassport,
-        handleGeneratePassport: async () => {}, // Placeholder, will be overridden
-        router,
-        handleRescan,
-        scanKey,
-        webcamAspectRatio,
-        setWebcamAspectRatio,
-        toast,
-        setIsPaymentDetailsComplete,
-    };
+  const props = {
+    email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
+    isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
+    isFaceChecking, isFaceUnique, faceCheckError,
+    setEmail, setPassword, setFaceFile, setPlan, setGender, setSelectedStyleId, setCurrentStep,
+    setClientSecret, setIsScanning, setIsLoading, setErrorMessage, setProgressMessage,
+    setIsGenerated, setShowPopup, setFinalPassport,
+    handleGeneratePassport: async () => { }, // Placeholder, will be overridden
+    router,
+    handleRescan,
+    scanKey,
+    webcamAspectRatio,
+    setWebcamAspectRatio,
+    toast,
+    setIsPaymentDetailsComplete,
+  };
 
   const appearance = {
     theme: 'night',
@@ -672,12 +698,12 @@ const Register2Page = () => {
       '.Block': {
         border: 'none',
         boxShadow: 'none',
-        backgroundColor: '#18181b',
+        backgroundColor: '#262626',
         fontFamily: 'inherit',
       },
       '.Input': {
         border: '1px solid gray',
-        backgroundColor: '#18181b',
+        backgroundColor: '#26262626',
         color: '#fff',
         fontFamily: 'inherit',
       },
@@ -702,10 +728,10 @@ const Register2Page = () => {
     );
   }
 
-    // Render Step 1 if we are not processing a payment yet
-    if (currentStep < 2) {
-        return <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />;
-    }
+  // Render Step 1 if we are not processing a payment yet
+  if (currentStep < 2) {
+    return <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />;
+  }
 
   // If we are on step 2+, we need a client secret. If we don't have one, show a loading state.
   // This also covers the time between clicking "Proceed to Payment" and the API returning the secret.
