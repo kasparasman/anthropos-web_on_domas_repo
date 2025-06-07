@@ -31,8 +31,14 @@ async function generateAvatar(selfieB64: string, styleB64: string): Promise<stri
     if (MOCK_AVATAR_GEN) {
         console.log("--- MOCKING AVATAR GENERATION ---");
         await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
-        const randomIndex = Math.floor(Math.random() * maleStyles.length);
-        return maleStyles[randomIndex].src; 
+        
+        // Determine if we should use female or male styles based on the styleB64
+        const isFemaleStyle = styleB64.includes("female");
+        const stylesArray = isFemaleStyle ? femaleStyles : maleStyles;
+        
+        // Get a random style from the appropriate gender array
+        const randomIndex = Math.floor(Math.random() * stylesArray.length);
+        return stylesArray[randomIndex].src;
     }
 
     const res = await fetch('/api/avatar-gen', {
