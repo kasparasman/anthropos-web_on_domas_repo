@@ -16,12 +16,12 @@ import FaceScanComponent from "@/components/faceScan/FaceScanComponent";
 import Benefits from "@/components/UI/benefits";
 import GridWithRays from "@/components/GridWithRays";
 import benefitsStyles from "@/components/UI/benefits.module.css";
-import burjKalifa from "@/public/BurjKalifa.png";
-import building2 from "@/public/Building2.png";
-import step1 from "@/public/step1.png";
-import step2 from "@/public/step2.png";
-import step3 from "@/public/step3.png";
-import mask from "@/public/mask.png";
+import burjKalifa from "../public/BurjKalifa.png";
+import building2 from "../public/Building2.png";
+import step1 from "../public/step1.png";
+import step2 from "../public/step2.png";
+import step3 from "../public/step3.png";
+import mask from "../public/mask.png";
 
 // --- Services & Config ---
 import { registerClient } from '../lib/firebase-client';
