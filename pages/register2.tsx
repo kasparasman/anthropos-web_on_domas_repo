@@ -16,12 +16,6 @@ import FaceScanComponent from "@/components/faceScan/FaceScanComponent";
 import Benefits from "@/components/UI/benefits";
 import GridWithRays from "@/components/GridWithRays";
 import benefitsStyles from "@/components/UI/benefits.module.css";
-import burjKalifa from "../public/BurjKalifa.png";
-import building2 from "../public/Building2.png";
-import step1 from "../public/step1.png";
-import step2 from "../public/step2.png";
-import step3 from "../public/step3.png";
-import mask from "../public/mask.png";
 
 // --- Services & Config ---
 import { registerClient } from '../lib/firebase-client';
@@ -168,8 +162,8 @@ const RegistrationFlow = ({
      <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white p-4">
        <GridWithRays />
         <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
-         <Image src={burjKalifa} alt="background" className="hidden lg:block object-cover opacity-100 pointer-events-none" />
-         <Image src={building2} alt="background" className="hidden lg:block mr-[-300px] lg:mr-[-200px] object-cover opacity-100 pointer-events-none" />
+         <Image src="/BurjKalifa.png" alt="background" width={800} height={800} className="hidden lg:block object-cover opacity-100 pointer-events-none" />
+         <Image src="/Building2.png" alt="background" width={800} height={800} className="hidden lg:block mr-[-300px] lg:mr-[-200px] object-cover opacity-100 pointer-events-none" />
        </div>
 
        <div className="flex flex-col items-center mt-10 gap-6">
@@ -190,7 +184,7 @@ const RegistrationFlow = ({
        <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 1 ? "opacity-100" : "opacity-40"}`}>
          <div className="flex flex-col items-center">
            <h2 className="">Step 1: Face Scan</h2>
-           <Image src={step1} alt="Step 1 visual" className="mb-6" />
+           <Image src="/Step1.png" alt="Step 1 visual" width={200} height={50} className="mb-6" />
          </div>
          <div 
            className="min-w-80 w-80 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
@@ -210,7 +204,7 @@ const RegistrationFlow = ({
                  />
              ) : (
                   <>
-                     <Image src={mask} alt="Face scan mask" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
+                     <Image src="/Mask.png" alt="Face scan mask" layout="fill" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
                      <MainButton className="z-10" onClick={() => setIsScanning(true)} disabled={isLoading}>Scan Your Face</MainButton>
                  </>
              )}
@@ -223,7 +217,7 @@ const RegistrationFlow = ({
        <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
          <div className="flex flex-col items-center">
            <h2 className="">Step 2: Payment & Account</h2>
-           <Image src={step2} alt="Step 2 visual" className="mb-6" />
+           <Image src="/Step2.png" alt="Step 2 visual" width={200} height={50} className="mb-6" />
          </div>
          
          {/* Email and Password inputs - now in step 2 */}
@@ -264,7 +258,7 @@ const RegistrationFlow = ({
        <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
          <div className="flex flex-col items-center">
            <h2 className="">Step 3: Passport Generation</h2>
-           <Image src={step3} alt="Step 3 visual" className="mb-6" />
+           <Image src="/Step3.png" alt="Step 3 visual" width={200} height={50} className="mb-6" />
          </div>
          <div className="flex gap-2">
            <MainButton variant={gender === 'male' ? "solid" : "outline"} onClick={() => setGender("male")}>Male</MainButton>
