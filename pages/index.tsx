@@ -50,12 +50,12 @@ export default function Home({
         <img
           src="/BurjKalifa.png"
           alt="background"
-          className="hidden lg:block ml-[-100px] opacity-100 pointer-events-none"
+          className="hidden lg:block ml-[-50px] opacity-100 pointer-events-none"
         />
         <img
           src="/Building2.png"
           alt="background"
-          className="hidden lg:block mr-[-600px] opacity-100 pointer-events-none"
+          className="hidden lg:block lg:mr-[-250px] opacity-100 pointer-events-none"
         />
         <div
           className="w-full absolute z-[1] bottom-[-40px] left-0 pointer-events-none"
