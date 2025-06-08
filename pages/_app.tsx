@@ -12,6 +12,7 @@ import AuthModal from '../components/auth/AuthModal'
 import { AuthModalManagerProvider, useAuthModalManager } from '../contexts/AuthModalManagerContext'
 import { useEffect } from 'react'
 import Toaster from '../components/Toaster'
+import GridWithRays from '../components/GridWithRays'
 
 // Load Google fonts and assign to CSS variables
 const geistSans = Geist({
@@ -23,22 +24,24 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
-interface AppContentProps extends AppProps {}
+interface AppContentProps extends AppProps { }
 
 function AppContent({ Component, pageProps, router }: AppContentProps) {
   const { state: authModalState, closeAuthModal, setMode } = useAuthModalManager();
 
   useEffect(() => {
-    console.log('[AppContent] MOUNTED/RE-MOUNTED'); 
+    console.log('[AppContent] MOUNTED/RE-MOUNTED');
     return () => {
-      console.log('[AppContent] UNMOUNTING'); 
+      console.log('[AppContent] UNMOUNTING');
     };
-  }, []); 
+  }, []);
 
   const hideNavbarOn = ['/register2'];
 
   return (
     <>
+      <GridWithRays />
+
       {!hideNavbarOn.includes(router.pathname) && (
         <Navbar
           onLoginClick={() => {

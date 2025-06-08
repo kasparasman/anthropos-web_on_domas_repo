@@ -169,8 +169,7 @@ const RegistrationFlow = ({
 }: RegistrationFlowProps) => {
   return (
     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
-      <GridWithRays />
-      <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
+      <div className=" sm:h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
       <img
           src="/BurjKalifa.png"
           alt="background"
@@ -184,7 +183,7 @@ const RegistrationFlow = ({
       </div>
 
       <div className="flex flex-col items-center mt-10 gap-6">
-        <h1>Become Anthropos Citizen!</h1>
+        <h1 className="text-center">Become Anthropos Citizen!</h1>
         <div className="relative flex items-center justify-center">
           <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[80px]"></div>
           <Benefits className="absolute z-2 top-[-16px] right-[-50px]" text="Participation in Chat" delay="0s" />
@@ -204,7 +203,7 @@ const RegistrationFlow = ({
           <Image src="/Step1.png" alt="Step 1 visual" width={120} height={32} className="mb-6" />
         </div>
         <div
-          className="min-w-80 w-80 h-60 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
+          className="min-w-80 w-80 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
           style={{ aspectRatio: webcamAspectRatio || '16/9' }}
         >
           {(isScanning || faceFile) ? (
