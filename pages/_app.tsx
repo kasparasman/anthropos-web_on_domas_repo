@@ -2,6 +2,7 @@
 import '../styles/globals.css'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
+import Script from 'next/script'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
 import Navbar from '../components/Navbar'
@@ -27,9 +28,7 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
-interface AppContentProps extends AppProps { }
-
-function AppContent({ Component, pageProps, router }: AppContentProps) {
+function AppContent({ Component, pageProps, router }: AppProps) {
   const { state: authModalState, closeAuthModal, setMode } = useAuthModalManager();
 
   useEffect(() => {
@@ -43,6 +42,20 @@ function AppContent({ Component, pageProps, router }: AppContentProps) {
 
   return (
     <>
+      {/* Google Tag Manager */}
+      <Script
+        id="gtm-script"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','GTM-PKQZ2XXM');
+          `,
+        }}
+      />
       <GridWithRays />
 
       {!hideNavbarOn.includes(router.pathname) && (

@@ -6,12 +6,13 @@ import React, { useRef, useState, useEffect } from 'react'
 interface AvatarPlayerProps {
   videoUrl: string | null
   isIdle: boolean
+  onVideoStart?: () => void
   onVideoEnd?: () => void
 }
 
 const IDLE_VIDEO_URL = "https://storage.googleapis.com/anthropos-442507_cloudbuild/source/idle"
 
-export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPlayerProps) {
+export default function AvatarPlayer({ videoUrl, isIdle, onVideoStart, onVideoEnd }: AvatarPlayerProps) {
   const idleVideoRef = useRef<HTMLVideoElement | null>(null)
   const topicVideoRef = useRef<HTMLVideoElement | null>(null)
   const [topicVideoStarted, setTopicVideoStarted] = useState(false)
@@ -71,40 +72,64 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
     const setupTopicVideo = async () => {
       try {
         // Reset video state
+        videoElement.pause()
         videoElement.currentTime = 0
         videoElement.src = videoUrl
+        videoElement.muted = false // Enable audio for topic videos
         
-        await videoElement.load()
-        setTopicVideoStarted(true)
+        // Load the video
+        videoElement.load()
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          const handleCanPlay = () => {
+            videoElement.removeEventListener('canplaythrough', handleCanPlay)
+            videoElement.removeEventListener('error', handleError)
+            resolve()
+          }
+          
+          const handleError = (e: Event) => {
+            videoElement.removeEventListener('canplaythrough', handleCanPlay)
+            videoElement.removeEventListener('error', handleError)
+            reject(new Error('Video load error'))
+          }
+          
+          videoElement.addEventListener('canplaythrough', handleCanPlay)
+          videoElement.addEventListener('error', handleError)
+          
+          // Check if already ready
+          if (videoElement.readyState >= 4) {
+            handleCanPlay()
+          }
+        })
+        
+        // Play the video
         await videoElement.play()
+        setTopicVideoStarted(true)
+        
+        // Call onVideoStart callback
+        if (onVideoStart) {
+          onVideoStart()
+        }
+        
         updateVideoOpacity()
+        
       } catch (error) {
         console.error('Error playing topic video:', error)
         setTopicVideoStarted(false)
       }
     }
 
-    // Set up event listeners
-    const handleCanPlay = () => {
-      if (!topicVideoStarted) {
-        setupTopicVideo()
-      }
-    }
-
-    videoElement.addEventListener('canplaythrough', handleCanPlay)
-    
-    // Try to play immediately if already loaded
-    if (videoElement.readyState >= 4) {
-      setupTopicVideo()
-    }
+    setupTopicVideo()
     
     return () => {
-      videoElement.removeEventListener('canplaythrough', handleCanPlay)
-      videoElement.pause()
-      videoElement.currentTime = 0
-      setTopicVideoStarted(false)
+      if (videoElement) {
+        videoElement.pause()
+        videoElement.currentTime = 0
+        setTopicVideoStarted(false)
+      }
     }
-  }, [videoUrl, isIdle])
+  }, [videoUrl, isIdle, onVideoStart])
 
   // Update opacity whenever relevant states change
   useEffect(() => {
@@ -124,7 +149,7 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
       <video
         ref={idleVideoRef}
         src={IDLE_VIDEO_URL}
-        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-150"
         style={{ opacity: 1 }}
         preload="auto"
         playsInline
@@ -136,7 +161,7 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
       {videoUrl && (
         <video
           ref={topicVideoRef}
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-150"
           style={{ opacity: 0 }}
           preload="auto"
           playsInline

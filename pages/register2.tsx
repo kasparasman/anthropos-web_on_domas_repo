@@ -261,8 +261,11 @@ const RegistrationFlow = ({
           <Image src="/Step1.png" alt="Step 1 visual" width={120} height={32} className="mb-6" />
         </div>
         <div
-          className="min-w-80 w-80 border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
-          style={{ aspectRatio: webcamAspectRatio || '16/9' }}
+          className="w-full max-w-md mx-auto border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
+          style={{ 
+            aspectRatio: webcamAspectRatio || '4/3',
+            minWidth: '320px'
+          }}
         >
           {(isScanning || faceFile) ? (
             <FaceScanComponent
@@ -433,8 +436,18 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
   const stripe = useStripe();
   const elements = useElements();
+  const submissionGuard = React.useRef(false);
 
   const handleGeneratePassport = async () => {
+    if (submissionGuard.current) {
+      toast({
+        title: 'Processing...',
+        description: 'Your passport generation is already in progress.',
+        duration: 3000,
+      });
+      return;
+    }
+
     if (!stripe || !elements || !clientSecret || !selectedStyleId || !faceFile || !email || !password || !uploadedFaceUrl || !props.plan) {
       toast({
         title: "Incomplete Form",
@@ -444,6 +457,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       return;
     }
 
+    submissionGuard.current = true;
     setIsLoading(true);
     setProgressMessage('Initializing...');
     props.setIsGenerated(true);
@@ -535,6 +549,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unknown error occurred.";
+      submissionGuard.current = false; // Reset guard on failure
 
       // On error, hide the popup and show a toast
       props.setShowPopup(false);
@@ -648,7 +663,6 @@ const Register2Page = () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      setProgressMessage('Preparing payment form...');
       const res = await fetch('/api/stripe/create-setup-intent', {
         method: 'POST',
       });

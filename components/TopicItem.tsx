@@ -33,7 +33,8 @@ export default function TopicItem({
   // Determine the styling based on selection and video played state
   const getSelectionClass = () => {
     if (!isSelected) {
-      return 'border border-gray bg-stone-800 text-dim_smoke'
+      // Default unselected state
+      return 'border border-gray bg-stone-800 text-dim_smoke hover:border-main/30 transition-colors'
     }
     
     if (hasPlayedVideo) {
@@ -49,7 +50,7 @@ export default function TopicItem({
     <div
       onClick={() => onSelect(topic.id)}
       className={`
-        relative flex flex-row p-3 rounded-xl transition-colors h-[150px] gap-3 overflow-hidden mb-4
+        relative flex flex-row p-3 rounded-xl transition-colors h-[150px] gap-3 overflow-hidden mb-4 cursor-pointer
         ${getSelectionClass()}
       `}
     >
@@ -97,7 +98,7 @@ export default function TopicItem({
               }
             }}
             disabled={loading} // Allow unliking by removing `likedByMe` from disabled condition
-            className="flex items-center gap-1 text-sm disabled:cursor-not-allowed"
+            className="flex items-center gap-1 text-sm disabled:cursor-not-allowed hover:scale-105 transition-transform"
             >
             <Heart
               size={18}
@@ -121,7 +122,7 @@ export default function TopicItem({
                   ? hasPlayedVideo 
                     ? 'bg-main/70 text-black' // Dimmed when video played
                     : 'bg-main text-black hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]' // Bright when not played
-                  : 'bg-dim_smoke text-black'
+                  : 'bg-dim_smoke text-black hover:bg-main/80'
                 }
               `}
             >
