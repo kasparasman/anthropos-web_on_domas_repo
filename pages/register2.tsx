@@ -230,7 +230,7 @@ const RegistrationFlow = ({
         </div>
       </div>
 
-      <Lock imgSrc={currentStep >= 2 ? '/unlock.png' : '/lock.png'} hideLines={currentStep >= 2} />
+      <Lock imgSrc={currentStep >= 2 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 2} />
 
       {/* step2 */}
       <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
@@ -264,7 +264,7 @@ const RegistrationFlow = ({
       </div>
 
       {/* Lock */}
-      <Lock imgSrc={currentStep >= 3 ? '/unlock.png' : '/lock.png'} hideLines={currentStep >= 3} />
+      <Lock imgSrc={currentStep >= 3 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 3} />
 
       {/* step3 */}
       <div className={`flex mb-16 flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
