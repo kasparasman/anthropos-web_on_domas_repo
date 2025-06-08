@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { generateAvatar } from '@/lib/services/avatarService';
 import { generateUniqueNickname } from '@/lib/services/nicknameService';
 import { getPromptForStyle } from '@/lib/services/promptService';
+import { admin } from '@/lib/firebase-admin';
 
 const stripe = createStripeClient();
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -104,6 +105,36 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                             where: { id: profile.id },
                             data: { status: 'ACTIVATION_FAILED' },
                         });
+
+                        // --- Compensation logic: refund and cleanup ---
+                        try {
+                            const invoiceIds = invoice as unknown as { payment_intent?: string; subscription?: string };
+                            const paymentIntentId = invoiceIds.payment_intent;
+                            if (paymentIntentId) {
+                                await stripe.refunds.create({ payment_intent: paymentIntentId });
+                                console.log(`💸 Issued refund for user ${profile.id}`);
+                            }
+
+                            const subscriptionId = invoiceIds.subscription;
+                            if (subscriptionId) {
+                                // Some Stripe typings may not include the `.del` method on subscriptions.
+                                // Use a safe cast to access it.
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-explicit-any
+                                await (stripe.subscriptions as unknown as { del: (id: string) => Promise<Stripe.Subscription> }).del(subscriptionId);
+                                console.log(`✂️  Cancelled subscription ${subscriptionId} for user ${profile.id}`);
+                            }
+                        } catch (compErr) {
+                            console.error(`⚠️  Compensation steps (refund/cancel) failed for user ${profile.id}:`, compErr);
+                        }
+
+                        // Delete the Firebase auth user so they can restart the flow
+                        try {
+                            await admin.auth().deleteUser(profile.id);
+                            console.log(`🗑️  Deleted Firebase user ${profile.id} after failed activation.`);
+                        } catch (firebaseErr) {
+                            console.error(`⚠️  Failed to delete Firebase user ${profile.id}:`, firebaseErr);
+                        }
+
                         // Return 200 to Stripe so it doesn't keep retrying a failed generation.
                         return res.status(200).send('Activation failed during generation step.');
                     }
