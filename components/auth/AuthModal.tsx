@@ -161,7 +161,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           <div className="fixed inset-0 bg-black/70 backdrop-blur h-full" onClick={() => { }} aria-hidden="true" />
           <div
             onClick={e => e.stopPropagation()} // Prevent clicks inside modal from bubbling to backdrop
-            className={`flex flex-col relative z-10 rounded-xl bg-black border border-main h-full overflow-y-auto no-scrollbar
+            className={`flex flex-col relative z-10 rounded-xl my-auto bg-black border border-main h-auto overflow-y-auto no-scrollbar
                         ${isPaymentStep ? 'p-0 w-auto bg-transparent border-none' : `py-8 px-12 ${authState.mode === 'register' ? 'w-[600px]' : 'w-[450px]'}`}`}
           >
             {/* Explicit X Close Button - Hidden during avatar setup */}
