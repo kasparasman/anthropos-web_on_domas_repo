@@ -13,6 +13,8 @@ import { AuthModalManagerProvider, useAuthModalManager } from '../contexts/AuthM
 import { useEffect } from 'react'
 import Toaster from '../components/Toaster'
 import GridWithRays from '../components/GridWithRays'
+import CookieConsent from 'react-cookie-consent'
+
 
 // Load Google fonts and assign to CSS variables
 const geistSans = Geist({
@@ -56,6 +58,31 @@ function AppContent({ Component, pageProps, router }: AppContentProps) {
       />
       <Component {...pageProps} />
       <Toaster />
+
+      <CookieConsent
+        location="bottom"
+        buttonText="Accept"
+        declineButtonText="Decline"
+        enableDeclineButton
+        cookieName="site_cookie_consent"
+        expires={365}
+        style={{ background: '#fada97', textAlign: 'center', padding: '1rem', fontWeight: 500 }}
+        buttonStyle={{ background: '#fada97', color: '#000000', fontSize: '16px', marginLeft: '0.5rem', border: '1px solid #000000', borderRadius: '6px', fontWeight: 600 }}
+        declineButtonStyle={{ color: '#fff', fontSize: '16px', marginLeft: '0.5rem', border: '1px solid #000000', borderRadius: '6px', fontWeight: 600 }}
+        onAccept={() => {
+          console.log('🎉 cookies accepted');
+          // initialize analytics here
+        }}
+        onDecline={() => {
+          console.log('🚫 cookies declined');
+          // disable tracking here
+        }}
+      >
+        <span style={{ color: '#000000', fontWeight: 500 }}>We use cookies to improve your experience.</span>{' '}
+        <a href="/cookie-policy" style={{ color: '#000', textDecoration: 'underline', fontWeight: 500 }}>
+          Learn more
+        </a>
+      </CookieConsent>
     </>
   );
 }
