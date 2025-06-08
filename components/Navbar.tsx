@@ -26,7 +26,7 @@ export default function Navbar({ onLoginClick }: NavbarProps) {
     <nav className="bg-black border-b border-gray">
       <div className="relative max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
+        <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse text-white">
           <span className="self-center text-2xl font-semibold whitespace-nowrap">
             Anthropos City
           </span>

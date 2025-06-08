@@ -5,7 +5,6 @@ import StatsSection from '../components/StatsSection'
 import RightPanel from '../components/RightPanel'
 import AssetsCounter from '@/components/AssetCounter'
 import AssetCarousel from '../components/AssetCarousel'
-import GridWithRays from '@/components/GridWithRays'
 import TotalAssetIncome from '@/components/TotalAssetIncome'
 
 import Input from '@/components/UI/input'
@@ -46,9 +45,7 @@ export default function Home({
 }: HomeProps) {
   return (
     <main className=" relative flex flex-col items-center">
-      {/* Background */}
-      <GridWithRays/>
-      
+      {/* Background */}      
       <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
         <img
           src="/BurjKalifa.png"
@@ -73,10 +70,10 @@ export default function Home({
         />
 
       </div>
-      <div className="max-w-5xl w-full space-y-10 mt-6">
+      <div className="max-w-5xl w-full space-y-10 my-10">
         <Banner />
 
-        <div className="flex flex-col lg:flex-row gap-6 w-full flex-grow">
+        <div className="flex flex-col lg:flex-row gap-6 w-full px-4 flex-grow">
           <StatsSection data={dexData} />
           <RightPanel topics={topics} />
         </div>

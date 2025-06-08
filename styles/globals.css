@@ -20,7 +20,7 @@
 
   }
   body {
-    @apply text-smoke;      /* every element that inherits color will now be smoke */
+    background-color: #000000;       /* every element that inherits color will now be smoke */
   }
 
   /* Normalize box-model & font smoothing */
@@ -95,6 +95,7 @@
     font-weight: 600;
     color: #ffffff;
     margin: 0px;
+    text-align: center;
   }
   h1 {
     font-size: 2rem; /* Adjust the size as needed, 'rem' is relative to the root element's font size */
