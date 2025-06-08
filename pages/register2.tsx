@@ -125,6 +125,8 @@ interface RegistrationFlowProps {
     duration?: number;
   }) => void;
   setIsPaymentDetailsComplete: (complete: boolean) => void;
+  activePassportTab: number;
+  setActivePassportTab: (tab: number) => void;
 }
 
 interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
@@ -166,11 +168,13 @@ const RegistrationFlow = ({
   setWebcamAspectRatio,
   toast,
   setIsPaymentDetailsComplete,
+  activePassportTab,
+  setActivePassportTab,
 }: RegistrationFlowProps) => {
   return (
     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
       <div className=" sm:h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
-      <img
+        <img
           src="/BurjKalifa.png"
           alt="background"
           className="hidden lg:block ml-[-100px] opacity-100 pointer-events-none"
@@ -293,17 +297,42 @@ const RegistrationFlow = ({
           <div className={`absolute bottom-0 left-0 w-full h-full bg-black flex flex-col items-center justify-center transform transition-transform duration-500 gap-6 ${showPopup ? "translate-y-0" : "translate-y-full"}`}>
             {finalPassport ? (
               <>
-                <GridWithRays/>
+                <GridWithRays />
                 <h1 className="text-3xl font-bold">Your Passport is Ready!</h1>
+                <div className="flex space-x-2 mt-4">
+                  {[1, 2, 3].map((tab) => (
+                    <MainButton
+                      key={tab}
+                      variant={activePassportTab === tab ? "solid" : "outline"}
+                      onClick={() => setActivePassportTab(tab)}
+                      className="w-12 h-12 flex items-center justify-center text-lg"
+                    >
+                      {tab}
+                    </MainButton>
+                  ))}
+                </div>
                 <div className="relative flex items-center justify-center">
                   <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[80px]"></div>
-                  <Passport className="z-1" nickname={finalPassport.nickname} gender={gender} avatarUrl={finalPassport.avatarUrl} citizenId={finalPassport.citizenId} />
+                  <Passport
+                    className="z-1"
+                    nickname={finalPassport.nickname}
+                    gender={gender}
+                    avatarUrl={
+                      activePassportTab === 1
+                        ? finalPassport.avatarUrl
+                        : activePassportTab === 2
+                          ? "/placeholder-avatar-2.svg"
+                          : "/placeholder-avatar-3.svg"
+                    }
+                    citizenId={finalPassport.citizenId}
+                  />
                 </div>
                 <MainButton variant="solid" onClick={() => router.push("/")}>Enter the City</MainButton>
               </>
             ) : (
               <>
                 <h1 className="text-3xl font-bold mb-4 animate-pulse">Forging Your Passport...</h1>
+
                 <div className="relative flex items-center justify-center">
                   {/* Blurred glow behind the passport */}
                   <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[100px] opacity-70 animate-pulse" />
@@ -506,6 +535,7 @@ const Register2Page = () => {
   const [isGenerated, setIsGenerated] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [finalPassport, setFinalPassport] = useState<{ nickname: string, avatarUrl: string, citizenId: number } | null>(null);
+  const [activePassportTab, setActivePassportTab] = useState(1);
 
   const stylesToShow = gender === "male" ? maleStyles : femaleStyles;
 
@@ -710,6 +740,8 @@ const Register2Page = () => {
     setWebcamAspectRatio,
     toast,
     setIsPaymentDetailsComplete,
+    activePassportTab,
+    setActivePassportTab,
   };
 
   const appearance = {

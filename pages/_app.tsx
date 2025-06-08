@@ -14,6 +14,7 @@ import { useEffect } from 'react'
 import Toaster from '../components/Toaster'
 import GridWithRays from '../components/GridWithRays'
 import CookieConsent from 'react-cookie-consent'
+import Footer from '../components/Footer'
 
 
 // Load Google fonts and assign to CSS variables
@@ -58,6 +59,7 @@ function AppContent({ Component, pageProps, router }: AppContentProps) {
       />
       <Component {...pageProps} />
       <Toaster />
+      <Footer />
 
       <CookieConsent
         location="bottom"

@@ -31,7 +31,7 @@ export default function RightPanel({ topics }: RightPanelProps) {
   }
 
   return (
-    <section className="w-full bg-black flex flex-col lg:flex-row gap-4 rounded-2xl border border-main px-3 sm:px-5 ">
+    <section className="w-full bg-black flex flex-col lg:flex-row gap-4 rounded-2xl border border-main px-3 sm:p-4 ">
       {/* Left side: avatar video */}
       <AvatarPlayer 
         videoUrl={current?.videoUrl ?? ''} 
