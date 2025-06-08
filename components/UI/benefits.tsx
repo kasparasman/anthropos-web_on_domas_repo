@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import clsx from 'clsx';
 
 interface BenefitsProps {
@@ -26,9 +27,11 @@ const Benefits: React.FC<BenefitsProps> = ({ text, className, delay }) => {
         >
             <div className="flex items-center w-full gap-0.5">
                 {/* Icon Placeholder */}
-                <img
-                    src="/done_round_main.png"
+                <Image
+                    src="/Done_round_main.png"
                     alt="Done icon"
+                    width={20}
+                    height={20}
                     className="w-5 h-5"
                 />
                 <p

@@ -153,6 +153,8 @@ interface RegistrationFlowProps {
   scanKey: number;
   webcamAspectRatio: number | null;
   setWebcamAspectRatio: (ratio: number | null) => void;
+  videoAspectRatio: number | null;
+  setVideoAspectRatio: (ratio: number | null) => void;
   toast: (options: {
     title?: React.ReactNode;
     description?: React.ReactNode;
@@ -200,6 +202,8 @@ const RegistrationFlow = ({
   // Webcam Aspect Ratio
   webcamAspectRatio,
   setWebcamAspectRatio,
+  videoAspectRatio,
+  setVideoAspectRatio,
   toast,
   setIsPaymentDetailsComplete,
   activePassportTab,
@@ -216,6 +220,18 @@ const RegistrationFlow = ({
 
     return () => clearInterval(interval);
   }, []);
+
+  const handleVideoMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video.videoHeight > 0) {
+      setVideoAspectRatio(video.videoWidth / video.videoHeight);
+    }
+  };
+
+  const handleStartScan = () => {
+    setVideoAspectRatio(null);
+    setIsScanning(true);
+  };
 
   return (
     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
@@ -263,7 +279,7 @@ const RegistrationFlow = ({
         <div
           className="w-full max-w-md mx-auto border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
           style={{ 
-            aspectRatio: webcamAspectRatio || '4/3',
+            aspectRatio: webcamAspectRatio || videoAspectRatio || '4/3',
             minWidth: '320px'
           }}
         >
@@ -281,14 +297,22 @@ const RegistrationFlow = ({
             />
           ) : (
             <>
-              <Image src="/Mask.png" alt="Face scan mask" layout="fill" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
-              <MainButton className="z-10" onClick={() => setIsScanning(true)} disabled={isLoading}>Scan Your Face</MainButton>
+              <video 
+                src="https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/FaceScan.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                onLoadedMetadata={handleVideoMetadata}
+                className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" 
+              />
+              <MainButton className="z-10" onClick={handleStartScan} disabled={isLoading}>Scan Your Face</MainButton>
             </>
           )}
         </div>
       </div>
 
-      <Lock imgSrc={currentStep >= 2 ? '/unlock.png' : '/lock.png'} hideLines={currentStep >= 2} />
+      <Lock imgSrc={currentStep >= 2 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 2} />
 
       {/* step2 */}
       <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
@@ -322,7 +346,7 @@ const RegistrationFlow = ({
       </div>
 
       {/* Lock */}
-      <Lock imgSrc={currentStep >= 3 ? '/unlock.png' : '/lock.png'} hideLines={currentStep >= 3} />
+      <Lock imgSrc={currentStep >= 3 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 3} />
 
       {/* step3 */}
       <div className={`flex mb-16 flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
@@ -592,6 +616,7 @@ const Register2Page = () => {
 
   // --- New State for Webcam Aspect Ratio ---
   const [webcamAspectRatio, setWebcamAspectRatio] = useState<number | null>(null);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
 
   // --- New State for Early Face Validation ---
   const [isFaceChecking, setIsFaceChecking] = useState(false);
@@ -655,6 +680,7 @@ const Register2Page = () => {
     setIsScanning(true);
     setScanKey(prev => prev + 1);
     setWebcamAspectRatio(null); // Reset aspect ratio
+    setVideoAspectRatio(null);
     setClientSecret(null); // Critical: Reset client secret
     setCurrentStep(1); // Go back to step 1
   };
@@ -691,22 +717,10 @@ const Register2Page = () => {
       setIsFaceUnique(null);
       setErrorMessage(null);
 
-      const MOCK_FACE_UNIQUE = process.env.NEXT_PUBLIC_MOCK_FACE_UNIQUE_CHECK === 'true';
-
       try {
-        // Step 1: Upload the file to get a persistent URL. This is now
-        // required for both mock and real flows so the webhook can access it.
+        // Step 1: Upload the file to get a persistent URL.
         const faceUrl = await uploadFileToStorage(faceFile);
         setUploadedFaceUrl(faceUrl);
-
-        if (MOCK_FACE_UNIQUE) {
-          console.log("--- MOCKING FACE UNIQUENESS CHECK (SUCCESS) ---");
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          setIsFaceUnique(true);
-          toast({ title: 'Face Verified (Mock)', description: 'Your face is unique! Proceeding to the next step.' });
-          setIsFaceChecking(false);
-          return; // Exit mock flow here
-        }
 
         // Step 2: Call our API endpoint to check for uniqueness
         const response = await fetch('/api/auth/check-face-uniqueness', {
@@ -806,6 +820,8 @@ const Register2Page = () => {
     scanKey,
     webcamAspectRatio,
     setWebcamAspectRatio,
+    videoAspectRatio,
+    setVideoAspectRatio,
     toast,
     setIsPaymentDetailsComplete,
     activePassportTab,
