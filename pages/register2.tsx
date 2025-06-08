@@ -717,22 +717,10 @@ const Register2Page = () => {
       setIsFaceUnique(null);
       setErrorMessage(null);
 
-      const MOCK_FACE_UNIQUE = process.env.NEXT_PUBLIC_MOCK_FACE_UNIQUE_CHECK === 'true';
-
       try {
-        // Step 1: Upload the file to get a persistent URL. This is now
-        // required for both mock and real flows so the webhook can access it.
+        // Step 1: Upload the file to get a persistent URL.
         const faceUrl = await uploadFileToStorage(faceFile);
         setUploadedFaceUrl(faceUrl);
-
-        if (MOCK_FACE_UNIQUE) {
-          console.log("--- MOCKING FACE UNIQUENESS CHECK (SUCCESS) ---");
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          setIsFaceUnique(true);
-          toast({ title: 'Face Verified (Mock)', description: 'Your face is unique! Proceeding to the next step.' });
-          setIsFaceChecking(false);
-          return; // Exit mock flow here
-        }
 
         // Step 2: Call our API endpoint to check for uniqueness
         const response = await fetch('/api/auth/check-face-uniqueness', {
