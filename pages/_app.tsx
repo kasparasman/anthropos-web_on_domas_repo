@@ -76,26 +76,68 @@ function AppContent({ Component, pageProps, router }: AppProps) {
 
       <CookieConsent
         location="bottom"
+        style={{
+          position: 'fixed',
+          bottom: '1rem',
+          right: '1rem',
+          marginLeft: '1rem',
+          marginBottom: '1rem',
+          width: '320px',
+          background: 'rgb(22, 22, 22)',
+          border: '1px solid rgb(70, 70, 70)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '1rem',
+          borderRadius: '8px',
+          boxSizing: 'border-box',
+          fontWeight: 500,
+        }}
         buttonText="Accept"
         declineButtonText="Decline"
         enableDeclineButton
         cookieName="site_cookie_consent"
         expires={365}
-        style={{ background: '#fada97', textAlign: 'center', padding: '1rem', fontWeight: 500 }}
-        buttonStyle={{ background: '#fada97', color: '#000000', fontSize: '16px', marginLeft: '0.5rem', border: '1px solid #000000', borderRadius: '6px', fontWeight: 600 }}
-        declineButtonStyle={{ color: '#fff', fontSize: '16px', marginLeft: '0.5rem', border: '1px solid #000000', borderRadius: '6px', fontWeight: 600 }}
-        onAccept={() => {
-          console.log('🎉 cookies accepted');
-          // initialize analytics here
+        buttonStyle={{
+          background: '#20c997',
+          color: '#fff',
+          fontSize: '14px',
+          padding: '0.5rem 1rem',
+          borderRadius: '6px',
+          fontWeight: 600,
+          border: 'none',
+          cursor: 'pointer',
+          marginLeft: '0.5rem',
         }}
-        onDecline={() => {
-          console.log('🚫 cookies declined');
-          // disable tracking here
+        declineButtonStyle={{
+          background: 'transparent',
+          color: '#fff',
+          fontSize: '14px',
+          padding: '0.5rem 1rem',
+          borderRadius: '6px',
+          fontWeight: 600,
+          border: '1px solid #fff',
+          cursor: 'pointer',
         }}
+        onAccept={() => console.log('🎉 cookies accepted')}
+        onDecline={() => console.log('🚫 cookies declined')}
       >
-        <span style={{ color: '#000000', fontWeight: 500 }}>We use cookies to improve your experience.</span>{' '}
-        <a href="/cookie-policy" style={{ color: '#000', textDecoration: 'underline', fontWeight: 500 }}>
-          Learn more
+        <span style={{ 
+          color: '#fff',
+          flex: 1 }}>
+          We use cookies to improve your experience.
+        </span>
+        <a
+          href="/cookie-policy"
+          style={{
+            color: '#fff',
+            textDecoration: 'underline',
+            marginLeft: '0.5rem',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Our policy
         </a>
       </CookieConsent>
     </>
