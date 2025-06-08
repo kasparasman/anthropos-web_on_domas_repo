@@ -153,6 +153,8 @@ interface RegistrationFlowProps {
   scanKey: number;
   webcamAspectRatio: number | null;
   setWebcamAspectRatio: (ratio: number | null) => void;
+  videoAspectRatio: number | null;
+  setVideoAspectRatio: (ratio: number | null) => void;
   toast: (options: {
     title?: React.ReactNode;
     description?: React.ReactNode;
@@ -200,6 +202,8 @@ const RegistrationFlow = ({
   // Webcam Aspect Ratio
   webcamAspectRatio,
   setWebcamAspectRatio,
+  videoAspectRatio,
+  setVideoAspectRatio,
   toast,
   setIsPaymentDetailsComplete,
   activePassportTab,
@@ -216,6 +220,18 @@ const RegistrationFlow = ({
 
     return () => clearInterval(interval);
   }, []);
+
+  const handleVideoMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video.videoHeight > 0) {
+      setVideoAspectRatio(video.videoWidth / video.videoHeight);
+    }
+  };
+
+  const handleStartScan = () => {
+    setVideoAspectRatio(null);
+    setIsScanning(true);
+  };
 
   return (
     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
@@ -263,7 +279,7 @@ const RegistrationFlow = ({
         <div
           className="w-full max-w-md mx-auto border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
           style={{ 
-            aspectRatio: webcamAspectRatio || '4/3',
+            aspectRatio: webcamAspectRatio || videoAspectRatio || '4/3',
             minWidth: '320px'
           }}
         >
@@ -281,8 +297,16 @@ const RegistrationFlow = ({
             />
           ) : (
             <>
-              <Image src="/Mask.png" alt="Face scan mask" layout="fill" className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" />
-              <MainButton className="z-10" onClick={() => setIsScanning(true)} disabled={isLoading}>Scan Your Face</MainButton>
+              <video 
+                src="https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/FaceScan.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                onLoadedMetadata={handleVideoMetadata}
+                className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" 
+              />
+              <MainButton className="z-10" onClick={handleStartScan} disabled={isLoading}>Scan Your Face</MainButton>
             </>
           )}
         </div>
@@ -592,6 +616,7 @@ const Register2Page = () => {
 
   // --- New State for Webcam Aspect Ratio ---
   const [webcamAspectRatio, setWebcamAspectRatio] = useState<number | null>(null);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
 
   // --- New State for Early Face Validation ---
   const [isFaceChecking, setIsFaceChecking] = useState(false);
@@ -655,6 +680,7 @@ const Register2Page = () => {
     setIsScanning(true);
     setScanKey(prev => prev + 1);
     setWebcamAspectRatio(null); // Reset aspect ratio
+    setVideoAspectRatio(null);
     setClientSecret(null); // Critical: Reset client secret
     setCurrentStep(1); // Go back to step 1
   };
@@ -806,6 +832,8 @@ const Register2Page = () => {
     scanKey,
     webcamAspectRatio,
     setWebcamAspectRatio,
+    videoAspectRatio,
+    setVideoAspectRatio,
     toast,
     setIsPaymentDetailsComplete,
     activePassportTab,
