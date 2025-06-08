@@ -34,13 +34,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         paymentMethodId, 
         idToken,
         faceUrl,
-        styleUrl,
+        styleId,
         nickname,
         gender
     } = req.body;
 
-    if (!email || !plan || !paymentMethodId || !idToken || !faceUrl || !styleUrl || !nickname || !gender) {
-        const missing = Object.entries({email, plan, paymentMethodId, idToken, faceUrl, styleUrl, nickname, gender})
+    if (!email || !plan || !paymentMethodId || !idToken || !faceUrl || !styleId || !nickname || !gender) {
+        const missing = Object.entries({email, plan, paymentMethodId, idToken, faceUrl, styleId, nickname, gender})
             .filter(([, value]) => !value)
             .map(([key]) => key);
         return res.status(400).json({ message: `Missing required parameters: ${missing.join(', ')}` });
@@ -71,6 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
             items: [{ price: priceId }],
+            expand: ['latest_invoice.payment_intent'],
         });
 
         // Step 3: Create the user profile in your database
@@ -81,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 nickname,
                 gender,
                 tmpFaceUrl: faceUrl, 
-                styleUrl: styleUrl,
+                styleId: styleId,
                 status: 'PENDING_PAYMENT',
                 stripeCustomerId: customer.id,
                 stripeSubscriptionId: subscription.id,

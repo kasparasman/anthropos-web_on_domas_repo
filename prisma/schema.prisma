@@ -18,13 +18,14 @@ model Profile {
   warnings       Int         @default(0)
   banned         Boolean     @default(false)
   avatarUrl      String?
-  status         String    @default("PENDING_PAYMENT")
+  status         String    @default("PENDING")
   rekFaceId      String?   @unique
   stripeCustomerId String?   @unique
   stripeSubscriptionId String? @unique
   stripePriceId      String?
   stripeCurrentPeriodEnd DateTime?
   tmpFaceUrl     String?
+  styleId        String?
   styleUrl       String?
   gender         String?
   createdAt      DateTime  @default(now()) @db.Timestamptz(6)

@@ -98,7 +98,7 @@ interface RegistrationFlowProps {
   errorMessage: string | null;
   isGenerated: boolean;
   showPopup: boolean;
-  finalPassport: { nickname: string; avatarUrl: string } | null;
+  finalPassport: { nickname: string; avatarUrl: string; citizenId: number } | null;
   stylesToShow: StyleItem[];
   isFaceChecking: boolean;
   isFaceUnique: boolean | null;
@@ -131,7 +131,7 @@ interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
   uploadedFaceUrl: string | null;
   setIsLoading: (loading: boolean) => void;
   setProgressMessage: (message: string | null) => void;
-  setFinalPassport: (passport: { nickname: string; avatarUrl: string } | null) => void;
+  setFinalPassport: (passport: { nickname: string; avatarUrl: string; citizenId: number } | null) => void;
   setIsGenerated: (generated: boolean) => void;
   setRegistrationInProgress: (inProgress: boolean) => void;
   toast: (options: {
@@ -298,16 +298,39 @@ const RegistrationFlow = ({
                 <h1 className="text-3xl font-bold">Your Passport is Ready!</h1>
                 <div className="relative flex items-center justify-center">
                   <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[80px]"></div>
-                  <Passport className="z-1" nickname={finalPassport.nickname} gender={gender} avatarUrl={finalPassport.avatarUrl} />
+                  <Passport className="z-1" nickname={finalPassport.nickname} gender={gender} avatarUrl={finalPassport.avatarUrl} citizenId={finalPassport.citizenId} />
                 </div>
                 <MainButton variant="solid" onClick={() => router.push("/")}>Enter the City</MainButton>
               </>
             ) : (
               <>
-                <h1 className="text-3xl font-bold">Forging Your Passport...</h1>
-                <div className="relative w-64 h-96 flex items-center justify-center">
-                  <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[100px] animate-pulse"></div>
-                  <p className="z-10 text-white/80 max-w-xs text-center">{progressMessage || 'Please wait, this may take a moment.'}</p>
+                <h1 className="text-3xl font-bold mb-4 animate-pulse">Forging Your Passport...</h1>
+                <div className="relative flex items-center justify-center">
+                  {/* Blurred glow behind the passport */}
+                  <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[100px] opacity-70 animate-pulse" />
+
+                  {/* Passport placeholder that will update automatically once finalPassport is ready */}
+                  {(() => {
+                    const selectedStyle = stylesToShow.find((s) => s.id === selectedStyleId);
+                    const placeholderAvatar = selectedStyle?.src || '/default-avatar.svg';
+                    return (
+                      <div className="relative">
+                        <Passport
+                          className="z-10 animate-pulse"
+                          nickname={progressMessage ? '...' : 'Forging'}
+                          gender={gender}
+                          avatarUrl={placeholderAvatar}
+                        />
+
+                        {/* Overlay shimmer to indicate forging */}
+                        <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-[16px]">
+                          <p className="text-white text-center px-4 animate-pulse">
+                            {progressMessage || 'Generating avatar & citizen name...'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </>
             )}
@@ -377,7 +400,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
           paymentMethodId: setupIntent.payment_method,
           idToken,
           faceUrl: uploadedFaceUrl,
-          styleUrl: stylesToShow.find(s => s.id === selectedStyleId)?.src,
+          styleId: selectedStyleId,
           nickname: email.split('@')[0],
           gender: props.gender,
         }),
@@ -394,7 +417,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
           const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
           const statusData = await statusResponse.json();
 
-          if (statusData.status === 'ACTIVE') {
+          if (statusData.status === 'ACTIVE' && statusData.avatarUrl && statusData.nickname) {
             clearInterval(pollInterval);
 
             setProgressMessage('Logging you in...');
@@ -408,7 +431,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
             }
 
             // Success!
-            setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl });
+            setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl, citizenId: statusData.citizenId });
             setProgressMessage(null);
             setIsLoading(false);
           }
@@ -476,7 +499,7 @@ const Register2Page = () => {
   // --- Final Passport State ---
   const [isGenerated, setIsGenerated] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [finalPassport, setFinalPassport] = useState<{ nickname: string, avatarUrl: string } | null>(null);
+  const [finalPassport, setFinalPassport] = useState<{ nickname: string, avatarUrl: string, citizenId: number } | null>(null);
 
   const stylesToShow = gender === "male" ? maleStyles : femaleStyles;
 

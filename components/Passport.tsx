@@ -27,7 +27,7 @@ export default function Passport({ id, citizenId, nickname, gender, avatarUrl, c
       {/* Avatar Section */}
       <div className="w-60 h-60 rounded-lg overflow-hidden relative">
         <Image
-          src={'/communicator.png'}
+          src={avatarUrl || '/communicator.png'}
           alt={`${nickname}'s avatar`}
           width={600}
           height={600}

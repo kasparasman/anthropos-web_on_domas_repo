@@ -20,6 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 status: true,
                 avatarUrl: true,
                 nickname: true,
+                citizenId: true,
             },
         });
 
@@ -31,6 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             status: profile.status,
             avatarUrl: profile.avatarUrl,
             nickname: profile.nickname,
+            citizenId: profile.citizenId,
         });
 
     } catch (error) {

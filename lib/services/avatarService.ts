@@ -1,64 +1,90 @@
+import { OpenAI } from 'openai';
+import { getPromptForStyle } from './promptService';
 import { blobToBase64 } from '@/lib/base64';
+import { uploadFromUrlToTmp } from '@/lib/uploadFromUrlToTmp';
+import { maleStyles, femaleStyles } from '@/lib/avatarStyles';
 
-// A mock avatar generation service. In a real application, this would
-// call a third-party API or a machine learning model.
-async function callAvatarGenerationModel(selfieB64: string, styleB64: string): Promise<string> {
-    console.log("--- MOCKING AVATAR GENERATION (SERVER-SIDE) ---");
-    
-    // Simulate network delay and processing time
-    await new Promise(resolve => setTimeout(resolve, 2500)); 
+const ai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const LIMITLESS_CREST_URL = "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_limitless.png";
 
-    // In a real scenario, you'd handle the response from your avatar service.
-    // For this mock, we'll just return a placeholder URL.
-    const mockAvatarUrl = "https://storage.googleapis.com/anthropos-main-bucket/avatars/mock_avatar.png";
-    
-    // Here you would add real error handling based on the service's response
-    if (!selfieB64 || !styleB64) {
-        throw new Error("Missing base64 data for avatar generation.");
+async function imageToDataUrl(url: string): Promise<string> {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch image from URL: ${url}`);
     }
-
-    return mockAvatarUrl;
+    const blob = await response.blob();
+    // Return the full data URL, which includes the correct MIME type.
+    return await blobToBase64(blob) as string;
 }
 
-
 /**
- * Fetches images from URLs, converts them to base64, and generates an avatar.
+ * Generates an avatar using the multi-modal 'responses' API.
+ * This is the core, non-streaming avatar generation logic for production.
+ *
  * @param faceUrl - The public URL of the user's face image.
- * @param styleUrl - The public URL of the chosen style image.
- * @returns A promise that resolves to the URL of the generated avatar.
+ * @param styleId - The ID of the chosen style (e.g., "m1", "f4").
+ * @returns A promise that resolves to the URL of the generated and uploaded avatar.
  */
-export async function generateAvatar(faceUrl: string, styleUrl: string): Promise<string> {
+export async function generateAvatar(faceUrl: string, styleId: string): Promise<string> {
+    console.log(`Starting avatar generation for style ID: ${styleId} using 'responses' API.`);
+
     try {
-        // Step 1: Fetch both images concurrently
-        const [faceResponse, styleResponse] = await Promise.all([
-            fetch(faceUrl),
-            fetch(styleUrl)
-        ]);
-
-        if (!faceResponse.ok) throw new Error(`Failed to fetch face image: ${faceResponse.statusText}`);
-        if (!styleResponse.ok) throw new Error(`Failed to fetch style image: ${styleResponse.statusText}`);
-
-        // Step 2: Convert images to blobs
-        const [faceBlob, styleBlob] = await Promise.all([
-            faceResponse.blob(),
-            styleResponse.blob()
-        ]);
+        const { prompt: instructions, archetype } = getPromptForStyle(styleId);
+        const style = [...maleStyles, ...femaleStyles].find(s => s.id === styleId);
+        if (!style) throw new Error(`Could not find style for ID ${styleId}`);
         
-        // Step 3: Convert blobs to base64 strings
-        const [faceB64, styleB64] = await Promise.all([
-            blobToBase64(faceBlob),
-            blobToBase64(styleBlob)
-        ]);
-        
-        // Step 4: Call the underlying avatar generation service/model
-        const avatarUrl = await callAvatarGenerationModel(faceB64, styleB64);
+        console.log(`Using archetype "${archetype}" with instructions and passing image URLs directly.`);
 
-        return avatarUrl;
+        // The API expects direct URLs, not base64 data, so we pass them straight through.
+        
+        // Per user direction, using the confirmed-working structure from avatar-gen.ts
+        // with the correct response extraction method.
+        // @ts-expect-error - The user has confirmed this structure is correct for the API and the types are out of sync.
+        const response = await ai.responses.create({
+            model: 'gpt-4.1',
+            input: [
+                {
+                    role: 'user',
+                    content: [
+                        { type: 'input_text', text: instructions },
+                        { type: 'input_text', text: 'USER_SELFIE' },
+                        { type: 'input_image', image_url: faceUrl, detail: 'low' },
+                        { type: 'input_text', text: 'STYLE_REFERENCE' },
+                        { type: 'input_image', image_url: style.src, detail: 'low' },
+                        { type: 'input_text', text: 'LIMITLESS_CREST' },
+                        { type: 'input_image', image_url: LIMITLESS_CREST_URL, detail: 'low' }
+                    ],
+                },
+            ],
+            tool_choice: 'required',
+            tools: [{ 
+                type: "image_generation",
+                moderation: "low",
+                size: "1024x1024",
+            }],
+        });
+        
+        // Correctly extract the result from the 'output' array for non-streaming responses.
+        const imageB64 = response.output
+            // @ts-expect-error - Trusting user's confirmed structure
+            ?.filter((output) => output.type === "image_generation_call")
+            // @ts-expect-error - Trusting user's confirmed structure
+            ?.map((output) => output.result)
+            ?.[0];
+
+        if (!imageB64) {
+            console.error("OpenAI 'responses' API call did not return an image. Full response:", JSON.stringify(response, null, 2));
+            throw new Error("OpenAI 'responses' API did not return image data.");
+        }
+        console.log('✅ Avatar generated by `responses` API successfully.');
+
+        const finalAvatarUrl = await uploadFromUrlToTmp(`data:image/png;base64,${imageB64}`, 'png');
+        console.log(`✅ Avatar uploaded to: ${finalAvatarUrl}`);
+
+        return finalAvatarUrl;
 
     } catch (error) {
-        console.error("Error in generateAvatar service:", error);
-        // Depending on the desired behavior, you could return a default avatar
-        // or re-throw the error to be handled by the calling API route.
-        throw new Error("Could not generate avatar.");
+        console.error("❌ Error in generateAvatar service:", error);
+        throw new Error(`Could not generate avatar: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 } 
