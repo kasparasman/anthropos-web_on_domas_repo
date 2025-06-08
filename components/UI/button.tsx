@@ -18,7 +18,7 @@ const MainButton: React.FC<ButtonProps> = ({
 }) => {
   // Base layout classes (same for both variants)
   const baseClasses =
-    "flex items-center justify-center font-semibold px-4 rounded-full transition";
+    "flex items-center justify-center font-semibold px-4 rounded-full transition-all duration-200 hover:shadow-[0_0px_16px_0_rgba(254,212,138,0.5)]";
 
   // Variant‐specific classes
   const variantClasses =

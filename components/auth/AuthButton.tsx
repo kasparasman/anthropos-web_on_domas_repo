@@ -3,6 +3,8 @@
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useAuthSync } from '../../hooks/useFirebaseNextAuth'
+import MainButton from '../UI/button'
+import { useRouter } from 'next/navigation'
 
 interface AuthButtonProps {
   onLoginClick: () => void;
@@ -11,6 +13,7 @@ interface AuthButtonProps {
 export default function AuthButton({ onLoginClick }: AuthButtonProps) {
   const { ready, user } = useAuthSync()   // Firebase state
   const { data: session, status } = useSession()           // NextAuth state
+  const router = useRouter()
 
   /* ------------- still loading either auth state ------------- */
   if (!ready || status === 'loading')
@@ -24,18 +27,18 @@ export default function AuthButton({ onLoginClick }: AuthButtonProps) {
   /* ------------- Logged-out ➜ show Sign-in / Sign-up -------------- */
   return (
     <div className="flex space-x-2">
-      <button
+      <MainButton
         onClick={onLoginClick}
-        className="px-4 py-1 bg-main text-background rounded"
+        className="rounded-md py-0.5"
       >
         Log in
-      </button>
-      <Link
-        href="/register2"
-        className="px-4 py-1 bg-main text-background rounded"
+      </MainButton>
+      <MainButton
+        onClick={() => router.push('/register2')}
+        className="rounded-md py-0.5"
       >
         Sign up
-      </Link>
+      </MainButton>
     </div>
   )
 }
