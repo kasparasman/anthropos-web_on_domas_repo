@@ -10,18 +10,23 @@ interface RightPanelProps {
 }
 
 export default function RightPanel({ topics }: RightPanelProps) {
-  const [selectedId, setSelectedId] = useState<string>(topics[0]?.id ?? '')
+  const [selectedId, setSelectedId] = useState<string>('') // No topic selected by default
   const [popupTopic, setPopupTopic] = useState<TopicWithBody | null>(null)
   const [isIdle, setIsIdle] = useState(true) // Start in idle state
   const [hasPlayedVideo, setHasPlayedVideo] = useState(false) // Track if topic video has played
 
   const current = topics.find((t) => t.id === selectedId)
 
-  // Handle topic selection
+  // Handle topic selection with basic guardrails
   const handleTopicSelect = (id: string) => {
     setSelectedId(id)
     setIsIdle(false) // Switch to topic video
     setHasPlayedVideo(false) // Reset played state
+  }
+
+  // Handle video start
+  const handleVideoStart = () => {
+    // Video has started playing
   }
 
   // Handle video end - return to idle immediately
@@ -36,6 +41,7 @@ export default function RightPanel({ topics }: RightPanelProps) {
       <AvatarPlayer 
         videoUrl={current?.videoUrl ?? ''} 
         isIdle={isIdle}
+        onVideoStart={handleVideoStart}
         onVideoEnd={handleVideoEnd}
       />
 

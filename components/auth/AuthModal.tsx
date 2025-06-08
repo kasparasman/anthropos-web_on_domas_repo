@@ -244,7 +244,6 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 disabled={isLoading}
                 onClick={() => setMode(authState.mode === 'login' ? 'register' : 'login')}
                 className="w-full mt-2 text-sm text-main disabled:opacity-60 hover:underline">
-                {authState.mode === 'login' ? 'Need an account? Register' : 'Have an account? Sign In'}
               </button>
             )}
 

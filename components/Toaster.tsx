@@ -9,12 +9,12 @@ export default function Toaster() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="bg-black text-gold border border-gold rounded-lg shadow-lg px-4 py-3 flex flex-col gap-1"
+          className="bg-black text-main border border-main rounded-lg shadow-lg px-4 py-3 flex flex-col gap-1"
         >
           {toast.title && <div className="font-bold">{toast.title}</div>}
           {toast.description && <div>{toast.description}</div>}
           <button
-            className="absolute top-1 right-2 text-gold"
+            className="absolute top-1 right-2 text-main hover:text-secondary"
             onClick={() => dismiss(toast.id)}
           >
             ×

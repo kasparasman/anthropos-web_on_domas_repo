@@ -55,6 +55,7 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
 }) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +74,9 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
 
   // --- Image URL State ---
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  // --- Video dimensions state ---
+  const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     if (capturedImage) {
@@ -171,7 +175,8 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
 
     const video = webcamRef.current.video;
     const canvas = canvasRef.current;
-    if (!canvas) {
+    const container = containerRef.current;
+    if (!canvas || !container) {
       if (isMountedRef.current) {
         animationFrameId.current = requestAnimationFrame(predictWebcam);
       }
@@ -316,9 +321,9 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
     }
   }, [isFaceSteady]);
 
-  const handleUserMedia = () => {
+  const handleUserMedia = useCallback(() => {
     const video = webcamRef.current?.video;
-    if (!onVideoReady || !video) {
+    if (!video) {
       return;
     }
 
@@ -329,8 +334,19 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
       }
       
       if (video.videoWidth > 0 && video.videoHeight > 0) {
-        // Once dimensions are available, we can set the aspect ratio
-        onVideoReady(video.videoWidth / video.videoHeight);
+        // Store video dimensions
+        setVideoDimensions({
+          width: video.videoWidth,
+          height: video.videoHeight
+        });
+
+        // Calculate aspect ratio
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        
+        // Call the parent callback with the aspect ratio
+        if (onVideoReady) {
+          onVideoReady(aspectRatio);
+        }
       } else {
         // If not ready, try again on the next available frame
         requestAnimationFrame(pollForDimensions);
@@ -338,7 +354,7 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
     };
 
     pollForDimensions();
-  };
+  }, [onVideoReady]);
 
   // Handle webcam errors with more specific error messages
   const handleWebcamError = (error: string | DOMException) => {
@@ -351,7 +367,7 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
   const StatusOverlay = () => {
     if (isFaceChecking) {
         return (
-            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white p-4">
+            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white p-4 rounded-2xl">
                 <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
                 <p className="mt-4 text-lg font-semibold">Verifying uniqueness...</p>
             </div>
@@ -360,7 +376,7 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
 
     if (isFaceUnique === true) {
         return (
-            <div className="absolute inset-0 bg-green-500/50 flex flex-col items-center justify-center text-white p-4">
+            <div className="absolute inset-0 bg-green-500/50 flex flex-col items-center justify-center text-white p-4 rounded-2xl">
                 <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -371,7 +387,7 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
 
     if (isFaceUnique === false) {
         return (
-            <div className="absolute inset-0 bg-red-800/80 flex flex-col items-center justify-center text-white text-center p-4">
+            <div className="absolute inset-0 bg-red-800/80 flex flex-col items-center justify-center text-white text-center p-4 rounded-2xl">
                  <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                  </svg>
@@ -386,7 +402,7 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
 
   // --- Render Logic ---
   return (
-    <div className="w-full h-full relative bg-black rounded-2xl">
+    <div ref={containerRef} className="w-full h-full relative bg-black rounded-2xl overflow-hidden">
       {imageUrl && capturedImage ? (
         // --- CAPTURED VIEW ---
         <>
@@ -401,7 +417,7 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
       ) : (
         // --- SCANNING VIEW ---
         <>
-          {error && <div className="absolute inset-0 flex items-center justify-center bg-black p-4 text-center text-red-400 z-30">{error}</div>}
+          {error && <div className="absolute inset-0 flex items-center justify-center bg-black p-4 text-center text-red-400 z-30 rounded-2xl">{error}</div>}
           
           {!error && !isModelLoaded && (
             <div className="flex flex-col items-center justify-center text-white h-full">
@@ -416,7 +432,12 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
             mirrored={true}
             onUserMedia={handleUserMedia}
             onUserMediaError={handleWebcamError}
-            className={`w-full h-full rounded-2xl transition-opacity duration-500 ${isModelLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-full object-cover rounded-2xl transition-opacity duration-500 ${isModelLoaded ? 'opacity-100' : 'opacity-0'}`}
+            videoConstraints={{
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              facingMode: "user"
+            }}
           />
           
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full rounded-2xl pointer-events-none transform -scale-x-100" />
@@ -443,4 +464,4 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
   );
 };
 
-export default FaceScanComponent; 
+export default FaceScanComponent;
