@@ -1,4 +1,6 @@
 // components/AvatarPlayer.tsx
+'use client'
+
 import React, { useRef, useState, useEffect } from 'react'
 
 interface AvatarPlayerProps {
@@ -13,11 +15,19 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
   const idleVideoRef = useRef<HTMLVideoElement | null>(null)
   const topicVideoRef = useRef<HTMLVideoElement | null>(null)
   const [topicVideoStarted, setTopicVideoStarted] = useState(false)
+  const previousVideoUrlRef = useRef<string | null>(null)
 
-  // Reset states when videoUrl changes
+  // Reset states when videoUrl changes or when switching to idle
   useEffect(() => {
-    setTopicVideoStarted(false)
-  }, [videoUrl])
+    if (videoUrl !== previousVideoUrlRef.current || isIdle) {
+      setTopicVideoStarted(false)
+      if (topicVideoRef.current) {
+        topicVideoRef.current.pause()
+        topicVideoRef.current.currentTime = 0
+      }
+      previousVideoUrlRef.current = videoUrl
+    }
+  }, [videoUrl, isIdle])
 
   // Handle video opacity using complementary system
   const updateVideoOpacity = () => {
@@ -28,8 +38,6 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
       // Complementary opacity system - always sums to 1
       topicVideoRef.current.style.opacity = topicOpacity.toString()
       idleVideoRef.current.style.opacity = (1 - topicOpacity).toString()
-      
-      console.log('Video opacity update:', { topicOpacity, idleOpacity: 1 - topicOpacity })
     }
   }
 
@@ -39,11 +47,8 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
       const setupIdleVideo = async () => {
         try {
           if (isIdle) {
-            console.log('Playing idle video')
-            idleVideoRef.current!.currentTime = 0
             await idleVideoRef.current!.play()
           } else {
-            console.log('Pausing idle video')
             idleVideoRef.current!.pause()
           }
           updateVideoOpacity()
@@ -57,67 +62,61 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
 
   // Handle topic video
   useEffect(() => {
-    if (topicVideoRef.current && videoUrl && !isIdle) {
-      console.log('Setting up topic video:', videoUrl)
-      
-      const setupTopicVideo = async () => {
-        try {
-          topicVideoRef.current!.currentTime = 0
-          setTopicVideoStarted(true)
-          console.log('Playing topic video')
-          await topicVideoRef.current!.play()
-          updateVideoOpacity()
-        } catch (error) {
-          console.error('Error playing topic video:', error)
-          setTopicVideoStarted(true) // Still show video even if autoplay fails
-          updateVideoOpacity()
-        }
-      }
+    if (!topicVideoRef.current || !videoUrl || isIdle) {
+      return
+    }
 
-      // Set up event listeners
-      const handleCanPlay = () => {
-        if (!topicVideoStarted) {
-          setupTopicVideo()
-        }
-      }
+    const videoElement = topicVideoRef.current
 
-      topicVideoRef.current.addEventListener('canplaythrough', handleCanPlay)
-      
-      // Try to play immediately if already loaded
-      if (topicVideoRef.current.readyState >= 4) { // HAVE_ENOUGH_DATA
+    const setupTopicVideo = async () => {
+      try {
+        // Reset video state
+        videoElement.currentTime = 0
+        videoElement.src = videoUrl
+        
+        await videoElement.load()
+        setTopicVideoStarted(true)
+        await videoElement.play()
+        updateVideoOpacity()
+      } catch (error) {
+        console.error('Error playing topic video:', error)
+        setTopicVideoStarted(false)
+      }
+    }
+
+    // Set up event listeners
+    const handleCanPlay = () => {
+      if (!topicVideoStarted) {
         setupTopicVideo()
       }
-      
-      return () => {
-        if (topicVideoRef.current) {
-          topicVideoRef.current.removeEventListener('canplaythrough', handleCanPlay)
-        }
-      }
-    } else if (topicVideoRef.current && (isIdle || !videoUrl)) {
-      // Pause topic video when switching to idle
-      topicVideoRef.current.pause()
-      setTopicVideoStarted(false)
-      updateVideoOpacity()
     }
-  }, [videoUrl, isIdle, topicVideoStarted])
 
-  // Update opacity whenever topicVideoStarted changes
+    videoElement.addEventListener('canplaythrough', handleCanPlay)
+    
+    // Try to play immediately if already loaded
+    if (videoElement.readyState >= 4) {
+      setupTopicVideo()
+    }
+    
+    return () => {
+      videoElement.removeEventListener('canplaythrough', handleCanPlay)
+      videoElement.pause()
+      videoElement.currentTime = 0
+      setTopicVideoStarted(false)
+    }
+  }, [videoUrl, isIdle])
+
+  // Update opacity whenever relevant states change
   useEffect(() => {
     updateVideoOpacity()
   }, [topicVideoStarted, isIdle])
 
   const handleTopicVideoEnd = () => {
-    console.log('Topic video ended')
-    
-    // Immediately switch to idle
     if (onVideoEnd) {
       onVideoEnd()
     }
-    
     setTopicVideoStarted(false)
   }
-
-  console.log('AvatarPlayer render:', { isIdle, videoUrl, topicVideoStarted })
 
   return (
     <div className="w-full lg:w-[40%] h-96 max-w-50 bg-black rounded-xl overflow-hidden mx-auto my-auto flex items-center justify-center relative">
@@ -125,32 +124,23 @@ export default function AvatarPlayer({ videoUrl, isIdle, onVideoEnd }: AvatarPla
       <video
         ref={idleVideoRef}
         src={IDLE_VIDEO_URL}
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ opacity: 1 }} // Initial opacity, will be controlled by updateVideoOpacity
+        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+        style={{ opacity: 1 }}
         preload="auto"
         playsInline
         muted
         loop
-        onLoadedData={() => console.log('Idle video loaded data')}
-        onCanPlay={() => console.log('Idle video can play')}
-        onPlay={() => console.log('Idle video started playing')}
-        onError={(e) => console.error('Idle video error:', e)}
       />
       
       {/* Topic Video - always rendered when videoUrl exists with complementary opacity */}
       {videoUrl && (
         <video
           ref={topicVideoRef}
-          src={videoUrl}
-          onEnded={handleTopicVideoEnd}
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: 0 }} // Initial opacity, will be controlled by updateVideoOpacity
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+          style={{ opacity: 0 }}
           preload="auto"
           playsInline
-          onLoadedData={() => console.log('Topic video loaded data')}
-          onCanPlay={() => console.log('Topic video can play')}
-          onPlay={() => console.log('Topic video started playing')}
-          onError={(e) => console.error('Topic video error:', e)}
+          onEnded={handleTopicVideoEnd}
         />
       )}
     </div>

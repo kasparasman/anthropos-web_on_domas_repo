@@ -408,15 +408,23 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       const setupData = await setupResponse.json();
       if (!setupResponse.ok) throw new Error(setupData.message || "An error occurred during registration setup.");
 
-      // Step 5: Start polling for activation status
-      setProgressMessage('Awaiting payment confirmation...');
+      // Step 5: Start polling for activation status (payment is now complete)
+      setProgressMessage('Forging your passport. This may take up to a minute...');
+
       const userId = setupData.userId;
       const pollInterval = setInterval(async () => {
         try {
           const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
           const statusData = await statusResponse.json();
 
-          if (statusData.status === 'ACTIVE' && statusData.avatarUrl && statusData.nickname) {
+          // While we wait for avatar generation & nickname creation, keep the user informed.
+          if (statusData.status !== 'ACTIVE') {
+            setProgressMessage('Forging your passport. This may take up to a minute...');
+            return; // Continue polling until the profile becomes ACTIVE
+          }
+
+          // --- Profile is ACTIVE: finalize the flow ---
+          if (statusData.avatarUrl && statusData.nickname) {
             clearInterval(pollInterval);
 
             setProgressMessage('Logging you in...');
@@ -434,12 +442,11 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
             setProgressMessage(null);
             setIsLoading(false);
           }
-          // If status is still 'PENDING_PAYMENT', do nothing and let it poll again.
 
         } catch (pollError) {
           // Stop polling on error
           clearInterval(pollInterval);
-          throw new Error("Failed to check registration status. Please try logging in later.");
+          throw new Error('Failed to check registration status. Please try logging in later.');
         }
       }, 3000); // Poll every 3 seconds
 
