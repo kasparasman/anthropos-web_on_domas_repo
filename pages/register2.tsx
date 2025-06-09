@@ -514,21 +514,14 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
   };
 
   const handleGeneratePassport = async () => {
+    // Synchronous guard against double-clicks
     if (submissionGuard.current) {
-      toast({
-        title: 'Processing...',
-        description: 'Your passport generation is already in progress.',
-        duration: 3000,
-      });
+      toast({ title: 'Processing...', description: 'Your passport generation is already in progress.', duration: 3000 });
       return;
     }
 
     if (!stripe || !elements || !clientSecret || !selectedStyleId || !faceFile || !email || !password || !uploadedFaceUrl || !props.plan) {
-      toast({
-        title: "Incomplete Form",
-        description: "Please complete all steps, including email, password, and style selection.",
-        duration: 5000
-      });
+      toast({ title: "Incomplete Form", description: "Please complete all steps, including email, password, and style selection.", duration: 5000 });
       return;
     }
 
@@ -538,12 +531,18 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     props.setIsGenerated(true);
     setTimeout(() => props.setShowPopup(true), 10);
 
-    let idToken = ''; // Keep idToken in a wider scope
+    let idToken = '';
 
     try {
-      // Step 1: User has clicked "Pay". We first create a PaymentMethod.
-      // No need for elements.submit() here as createPaymentMethod does its own validation.
-      setProgressMessage('Validating payment information...');
+      // 1. VALIDATE + LOCK
+      setProgressMessage('Validating payment details...');
+      const { error: submitErr } = await elements.submit();
+      if (submitErr) {
+        throw new Error(submitErr.message || 'Failed to validate payment form.');
+      }
+
+      // 2. CREATE PAYMENT METHOD
+      setProgressMessage('Securing payment method...');
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
         elements,
         params: { billing_details: { email } },
@@ -556,12 +555,12 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         throw new Error('Failed to create payment method. Please try again.');
       }
 
-      // Step 2: Create Firebase user
+      // After this point, other async actions are safe
       setProgressMessage('Creating your citizen account...');
       const cred = await registerClient(email, password);
       idToken = await cred.user.getIdToken();
 
-      // Step 3: Send the new PaymentMethod ID to the backend
+      // 3. BACKEND ROUND-TRIP
       setProgressMessage('Submitting registration...');
       const setupResponse = await fetch('/api/auth/setup-registration', {
         method: 'POST',
@@ -584,28 +583,32 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       }
 
       const setupData = await setupResponse.json();
-
-      // Step 4: The backend has prepared the payment. Now, confirm it on the frontend.
+      if (!setupData.clientSecret) {
+        throw new Error("Backend did not return a client secret for payment confirmation.");
+      }
+      
+      // 4. CONFIRM THE INVOICE PAYMENTINTENT
       setProgressMessage('Awaiting payment confirmation...');
-
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-        elements,
         clientSecret: setupData.clientSecret,
+        payment_method: paymentMethod.id,      // manual mode
         confirmParams: {
           return_url: `${window.location.origin}/`,
         },
-        redirect: 'if_required', 
+        redirect: 'if_required',
       });
 
       if (confirmError) {
+        // This can happen if the user closes the 3DS modal, etc.
         throw new Error(confirmError.message || 'Payment confirmation failed. Please try again.');
       }
 
       if (paymentIntent?.status !== 'succeeded') {
+        // This case might be hit if `if_required` doesn't redirect but payment is not successful.
         throw new Error(`Payment not successful (status: ${paymentIntent?.status}). Please try again.`);
       }
 
-      // Step 5: Payment is successful! Start polling for activation status.
+      // 5. SUCCESS - START POLLING
       setProgressMessage('Payment successful! Forging your passport...');
       startPollingForStatus(setupData.userId, idToken);
 
@@ -929,7 +932,7 @@ const Register2Page = () => {
 
   // Once we have a clientSecret, wrap the rest of the flow in the Elements provider
   return (
-    <Elements stripe={getStripe()} options={{ clientSecret, appearance }} key={clientSecret}>
+    <Elements stripe={getStripe()} options={{ clientSecret, appearance, paymentMethodCreation: 'manual', }} key={clientSecret}>
       <CheckoutAndFinalize {...props} uploadedFaceUrl={uploadedFaceUrl} setRegistrationInProgress={setRegistrationInProgress} />
     </Elements>
   );

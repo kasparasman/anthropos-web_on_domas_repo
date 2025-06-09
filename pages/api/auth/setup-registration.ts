@@ -59,25 +59,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const customer = await stripe.customers.create({
             email: email,
         });
-
+        // 1.5 **ATTACH the PaymentMethod to that customer**
+        await stripe.paymentMethods.attach(paymentMethodId, {
+            customer: customer.id,
+        });
+        await stripe.customers.update(customer.id, {
+            invoice_settings: { default_payment_method: paymentMethodId },
+          });
+          
         // Step 2: Create the subscription with the default payment method attached.
         const priceId = PRICE_IDS[plan];
         if (!priceId) {
             return res.status(400).json({ message: `Invalid plan: ${plan}` });
         }
         
-        const idempotencyKey = `sub_create_${uid}_${plan}`;
+        const idempotencyKey = `sub_${uid}_${plan}_${Date.now()}`;   // ← add timestamp or UUID
 
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
             items: [{ price: priceId }],
-            default_payment_method: paymentMethodId,
             payment_behavior: 'default_incomplete',
-            payment_settings: { save_default_payment_method: 'on_subscription' },
+            collection_method: 'charge_automatically',
+            default_payment_method: paymentMethodId,
+            trial_period_days: 0,
+            payment_settings: {
+                save_default_payment_method: 'on_subscription',
+              },
             expand: ['latest_invoice.payment_intent'],
-        }, {
-            idempotencyKey: idempotencyKey,
-        });
+        }, 
+            { idempotencyKey }   // same header, but now unique per attempt
+        );
 
         // Step 3: Create (or upsert) the user profile in your database immediately
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
@@ -109,15 +120,69 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
         });
 
-        // Step 4: Return the client secret from the subscription's invoice to the frontend.
-        const latestInvoice = subscription.latest_invoice as Stripe.Invoice;
-        const paymentIntent = latestInvoice.payment_intent as Stripe.PaymentIntent;
+// ─────────────────────────── Step 4 — get a PaymentIntent, no matter what ──────────────────────────
+type InvoiceWithPI =
+  Stripe.Invoice & { payment_intent: Stripe.PaymentIntent | string | null };
 
-        res.status(200).json({
-            clientSecret: paymentIntent.client_secret,
-            userId: uid,
-        });
+async function waitForPaymentIntent(
+  stripe: Stripe,
+  subId: string,
+  customerId: string,
+  maxMs = 15_000,
+): Promise<Stripe.PaymentIntent> {
+  const started = Date.now();
 
+  /* eslint-disable no-await-in-loop */
+  while (Date.now() - started < maxMs) {
+    // 1) Re-fetch subscription with nested expansion
+    const sub = (await stripe.subscriptions.retrieve(subId, {
+      expand: ['latest_invoice.payment_intent'],
+    })) as Stripe.Subscription;
+
+    const invRef = sub.latest_invoice;
+    if (invRef) {
+      // 2) ensure invoice object
+      const invoice: InvoiceWithPI =
+        typeof invRef === 'string'
+          ? (await stripe.invoices.retrieve(invRef, {
+              expand: ['payment_intent'],
+            })) as any
+          : (invRef as any);
+
+      const piRef = invoice.payment_intent;
+      if (piRef && typeof piRef !== 'string' && piRef.client_secret) {
+        return piRef; // 🎉 found a full PI
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, 1_000));
+  }
+
+  // 3) Fallback: grab the newest PI on the customer (created in the last 5 min)
+  const piList = await stripe.paymentIntents.list({
+    customer: customerId,
+    limit: 1,
+    created: { gte: Math.floor(Date.now() / 1000) - 300 },
+  });
+
+  const pi = piList.data.find((p) => p.client_secret);
+  if (pi) return pi;
+
+  throw new Error(
+    'Stripe never attached a usable PaymentIntent to the invoice within the timeout.',
+  );
+}
+// ────────────────────────────────────────────────────────────────────────────────────
+
+// call the helper
+const pi = await waitForPaymentIntent(stripe, subscription.id, customer.id);
+
+res.status(200).json({
+  clientSecret: pi.client_secret!,
+  userId: uid,
+});
+
+  
     } catch (error) {
         let message = 'An unknown error occurred.';
         let statusCode = 500;
