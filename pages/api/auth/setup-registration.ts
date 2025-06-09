@@ -74,6 +74,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             expand: ['latest_invoice.payment_intent'],
         });
 
+        // Step 3: Create (or upsert) the user profile in your database immediately so that /check-status doesn't 404
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+        const periodEndUnix = (subscription as any).current_period_end as number | undefined;
+
+        await prisma.profile.upsert({
+            where: { id: uid },
+            data: {
+                id: uid,
+                email: email,
+                nickname,
+                gender,
+                tmpFaceUrl: faceUrl,
+                styleId: styleId,
+                status: 'PENDING_PAYMENT',
+                stripeCustomerId: customer.id,
+                stripeSubscriptionId: subscription.id,
+                stripePriceId: priceId,
+                ...(typeof periodEndUnix === 'number' ? { stripeCurrentPeriodEnd: new Date(periodEndUnix * 1000) } : {}),
+            },
+            update: {
+                // shouldn't normally hit, but keep fields updated idempotently
+                email: email,
+                tmpFaceUrl: faceUrl,
+                styleId: styleId,
+                stripeCustomerId: customer.id,
+                stripeSubscriptionId: subscription.id,
+                stripePriceId: priceId,
+                ...(typeof periodEndUnix === 'number' ? { stripeCurrentPeriodEnd: new Date(periodEndUnix * 1000) } : {}),
+            },
+        });
+
         // --- Handle Payment That Requires 3DS ---
         const latestInvoice = subscription.latest_invoice as Stripe.Invoice | undefined;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
@@ -88,23 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
         }
 
-        // Step 3: Create the user profile in your database
-        await prisma.profile.create({
-            data: {
-                id: uid,
-                email: email,
-                nickname,
-                gender,
-                tmpFaceUrl: faceUrl, 
-                styleId: styleId,
-                status: 'PENDING_PAYMENT',
-                stripeCustomerId: customer.id,
-                stripeSubscriptionId: subscription.id,
-                stripePriceId: priceId,
-                stripeCurrentPeriodEnd: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000),
-            },
-        });
-
+        // If no 3DS is needed, finish normally
         res.status(200).json({
             success: true,
             userId: uid,
