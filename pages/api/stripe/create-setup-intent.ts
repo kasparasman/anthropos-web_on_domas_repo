@@ -11,7 +11,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const setupIntent = await stripe.setupIntents.create({
-      usage: 'on_session', // Or 'off_session'
+      usage: 'on_session',
+      payment_method_options: {
+        card: {
+          request_three_d_secure: 'any', // Prefer frictionless but allow challenge
+        },
+      },
     });
 
     res.status(200).json({
