@@ -58,6 +58,7 @@
     "@stripe/stripe-js": "^7.3.1",
     "@types/micro": "^7.3.7",
     "@types/qrcode.react": "^1.0.5",
+    "@types/stripe-v3": "^3.1.33",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.0",
