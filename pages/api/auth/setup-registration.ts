@@ -80,7 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         await prisma.profile.upsert({
             where: { id: uid },
-            data: {
+            create: {
                 id: uid,
                 email: email,
                 nickname,
