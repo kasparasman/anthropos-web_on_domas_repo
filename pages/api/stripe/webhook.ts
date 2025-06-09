@@ -55,7 +55,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     return res.status(400).send('Webhook Error: Missing customer ID.');
                 }
                 
-                const profile: Profile | null = await withPrismaRetry(() => prisma.profile.findFirst({
+                const profile: (Profile & { styleId?: string | null }) | null = await withPrismaRetry(() => prisma.profile.findFirst({
                     where: { stripeCustomerId: customerId },
                 }));
 
@@ -205,7 +205,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     status: newStatus,
                 };
 
-                if (subscription.current_period_end) {
+                // Only update the date if current_period_end is a valid number
+                if (typeof subscription.current_period_end === 'number') {
                     dataToUpdate.stripeCurrentPeriodEnd = new Date(subscription.current_period_end * 1000);
                 }
 
@@ -217,7 +218,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         NOT: { status: 'PENDING_PAYMENT' },
                     },
                     data: dataToUpdate,
-                }));
+                })) as { count: number };
 
                 if (updateResult.count > 0) {
                     console.log(`Updated subscription status for ${subscription.id} to ${newStatus} on ${updateResult.count} profile(s).`);
