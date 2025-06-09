@@ -46,6 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     try {
         switch (event.type) {
+            case 'invoice.paid':
             case 'invoice.payment_succeeded': {
                 const invoice = event.data.object as Stripe.Invoice;
                 const customerId = invoice.customer as string;
