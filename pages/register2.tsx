@@ -577,35 +577,38 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         }),
       });
 
-      const setupData = await setupResponse.json();
-      
-      // --- 3DS Handling ---
-      if (setupResponse.status === 402 && setupData.requiresAction) {
-        setProgressMessage('Please complete authentication to continue.');
-        const { paymentIntent, error: authError } = await stripe.confirmCardPayment(setupData.clientSecret);
-        
-        if (authError) {
-          throw new Error(authError.message || '3D Secure authentication failed.');
-        }
-
-        if (paymentIntent?.status !== 'succeeded') {
-          throw new Error('Payment authentication was not successful. Please try again.');
-        }
-
-        // If 3DS is successful, the webhook will handle activation.
-        // We can start polling immediately.
-        const userId = setupData.userId || (await registerClient(email, password)).user.uid;
-        startPollingForStatus(userId, idToken);
-        return; // Stop execution here, polling will handle the rest
-      }
-      
       if (!setupResponse.ok) {
-        throw new Error(setupData.message || "An error occurred during registration setup.");
+        const errorData = await setupResponse.json();
+        throw new Error(errorData.message || "An error occurred during registration setup.");
       }
 
-      // Step 5: Start polling for activation status (payment is now complete)
-      setProgressMessage('Forging your passport. This may take up to a minute...');
+      const setupData = await setupResponse.json();
 
+      // Step 5: The backend has prepared the payment. Now, confirm it on the frontend.
+      // This is the step that handles the 3DS popup.
+      setProgressMessage('Awaiting payment confirmation...');
+
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        clientSecret: setupData.clientSecret,
+        confirmParams: {
+          // Make sure to change this to your payment completion page
+          return_url: `${window.location.origin}/`,
+        },
+        redirect: 'if_required', // This prevents a full page redirect
+      });
+
+      if (confirmError) {
+        throw new Error(confirmError.message || 'Payment confirmation failed. Please try again.');
+      }
+
+      if (paymentIntent?.status !== 'succeeded') {
+        // This can happen if the user closes the 3DS modal or authentication fails
+        throw new Error(`Payment not successful (status: ${paymentIntent?.status}). Please try again.`);
+      }
+
+      // Step 6: Payment is successful! Start polling for activation status.
+      setProgressMessage('Payment successful! Forging your passport...');
       startPollingForStatus(setupData.userId, idToken);
 
     } catch (err: unknown) {

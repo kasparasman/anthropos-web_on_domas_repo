@@ -66,8 +66,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             customer: customer.id,
         });
 
-        // Step 2: Create the subscription with payment behavior set to 'default_incomplete'.
-        // This tells Stripe to create the subscription and its first invoice, but wait for us to confirm the payment.
+        // Step 2: Set the attached payment method as the default for the customer's invoices.
+        // This ensures the subscription will try to use it.
+        await stripe.customers.update(customer.id, {
+            invoice_settings: {
+                default_payment_method: paymentMethodId,
+            },
+        });
+
+        // Step 3: Create the subscription. It will now automatically attempt to charge the default payment method.
         const priceId = PRICE_IDS[plan];
         if (!priceId) {
             return res.status(400).json({ message: `Invalid plan: ${plan}` });
@@ -76,12 +83,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
             items: [{ price: priceId }],
-            payment_behavior: 'default_incomplete', // Important: Don't charge immediately
-            payment_settings: { save_default_payment_method: 'on_subscription' }, // Important: Save the card
+            payment_behavior: 'default_incomplete',
             expand: ['latest_invoice.payment_intent'],
         });
 
-        // Step 3: Create (or upsert) the user profile in your database immediately
+        // Step 4: Create (or upsert) the user profile in your database immediately
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
         const periodEndUnix = (subscription as any).current_period_end as number | undefined;
 
@@ -111,42 +117,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
         });
 
-        // Step 4: Confirm the payment for the subscription's first invoice.
-        // This is the action that will trigger the single 3DS popup if required.
+        // Step 5: Return the client secret from the subscription's invoice to the frontend.
+        // The frontend will use this to call `stripe.confirmPayment()`.
         const latestInvoice = subscription.latest_invoice as Stripe.Invoice;
         const paymentIntent = latestInvoice.payment_intent as Stripe.PaymentIntent;
 
-        // The frontend already sent us the payment method ID. We use it here to confirm.
-        const updatedPaymentIntent = await stripe.paymentIntents.confirm(
-            paymentIntent.id,
-            { payment_method: paymentMethodId }
-        );
-
-        // Check the status of the confirmed payment intent
-        if (updatedPaymentIntent.status === 'requires_action' || updatedPaymentIntent.status === 'requires_confirmation') {
-             console.log('[3DS] Subscription requires additional authentication. Sending client_secret to frontend.');
-             return res.status(402).json({
-                 requiresAction: true,
-                 clientSecret: updatedPaymentIntent.client_secret,
-                 userId: uid,
-             });
-        }
- 
-        if (updatedPaymentIntent.status === 'succeeded') {
-            // If it succeeded immediately (e.g., no 3DS needed), we can return success.
-            // The webhook will handle the final activation.
-            res.status(200).json({
-                success: true,
-                userId: uid,
-            });
-        } else {
-            // If it's in another state (e.g., processing), let the client know.
-            // This is a rare case for card payments.
-            res.status(202).json({
-                success: false,
-                message: `Payment is processing (status: ${updatedPaymentIntent.status}).`
-            });
-        }
+        res.status(200).json({
+            clientSecret: paymentIntent.client_secret,
+            userId: uid,
+        });
 
     } catch (error) {
         let message = 'An unknown error occurred.';
