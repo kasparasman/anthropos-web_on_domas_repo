@@ -72,7 +72,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             customer: customer.id,
             items: [{ price: priceId }],
             payment_behavior: 'default_incomplete',
-            payment_settings: { save_default_payment_method: 'on_subscription' },
+            payment_settings: { 
+                save_default_payment_method: 'on_subscription',
+            },
             expand: ['latest_invoice.payment_intent'],
         }, {
             idempotencyKey: idempotencyKey,

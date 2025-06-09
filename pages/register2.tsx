@@ -582,10 +582,6 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret: setupData.clientSecret,
-        confirmParams: {
-          return_url: `${window.location.origin}/`,
-          setup_future_usage: 'off_session', // Save card for future off-session payments
-        },
         redirect: 'if_required',
       });
 
