@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "pages/api/stripe/webhook.ts": {
+      "maxDuration": 60
+    }
+  }
+} 

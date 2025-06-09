@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { 
         email, 
         plan, 
-        paymentMethodId, 
+        paymentMethodId,
         idToken,
         faceUrl,
         styleId,
@@ -53,46 +53,68 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const decodedToken = await verifyIdToken(idToken);
         const uid = decodedToken.uid;
         
-        // Step 1: Create a Stripe Customer and attach the payment method
+        // --- Final, Correct Subscription Flow ---
+
+        // Step 1: Create a Stripe Customer.
         const customer = await stripe.customers.create({
             email: email,
-            payment_method: paymentMethodId,
-            invoice_settings: {
-                default_payment_method: paymentMethodId,
-            },
         });
 
-        // Step 2: Create the subscription
+        // Step 2: Create the subscription with the default payment method attached.
         const priceId = PRICE_IDS[plan];
         if (!priceId) {
             return res.status(400).json({ message: `Invalid plan: ${plan}` });
         }
         
+        const idempotencyKey = `sub_create_${uid}_${plan}`;
+
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
             items: [{ price: priceId }],
+            default_payment_method: paymentMethodId,
+            payment_behavior: 'default_incomplete',
+            payment_settings: { save_default_payment_method: 'on_subscription' },
             expand: ['latest_invoice.payment_intent'],
+        }, {
+            idempotencyKey: idempotencyKey,
         });
 
-        // Step 3: Create the user profile in your database
-        await prisma.profile.create({
-            data: {
+        // Step 3: Create (or upsert) the user profile in your database immediately
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+        const periodEndUnix = (subscription as any).current_period_end as number | undefined;
+
+        await prisma.profile.upsert({
+            where: { id: uid },
+            create: {
                 id: uid,
                 email: email,
                 nickname,
                 gender,
-                tmpFaceUrl: faceUrl, 
+                tmpFaceUrl: faceUrl,
                 styleId: styleId,
                 status: 'PENDING_PAYMENT',
                 stripeCustomerId: customer.id,
                 stripeSubscriptionId: subscription.id,
                 stripePriceId: priceId,
-                stripeCurrentPeriodEnd: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000),
+                ...(typeof periodEndUnix === 'number' ? { stripeCurrentPeriodEnd: new Date(periodEndUnix * 1000) } : {}),
+            },
+            update: {
+                email: email,
+                tmpFaceUrl: faceUrl,
+                styleId: styleId,
+                stripeCustomerId: customer.id,
+                stripeSubscriptionId: subscription.id,
+                stripePriceId: priceId,
+                ...(typeof periodEndUnix === 'number' ? { stripeCurrentPeriodEnd: new Date(periodEndUnix * 1000) } : {}),
             },
         });
 
+        // Step 4: Return the client secret from the subscription's invoice to the frontend.
+        const latestInvoice = subscription.latest_invoice as Stripe.Invoice;
+        const paymentIntent = latestInvoice.payment_intent as Stripe.PaymentIntent;
+
         res.status(200).json({
-            success: true,
+            clientSecret: paymentIntent.client_secret,
             userId: uid,
         });
 
@@ -101,6 +123,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let statusCode = 500;
 
         if (error instanceof Stripe.errors.StripeError) {
+            // Handle card errors that require 3DS authentication
+            if (error.code === 'card_error' && error.decline_code === 'authentication_required') {
+                const paymentIntent = error.payment_intent;
+                if (paymentIntent) {
+                    console.log('[3DS] Authentication required. Sending client_secret to frontend.');
+                    return res.status(402).json({
+                        requiresAction: true,
+                        clientSecret: paymentIntent.client_secret,
+                        userId: (error as { doc?: { userId_for_logging?: string } })?.doc?.userId_for_logging
+                    });
+                }
+            }
             message = `Stripe Error: ${error.message}`;
             statusCode = error.statusCode || 500;
         } else if (error instanceof Error) {

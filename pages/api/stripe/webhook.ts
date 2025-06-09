@@ -6,6 +6,9 @@ import { prisma } from '@/lib/prisma';
 import { generateAvatar } from '@/lib/services/avatarService';
 import { generateUniqueNickname } from '@/lib/services/nicknameService';
 import { getPromptForStyle } from '@/lib/services/promptService';
+import { admin } from '@/lib/firebase-admin';
+import { withPrismaRetry } from '@/lib/prisma/util';
+import { Profile } from '@prisma/client';
 
 const stripe = createStripeClient();
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -43,7 +46,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     try {
         switch (event.type) {
-            case 'invoice.payment_succeeded':
+            case 'invoice.paid':
+            case 'invoice.payment_succeeded': {
                 const invoice = event.data.object as Stripe.Invoice;
                 const customerId = invoice.customer as string;
 
@@ -52,90 +56,135 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     return res.status(400).send('Webhook Error: Missing customer ID.');
                 }
                 
-                const profile = await prisma.profile.findFirst({
+                const profile: (Profile & { styleId?: string | null }) | null = await withPrismaRetry(() => prisma.profile.findFirst({
                     where: { stripeCustomerId: customerId },
-                });
+                }));
 
                 // --- New User Activation Flow ---
                 if (profile && profile.status === 'PENDING_PAYMENT') {
-                    if (!profile.tmpFaceUrl || !profile.styleId || !profile.gender) {
-                        console.error(`Profile ${profile.id} is missing required data for activation.`, {
-                            hasFace: !!profile.tmpFaceUrl,
-                            hasStyle: !!profile.styleId,
-                            hasGender: !!profile.gender,
-                        });
-                        // Don't throw, just log and exit. Prevents Stripe from retrying a doomed request.
-                        return res.status(200).send('Profile data missing, cannot activate.');
-                    }
-                    
-                    console.log(`🚀 Activating profile for user ${profile.id}...`);
-                    
-                    try {
-                        // Step 1: Generate the Avatar
-                        const avatarUrl = await generateAvatar(profile.tmpFaceUrl, profile.styleId);
-                        
-                        // Step 2: Determine Archetype for Nickname Generation
-                        const { archetype } = getPromptForStyle(profile.styleId);
-
-                        // Step 3: Generate a Unique Nickname
-                        const nickname = await generateUniqueNickname({
-                            avatarUrl,
-                            gender: profile.gender as 'male' | 'female',
-                            archetype,
-                        });
-
-                        // Step 4: Update Profile to ACTIVE
-                        await prisma.profile.update({
+                    // First, update the status to show that generation is in progress.
+                    // This is a quick operation.
+                    await withPrismaRetry(
+                        () => prisma.profile.update({
                             where: { id: profile.id },
-                            data: {
-                                status: 'ACTIVE',
-                                avatarUrl: avatarUrl,
-                                nickname: nickname,
-                                tmpFaceUrl: null, // Clean up temporary data
-                                styleId: null, // Clean up temporary data
-                            },
-                        });
-                        console.log(`✅ Successfully activated profile for user ${profile.id} with nickname "${nickname}"`);
+                            data: { status: 'GENERATING_ASSETS' },
+                        })
+                    );
+                    console.log(`🚀 Set status to GENERATING_ASSETS for user ${profile.id}. Triggering background job.`);
 
-                    } catch (generationError) {
-                        console.error(`❌ Failed to generate avatar or nickname for user ${profile.id}:`, generationError);
-                        // Update status to FAILED so we know not to retry this user automatically.
-                        await prisma.profile.update({
-                            where: { id: profile.id },
-                            data: { status: 'ACTIVATION_FAILED' },
-                        });
-                        // Return 200 to Stripe so it doesn't keep retrying a failed generation.
-                        return res.status(200).send('Activation failed during generation step.');
-                    }
+                    // Now, trigger the background job. We DO NOT wait for it to finish.
+                    // This is a "fire-and-forget" call.
+                    const generatorUrl = new URL('/api/user/generate-assets', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString();
+                    
+                    fetch(generatorUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: profile.id }),
+                    }).catch(error => {
+                        // If the trigger fails, we should log it, but the user is in a recoverable state.
+                        console.error(`CRITICAL: Failed to trigger asset generator for user ${profile.id}`, error);
+                    });
+                    
+                    // Respond to Stripe immediately.
+                    console.log(`✅ Webhook finished for ${profile.id}. Background job is running.`);
 
                 // --- Recurring Payment for Existing User ---
                 } else if (profile) {
                     console.log(`Renewing subscription for ${profile.id}. Ensuring status is ACTIVE.`);
-                    await prisma.profile.update({
+                    await withPrismaRetry(() => prisma.profile.update({
                         where: { id: profile.id },
                         data: { status: 'ACTIVE' }, // Ensure they are active on renewal
-                    });
+                    }));
                 } else {
                     console.warn(`Webhook received for unknown customer ID: ${customerId}`);
                 }
                 break;
+            }
+            case 'invoice.payment_failed': {
+                const failedInvoice = event.data.object as Stripe.Invoice;
+                const failedCustomerId = failedInvoice.customer as string;
 
+                if (!failedCustomerId) {
+                    console.error('Webhook Error: No customer ID on the failed invoice.', { id: failedInvoice.id });
+                    return res.status(400).send('Webhook Error: Missing customer ID on failed invoice.');
+                }
+                
+                // Find the user profile, specifically one that is waiting for payment
+                const failedProfile: Profile | null = await withPrismaRetry(() => prisma.profile.findFirst({
+                    where: { 
+                        stripeCustomerId: failedCustomerId,
+                        status: 'PENDING_PAYMENT' 
+                    },
+                }));
+
+                if (failedProfile) {
+                    // --- Enhanced Logging ---
+                    let failureReason = 'No specific reason provided.';
+                    try {
+                        if (failedInvoice.charge) {
+                            const charge = await stripe.charges.retrieve(failedInvoice.charge as string);
+                            if (charge.failure_message) {
+                                failureReason = charge.failure_message;
+                            }
+                        }
+                    } catch (chargeError) {
+                        console.warn('Could not retrieve charge details for failed invoice.', chargeError);
+                    }
+                    console.log(`❌ Payment failed for new user ${failedProfile.id}. Reason: ${failureReason}. Rolling back registration.`);
+
+                    // --- Full Rollback Logic ---
+                    try {
+                        // 1. Delete Prisma Profile
+                        await withPrismaRetry(() => prisma.profile.delete({ where: { id: failedProfile.id } }));
+                        console.log(`🗑️  Deleted Prisma profile for user ${failedProfile.id}.`);
+                        
+                        // 2. Delete Firebase User
+                        await admin.auth().deleteUser(failedProfile.id);
+                        console.log(`🗑️  Deleted Firebase auth user ${failedProfile.id}.`);
+                        
+                        // 3. Delete Stripe Customer
+                        await stripe.customers.del(failedCustomerId);
+                        console.log(`🗑️  Deleted Stripe customer ${failedCustomerId}.`);
+
+                    } catch (rollbackError) {
+                        console.error(`💀 CRITICAL: Rollback failed for user ${failedProfile.id}. Manual cleanup required.`, rollbackError);
+                        // Still return 200 so Stripe doesn't retry a failed state
+                    }
+                } else {
+                     console.log(`Payment failed for customer ${failedCustomerId}, but no matching PENDING_PAYMENT profile found. Ignoring.`);
+                }
+                break;
+            }
+            case 'invoice.payment_action_required': {
+                // This event is expected during 3DS flows. The client-side handles the action.
+                // We log it for observability and return a 200 OK to acknowledge receipt.
+                console.log(`🔔 Invoice requires customer action, client-side will handle: ${event.id}`);
+                break;
+            }
             case 'customer.subscription.deleted':
-            case 'customer.subscription.updated':
-                const subscription = event.data.object as unknown as { id: string; status: string; current_period_end: number };
+            case 'customer.subscription.updated': {
+                const subscription = event.data.object as Stripe.Subscription;
                 const newStatus = subscription.status.toUpperCase().replace('-', '_');
+                
+                const dataToUpdate: { status: string; stripeCurrentPeriodEnd?: Date } = {
+                    status: newStatus,
+                };
+
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                const periodEndUnix = (subscription as any).current_period_end as number | undefined;
+                if (typeof periodEndUnix === 'number') {
+                    dataToUpdate.stripeCurrentPeriodEnd = new Date(periodEndUnix * 1000);
+                }
+
                 // Avoid overwriting the PENDING_PAYMENT state for new users awaiting activation.
-                const updateResult = await prisma.profile.updateMany({
+                const updateResult = await withPrismaRetry(() => prisma.profile.updateMany({
                     where: {
                         stripeSubscriptionId: subscription.id,
                         // Only update if the profile is NOT still awaiting activation.
                         NOT: { status: 'PENDING_PAYMENT' },
                     },
-                    data: {
-                        status: newStatus,
-                        stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
-                    },
-                });
+                    data: dataToUpdate,
+                })) as { count: number };
 
                 if (updateResult.count > 0) {
                     console.log(`Updated subscription status for ${subscription.id} to ${newStatus} on ${updateResult.count} profile(s).`);
@@ -143,7 +192,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     console.log(`Skipped status update for subscription ${subscription.id} because associated profile(s) are still pending activation.`);
                 }
                 break;
-
+            }
             default:
                 console.warn(`🤷‍♀️ Unhandled event type: ${event.type}`);
         }

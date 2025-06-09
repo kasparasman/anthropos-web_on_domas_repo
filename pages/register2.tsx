@@ -462,6 +462,57 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
   const elements = useElements();
   const submissionGuard = React.useRef(false);
 
+  // --- New Polling Logic ---
+  const startPollingForStatus = (userId: string, idToken: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
+
+        if (statusResponse.status === 404) {
+          clearInterval(pollInterval);
+          toast({
+            title: 'Payment Failed',
+            description: 'Your payment could not be completed. No money was taken. Please try again.',
+            duration: 8000,
+          });
+          // Reset front-end state
+          setIsLoading(false);
+          setProgressMessage(null);
+          setIsGenerated(false);
+          props.setShowPopup(false);
+          props.setRegistrationInProgress(false);
+          props.setClientSecret(null); // Reset the secret to unmount PaymentElement
+          props.setCurrentStep(1);
+          return;
+        }
+
+        const statusData = await statusResponse.json();
+        
+        if (statusData.status !== 'ACTIVE') {
+          setProgressMessage('Forging your passport. This may take up to a minute...');
+          return;
+        }
+
+        if (statusData.avatarUrl && statusData.nickname) {
+          clearInterval(pollInterval);
+          setProgressMessage('Logging you in...');
+          const signInResult = await signIn('credentials', { idToken, redirect: false });
+
+          if (signInResult?.error) {
+            throw new Error(`Login failed after registration: ${signInResult.error}`);
+          }
+          
+          setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl, citizenId: statusData.citizenId });
+          setProgressMessage(null);
+          setIsLoading(false);
+        }
+      } catch (pollError) {
+        clearInterval(pollInterval);
+        throw new Error('Failed to check registration status. Please try logging in later.');
+      }
+    }, 3000);
+  };
+
   const handleGeneratePassport = async () => {
     if (submissionGuard.current) {
       toast({
@@ -490,26 +541,27 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     let idToken = ''; // Keep idToken in a wider scope
 
     try {
-      // Step 1: Validate payment form
+      // Step 1: User has clicked "Pay". We first create a PaymentMethod.
+      // No need for elements.submit() here as createPaymentMethod does its own validation.
       setProgressMessage('Validating payment information...');
-      const { error: submitError } = await elements.submit();
-      if (submitError) throw new Error(submitError.message || "Payment form validation failed.");
-
-      // Step 2: Confirm the card setup
-      setProgressMessage('Securing payment method...');
-      const { error: setupError, setupIntent } = await stripe.confirmSetup({
+      const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
         elements,
-        redirect: 'if_required',
+        params: { billing_details: { email } },
       });
-      if (setupError) throw new Error(setupError.message || "Failed to secure payment method.");
-      if (setupIntent?.status !== 'succeeded' || !setupIntent.payment_method) throw new Error("Could not verify payment method.");
 
-      // Step 3: Create Firebase user
+      if (pmError) {
+        throw new Error(pmError.message || 'Could not create payment method.');
+      }
+      if (!paymentMethod) {
+        throw new Error('Failed to create payment method. Please try again.');
+      }
+
+      // Step 2: Create Firebase user
       setProgressMessage('Creating your citizen account...');
       const cred = await registerClient(email, password);
-      idToken = await cred.user.getIdToken(); // Assign to wider scope variable
+      idToken = await cred.user.getIdToken();
 
-      // Step 4: Call the backend to SETUP everything (but not finalize)
+      // Step 3: Send the new PaymentMethod ID to the backend
       setProgressMessage('Submitting registration...');
       const setupResponse = await fetch('/api/auth/setup-registration', {
         method: 'POST',
@@ -517,7 +569,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         body: JSON.stringify({
           email,
           plan: props.plan,
-          paymentMethodId: setupIntent.payment_method,
+          paymentMethodId: paymentMethod.id,
           idToken,
           faceUrl: uploadedFaceUrl,
           styleId: selectedStyleId,
@@ -526,50 +578,36 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         }),
       });
 
+      if (!setupResponse.ok) {
+        const errorData = await setupResponse.json();
+        throw new Error(errorData.message || "An error occurred during registration setup.");
+      }
+
       const setupData = await setupResponse.json();
-      if (!setupResponse.ok) throw new Error(setupData.message || "An error occurred during registration setup.");
 
-      // Step 5: Start polling for activation status (payment is now complete)
-      setProgressMessage('Forging your passport. This may take up to a minute...');
+      // Step 4: The backend has prepared the payment. Now, confirm it on the frontend.
+      setProgressMessage('Awaiting payment confirmation...');
 
-      const userId = setupData.userId;
-      const pollInterval = setInterval(async () => {
-        try {
-          const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
-          const statusData = await statusResponse.json();
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        clientSecret: setupData.clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/`,
+        },
+        redirect: 'if_required', 
+      });
 
-          // While we wait for avatar generation & nickname creation, keep the user informed.
-          if (statusData.status !== 'ACTIVE') {
-            setProgressMessage('Forging your passport. This may take up to a minute...');
-            return; // Continue polling until the profile becomes ACTIVE
-          }
+      if (confirmError) {
+        throw new Error(confirmError.message || 'Payment confirmation failed. Please try again.');
+      }
 
-          // --- Profile is ACTIVE: finalize the flow ---
-          if (statusData.avatarUrl && statusData.nickname) {
-            clearInterval(pollInterval);
+      if (paymentIntent?.status !== 'succeeded') {
+        throw new Error(`Payment not successful (status: ${paymentIntent?.status}). Please try again.`);
+      }
 
-            setProgressMessage('Logging you in...');
-            const signInResult = await signIn('credentials', {
-              idToken,
-              redirect: false,
-            });
-
-            if (signInResult?.error) {
-              throw new Error(`Login failed after registration: ${signInResult.error}`);
-            }
-
-            // Success!
-            setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl, citizenId: statusData.citizenId });
-            setProgressMessage(null);
-            setIsLoading(false);
-          }
-
-        } catch (pollError) {
-          // Stop polling on error
-          clearInterval(pollInterval);
-          throw new Error('Failed to check registration status. Please try logging in later.');
-        }
-      }, 3000); // Poll every 3 seconds
+      // Step 5: Payment is successful! Start polling for activation status.
+      setProgressMessage('Payment successful! Forging your passport...');
+      startPollingForStatus(setupData.userId, idToken);
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unknown error occurred.";
@@ -584,7 +622,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       toast({ title: 'Registration Failed', description: message, duration: 9000 });
       setIsLoading(false);
       setProgressMessage(null);
-      setRegistrationInProgress(false);
+      props.setRegistrationInProgress(false);
     }
   };
 
