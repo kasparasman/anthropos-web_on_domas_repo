@@ -151,6 +151,50 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 }
                 break;
 
+            case 'invoice.payment_failed': {
+                const failedInvoice = event.data.object as Stripe.Invoice;
+                const failedCustomerId = failedInvoice.customer as string;
+
+                if (!failedCustomerId) {
+                    console.error('Webhook Error: No customer ID on the failed invoice.', { id: failedInvoice.id });
+                    return res.status(400).send('Webhook Error: Missing customer ID on failed invoice.');
+                }
+                
+                // Find the user profile, specifically one that is waiting for payment
+                const failedProfile = await prisma.profile.findFirst({
+                    where: { 
+                        stripeCustomerId: failedCustomerId,
+                        status: 'PENDING_PAYMENT' 
+                    },
+                });
+
+                if (failedProfile) {
+                    console.log(`❌ Payment failed for new user ${failedProfile.id}. Rolling back registration.`);
+
+                    // --- Full Rollback Logic ---
+                    try {
+                        // 1. Delete Prisma Profile
+                        await prisma.profile.delete({ where: { id: failedProfile.id } });
+                        console.log(`🗑️  Deleted Prisma profile for user ${failedProfile.id}.`);
+                        
+                        // 2. Delete Firebase User
+                        await admin.auth().deleteUser(failedProfile.id);
+                        console.log(`🗑️  Deleted Firebase auth user ${failedProfile.id}.`);
+                        
+                        // 3. Delete Stripe Customer
+                        await stripe.customers.del(failedCustomerId);
+                        console.log(`🗑️  Deleted Stripe customer ${failedCustomerId}.`);
+
+                    } catch (rollbackError) {
+                        console.error(`💀 CRITICAL: Rollback failed for user ${failedProfile.id}. Manual cleanup required.`, rollbackError);
+                        // Still return 200 so Stripe doesn't retry a failed state
+                    }
+                } else {
+                     console.log(`Payment failed for customer ${failedCustomerId}, but no matching PENDING_PAYMENT profile found. Ignoring.`);
+                }
+                break;
+            }
+
             case 'customer.subscription.deleted':
             case 'customer.subscription.updated':
                 const subscription = event.data.object as unknown as { id: string; status: string; current_period_end: number };
