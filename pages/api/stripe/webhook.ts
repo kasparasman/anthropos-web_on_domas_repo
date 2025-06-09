@@ -7,6 +7,8 @@ import { generateAvatar } from '@/lib/services/avatarService';
 import { generateUniqueNickname } from '@/lib/services/nicknameService';
 import { getPromptForStyle } from '@/lib/services/promptService';
 import { admin } from '@/lib/firebase-admin';
+import { withPrismaRetry } from '@/lib/prisma/util';
+import { Profile } from '@prisma/client';
 
 const stripe = createStripeClient();
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -44,7 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     try {
         switch (event.type) {
-            case 'invoice.payment_succeeded':
+            case 'invoice.payment_succeeded': {
                 const invoice = event.data.object as Stripe.Invoice;
                 const customerId = invoice.customer as string;
 
@@ -53,9 +55,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     return res.status(400).send('Webhook Error: Missing customer ID.');
                 }
                 
-                const profile = await prisma.profile.findFirst({
+                const profile: Profile | null = await withPrismaRetry(() => prisma.profile.findFirst({
                     where: { stripeCustomerId: customerId },
-                });
+                }));
 
                 // --- New User Activation Flow ---
                 if (profile && profile.status === 'PENDING_PAYMENT') {
@@ -86,7 +88,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         });
 
                         // Step 4: Update Profile to ACTIVE
-                        await prisma.profile.update({
+                        await withPrismaRetry(() => prisma.profile.update({
                             where: { id: profile.id },
                             data: {
                                 status: 'ACTIVE',
@@ -95,16 +97,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                 tmpFaceUrl: null, // Clean up temporary data
                                 styleId: null, // Clean up temporary data
                             },
-                        });
+                        }));
                         console.log(`✅ Successfully activated profile for user ${profile.id} with nickname "${nickname}"`);
 
                     } catch (generationError) {
                         console.error(`❌ Failed to generate avatar or nickname for user ${profile.id}:`, generationError);
                         // Update status to FAILED so we know not to retry this user automatically.
-                        await prisma.profile.update({
+                        await withPrismaRetry(() => prisma.profile.update({
                             where: { id: profile.id },
                             data: { status: 'ACTIVATION_FAILED' },
-                        });
+                        }));
 
                         // --- Compensation logic: refund and cleanup ---
                         try {
@@ -142,15 +144,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 // --- Recurring Payment for Existing User ---
                 } else if (profile) {
                     console.log(`Renewing subscription for ${profile.id}. Ensuring status is ACTIVE.`);
-                    await prisma.profile.update({
+                    await withPrismaRetry(() => prisma.profile.update({
                         where: { id: profile.id },
                         data: { status: 'ACTIVE' }, // Ensure they are active on renewal
-                    });
+                    }));
                 } else {
                     console.warn(`Webhook received for unknown customer ID: ${customerId}`);
                 }
                 break;
-
+            }
             case 'invoice.payment_failed': {
                 const failedInvoice = event.data.object as Stripe.Invoice;
                 const failedCustomerId = failedInvoice.customer as string;
@@ -161,12 +163,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 }
                 
                 // Find the user profile, specifically one that is waiting for payment
-                const failedProfile = await prisma.profile.findFirst({
+                const failedProfile: Profile | null = await withPrismaRetry(() => prisma.profile.findFirst({
                     where: { 
                         stripeCustomerId: failedCustomerId,
                         status: 'PENDING_PAYMENT' 
                     },
-                });
+                }));
 
                 if (failedProfile) {
                     console.log(`❌ Payment failed for new user ${failedProfile.id}. Rolling back registration.`);
@@ -174,7 +176,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     // --- Full Rollback Logic ---
                     try {
                         // 1. Delete Prisma Profile
-                        await prisma.profile.delete({ where: { id: failedProfile.id } });
+                        await withPrismaRetry(() => prisma.profile.delete({ where: { id: failedProfile.id } }));
                         console.log(`🗑️  Deleted Prisma profile for user ${failedProfile.id}.`);
                         
                         // 2. Delete Firebase User
@@ -194,23 +196,28 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 }
                 break;
             }
-
             case 'customer.subscription.deleted':
-            case 'customer.subscription.updated':
-                const subscription = event.data.object as unknown as { id: string; status: string; current_period_end: number };
+            case 'customer.subscription.updated': {
+                const subscription = event.data.object as Stripe.Subscription;
                 const newStatus = subscription.status.toUpperCase().replace('-', '_');
+                
+                const dataToUpdate: { status: string; stripeCurrentPeriodEnd?: Date } = {
+                    status: newStatus,
+                };
+
+                if (subscription.current_period_end) {
+                    dataToUpdate.stripeCurrentPeriodEnd = new Date(subscription.current_period_end * 1000);
+                }
+
                 // Avoid overwriting the PENDING_PAYMENT state for new users awaiting activation.
-                const updateResult = await prisma.profile.updateMany({
+                const updateResult = await withPrismaRetry(() => prisma.profile.updateMany({
                     where: {
                         stripeSubscriptionId: subscription.id,
                         // Only update if the profile is NOT still awaiting activation.
                         NOT: { status: 'PENDING_PAYMENT' },
                     },
-                    data: {
-                        status: newStatus,
-                        stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
-                    },
-                });
+                    data: dataToUpdate,
+                }));
 
                 if (updateResult.count > 0) {
                     console.log(`Updated subscription status for ${subscription.id} to ${newStatus} on ${updateResult.count} profile(s).`);
@@ -218,7 +225,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     console.log(`Skipped status update for subscription ${subscription.id} because associated profile(s) are still pending activation.`);
                 }
                 break;
-
+            }
             default:
                 console.warn(`🤷‍♀️ Unhandled event type: ${event.type}`);
         }

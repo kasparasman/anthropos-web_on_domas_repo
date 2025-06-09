@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
+import { withPrismaRetry } from '@/lib/prisma/util';
+import { Profile } from '@prisma/client';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -14,15 +16,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const profile = await prisma.profile.findUnique({
-            where: { id: userId },
-            select: {
-                status: true,
-                avatarUrl: true,
-                nickname: true,
-                citizenId: true,
-            },
-        });
+        const profile : Partial<Profile> | null = await withPrismaRetry(() => 
+            prisma.profile.findUnique({
+                where: { id: userId },
+                select: {
+                    status: true,
+                    avatarUrl: true,
+                    nickname: true,
+                    citizenId: true,
+                },
+            })
+        );
 
         if (!profile) {
             return res.status(404).json({ message: 'User not found.' });

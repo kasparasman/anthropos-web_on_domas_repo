@@ -467,8 +467,27 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     const pollInterval = setInterval(async () => {
       try {
         const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
-        const statusData = await statusResponse.json();
 
+        if (statusResponse.status === 404) {
+          clearInterval(pollInterval);
+          toast({
+            title: 'Payment Failed',
+            description: 'Your payment could not be completed. No money was taken. Please try again.',
+            duration: 8000,
+          });
+          // Reset front-end state
+          setIsLoading(false);
+          setProgressMessage(null);
+          setIsGenerated(false);
+          props.setShowPopup(false);
+          props.setRegistrationInProgress(false);
+          props.setClientSecret(null); // Reset the secret to unmount PaymentElement
+          props.setCurrentStep(1);
+          return;
+        }
+
+        const statusData = await statusResponse.json();
+        
         if (statusData.status !== 'ACTIVE') {
           setProgressMessage('Forging your passport. This may take up to a minute...');
           return;
@@ -602,7 +621,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       toast({ title: 'Registration Failed', description: message, duration: 9000 });
       setIsLoading(false);
       setProgressMessage(null);
-      setRegistrationInProgress(false);
+      props.setRegistrationInProgress(false);
     }
   };
 
