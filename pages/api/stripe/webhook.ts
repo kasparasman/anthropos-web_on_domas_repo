@@ -205,9 +205,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     status: newStatus,
                 };
 
-                // Only update the date if current_period_end is a valid number
-                if (typeof subscription.current_period_end === 'number') {
-                    dataToUpdate.stripeCurrentPeriodEnd = new Date(subscription.current_period_end * 1000);
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+                const periodEndUnix = (subscription as any).current_period_end as number | undefined;
+                if (typeof periodEndUnix === 'number') {
+                    dataToUpdate.stripeCurrentPeriodEnd = new Date(periodEndUnix * 1000);
                 }
 
                 // Avoid overwriting the PENDING_PAYMENT state for new users awaiting activation.

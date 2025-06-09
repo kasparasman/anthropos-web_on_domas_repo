@@ -74,6 +74,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             expand: ['latest_invoice.payment_intent'],
         });
 
+        // --- Handle Payment That Requires 3DS ---
+        const latestInvoice = subscription.latest_invoice as Stripe.Invoice | undefined;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+        const paymentIntent = (latestInvoice as any)?.payment_intent as Stripe.PaymentIntent | undefined;
+
+        if (paymentIntent && paymentIntent.status === 'requires_action') {
+            console.log('[3DS] Subscription requires additional authentication. Sending client_secret to frontend.');
+            return res.status(402).json({
+                requiresAction: true,
+                clientSecret: paymentIntent.client_secret,
+                userId: uid,
+            });
+        }
+
         // Step 3: Create the user profile in your database
         await prisma.profile.create({
             data: {
