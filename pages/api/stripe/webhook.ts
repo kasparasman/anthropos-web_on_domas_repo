@@ -29,13 +29,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
+    // --- Start of Diagnostic Logging ---
+    console.log('--- Stripe Webhook Request Received ---');
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+
     if (!webhookSecret) {
-        console.error('❌ STRIPE_WEBHOOK_SECRET is not set.');
+        console.error('❌ FATAL: STRIPE_WEBHOOK_SECRET environment variable is not set on Vercel.');
         return res.status(500).json({ message: 'Webhook secret is not configured.' });
+    } else {
+        console.log(`✅ Webhook secret loaded. Starts with: "${webhookSecret.substring(0, 5)}..."`);
     }
+    // --- End of Diagnostic Logging ---
     
     const buf = await buffer(req);
     const sig = req.headers['stripe-signature'];
+
+    // --- More Diagnostic Logging ---
+    console.log(`Received raw body. Length: ${buf.length} bytes.`);
+    // ---
 
     let event: Stripe.Event;
 
@@ -47,10 +58,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         console.error(`❌ Stripe webhook signature verification failed: ${message}`);
+        
+        // --- Final Diagnostic Log on Failure ---
+        console.error('Failed to construct event. This usually means the webhook secret is incorrect or the request body was modified.');
+        console.error(`Signature Header From Request: ${sig}`);
+        // ---
+        
         return res.status(400).json({ message: `Webhook Error: ${message}` });
     }
     
-    console.log(`✅ Received Stripe event: ${event.type} ${event.id}`);
+    console.log(`✅ Event constructed successfully! Event type: ${event.type} ${event.id}`);
 
     try {
         switch (event.type) {
