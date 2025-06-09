@@ -277,7 +277,7 @@ const RegistrationFlow = ({
           <Image src="/Step1.png" alt="Step 1 visual" width={120} height={32} className="mb-6" />
         </div>
         <div
-          className="w-full max-w-md mx-auto border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
+          className="w-full max-w-md border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
           style={{ 
             aspectRatio: webcamAspectRatio || videoAspectRatio || '4/3',
             minWidth: '320px'
@@ -380,13 +380,13 @@ const RegistrationFlow = ({
               <>
                 <GridWithRays />
                 <h1 className="text-3xl font-bold">Your Passport is Ready!</h1>
-                <div className="flex space-x-2 mt-4">
+                <div className="flex space-x-4 mt-4">
                   {[1, 2, 3].map((tab) => (
                     <MainButton
                       key={tab}
                       variant={activePassportTab === tab ? "solid" : "outline"}
                       onClick={() => setActivePassportTab(tab)}
-                      className="w-12 h-12 flex items-center justify-center text-lg"
+                      className="w-10 h-10 flex items-center justify-center text-lg"
                     >
                       {tab}
                     </MainButton>
