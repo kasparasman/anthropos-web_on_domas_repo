@@ -118,7 +118,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 }));
 
                 if (failedProfile) {
-                    console.log(`❌ Payment failed for new user ${failedProfile.id}. Rolling back registration.`);
+                    // --- Enhanced Logging ---
+                    let failureReason = 'No specific reason provided.';
+                    try {
+                        if (failedInvoice.charge) {
+                            const charge = await stripe.charges.retrieve(failedInvoice.charge as string);
+                            if (charge.failure_message) {
+                                failureReason = charge.failure_message;
+                            }
+                        }
+                    } catch (chargeError) {
+                        console.warn('Could not retrieve charge details for failed invoice.', chargeError);
+                    }
+                    console.log(`❌ Payment failed for new user ${failedProfile.id}. Reason: ${failureReason}. Rolling back registration.`);
 
                     // --- Full Rollback Logic ---
                     try {
