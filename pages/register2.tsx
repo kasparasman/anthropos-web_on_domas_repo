@@ -541,27 +541,17 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     let idToken = ''; // Keep idToken in a wider scope
 
     try {
-      // Step 1: Validate payment form. THIS IS THE CRITICAL STEP WE WERE MISSING.
-      // This must be called before any async work.
+      // Step 1: Validate payment form.
       setProgressMessage('Validating payment information...');
       const { error: submitError } = await elements.submit();
       if (submitError) throw new Error(submitError.message || "Payment form validation failed.");
 
-      // Step 2: Confirm the card setup. This gives us the PaymentMethod ID.
-      setProgressMessage('Securing payment method...');
-      const { error: setupError, setupIntent } = await stripe.confirmSetup({
-        elements,
-        redirect: 'if_required',
-      });
-      if (setupError) throw new Error(setupError.message || "Failed to secure payment method.");
-      if (setupIntent?.status !== 'succeeded' || !setupIntent.payment_method) throw new Error("Could not verify payment method.");
-
-      // Step 3: Create Firebase user
+      // Step 2: Create Firebase user
       setProgressMessage('Creating your citizen account...');
       const cred = await registerClient(email, password);
-      idToken = await cred.user.getIdToken(); // Assign to wider scope variable
+      idToken = await cred.user.getIdToken();
 
-      // Step 4: Call the backend to SETUP everything (but not finalize)
+      // Step 3: Call the backend to create the subscription and get a client secret
       setProgressMessage('Submitting registration...');
       const setupResponse = await fetch('/api/auth/setup-registration', {
         method: 'POST',
@@ -569,7 +559,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         body: JSON.stringify({
           email,
           plan: props.plan,
-          paymentMethodId: setupIntent.payment_method,
+          // No longer sending paymentMethodId
           idToken,
           faceUrl: uploadedFaceUrl,
           styleId: selectedStyleId,
@@ -585,7 +575,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
       const setupData = await setupResponse.json();
 
-      // Step 5: The backend has prepared the payment. Now, confirm it on the frontend.
+      // Step 4: The backend has prepared the payment. Now, confirm it on the frontend.
       // This is the step that handles the 3DS popup.
       setProgressMessage('Awaiting payment confirmation...');
 
@@ -608,7 +598,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         throw new Error(`Payment not successful (status: ${paymentIntent?.status}). Please try again.`);
       }
 
-      // Step 6: Payment is successful! Start polling for activation status.
+      // Step 5: Payment is successful! Start polling for activation status.
       setProgressMessage('Payment successful! Forging your passport...');
       startPollingForStatus(setupData.userId, idToken);
 

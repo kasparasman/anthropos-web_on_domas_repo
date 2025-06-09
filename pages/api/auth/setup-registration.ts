@@ -31,7 +31,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { 
         email, 
         plan, 
-        paymentMethodId, 
         idToken,
         faceUrl,
         styleId,
@@ -39,8 +38,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         gender
     } = req.body;
 
-    if (!email || !plan || !paymentMethodId || !idToken || !faceUrl || !styleId || !nickname || !gender) {
-        const missing = Object.entries({email, plan, paymentMethodId, idToken, faceUrl, styleId, nickname, gender})
+    if (!email || !plan || !idToken || !faceUrl || !styleId || !nickname || !gender) {
+        const missing = Object.entries({email, plan, idToken, faceUrl, styleId, nickname, gender})
             .filter(([, value]) => !value)
             .map(([key]) => key);
         return res.status(400).json({ message: `Missing required parameters: ${missing.join(', ')}` });
@@ -55,26 +54,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // --- Streamlined Subscription Flow ---
 
-        // Step 1: Create a Stripe Customer first.
-        // We will attach the payment method later, directly to the subscription.
+        // Step 1: Create a Stripe Customer.
         const customer = await stripe.customers.create({
             email: email,
         });
 
-        // Step 1.5: Attach the payment method to the customer. This is the crucial step.
-        await stripe.paymentMethods.attach(paymentMethodId, {
-            customer: customer.id,
-        });
-
-        // Step 2: Set the attached payment method as the default for the customer's invoices.
-        // This ensures the subscription will try to use it.
-        await stripe.customers.update(customer.id, {
-            invoice_settings: {
-                default_payment_method: paymentMethodId,
-            },
-        });
-
-        // Step 3: Create the subscription. It will now automatically attempt to charge the default payment method.
+        // Step 2: Create the subscription with payment behavior set to 'default_incomplete'.
+        // It will save the payment method automatically on successful confirmation.
         const priceId = PRICE_IDS[plan];
         if (!priceId) {
             return res.status(400).json({ message: `Invalid plan: ${plan}` });
@@ -84,10 +70,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             customer: customer.id,
             items: [{ price: priceId }],
             payment_behavior: 'default_incomplete',
+            payment_settings: { save_default_payment_method: 'on_subscription' },
             expand: ['latest_invoice.payment_intent'],
         });
 
-        // Step 4: Create (or upsert) the user profile in your database immediately
+        // Step 3: Create (or upsert) the user profile in your database immediately
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
         const periodEndUnix = (subscription as any).current_period_end as number | undefined;
 
@@ -117,8 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
         });
 
-        // Step 5: Return the client secret from the subscription's invoice to the frontend.
-        // The frontend will use this to call `stripe.confirmPayment()`.
+        // Step 4: Return the client secret from the subscription's invoice to the frontend.
         const latestInvoice = subscription.latest_invoice as Stripe.Invoice;
         const paymentIntent = latestInvoice.payment_intent as Stripe.PaymentIntent;
 
