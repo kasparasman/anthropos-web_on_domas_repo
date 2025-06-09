@@ -541,12 +541,13 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     let idToken = ''; // Keep idToken in a wider scope
 
     try {
-      // Step 1: Validate payment form
+      // Step 1: Validate payment form. THIS IS THE CRITICAL STEP WE WERE MISSING.
+      // This must be called before any async work.
       setProgressMessage('Validating payment information...');
       const { error: submitError } = await elements.submit();
       if (submitError) throw new Error(submitError.message || "Payment form validation failed.");
 
-      // Step 2: Confirm the card setup
+      // Step 2: Confirm the card setup. This gives us the PaymentMethod ID.
       setProgressMessage('Securing payment method...');
       const { error: setupError, setupIntent } = await stripe.confirmSetup({
         elements,
