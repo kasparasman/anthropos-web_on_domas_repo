@@ -563,10 +563,16 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       // --- 3DS Handling ---
       if (setupResponse.status === 402 && setupData.requiresAction) {
         setProgressMessage('Please complete authentication to continue.');
-        const { error: authError } = await stripe.confirmCardPayment(setupData.clientSecret);
+        const { paymentIntent, error: authError } = await stripe.confirmCardPayment(setupData.clientSecret);
+        
         if (authError) {
           throw new Error(authError.message || '3D Secure authentication failed.');
         }
+
+        if (paymentIntent?.status !== 'succeeded') {
+          throw new Error('Payment authentication was not successful. Please try again.');
+        }
+
         // If 3DS is successful, the webhook will handle activation.
         // We can start polling immediately.
         const userId = setupData.userId || (await registerClient(email, password)).user.uid;
