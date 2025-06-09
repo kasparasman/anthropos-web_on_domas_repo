@@ -61,6 +61,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             email: email,
         });
 
+        // Step 1.5: Attach the payment method to the customer. This is the crucial step.
+        await stripe.paymentMethods.attach(paymentMethodId, {
+            customer: customer.id,
+        });
+
         // Step 2: Create the subscription with payment behavior set to 'default_incomplete'.
         // This tells Stripe to create the subscription and its first invoice, but wait for us to confirm the payment.
         const priceId = PRICE_IDS[plan];
