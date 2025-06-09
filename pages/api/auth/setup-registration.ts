@@ -66,12 +66,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(400).json({ message: `Invalid plan: ${plan}` });
         }
         
+        const idempotencyKey = `sub_create_${uid}_${plan}`;
+
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
             items: [{ price: priceId }],
             payment_behavior: 'default_incomplete',
             payment_settings: { save_default_payment_method: 'on_subscription' },
             expand: ['latest_invoice.payment_intent'],
+        }, {
+            idempotencyKey: idempotencyKey,
         });
 
         // Step 3: Create (or upsert) the user profile in your database immediately

@@ -583,14 +583,19 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         elements,
         clientSecret: setupData.clientSecret,
         confirmParams: {
-          // Make sure to change this to your payment completion page
           return_url: `${window.location.origin}/`,
+          setup_future_usage: 'off_session', // Save card for future off-session payments
         },
-        redirect: 'if_required', // This prevents a full page redirect
+        redirect: 'if_required',
       });
 
       if (confirmError) {
-        throw new Error(confirmError.message || 'Payment confirmation failed. Please try again.');
+        // Handle specific payment errors for better UX
+        let userMessage = confirmError.message || 'Payment confirmation failed. Please try again.';
+        if (confirmError.code === 'card_declined' || confirmError.code === 'issuer_declined') {
+            userMessage = 'Your card was declined. Please use a different card or contact your bank.';
+        }
+        throw new Error(userMessage);
       }
 
       if (paymentIntent?.status !== 'succeeded') {
