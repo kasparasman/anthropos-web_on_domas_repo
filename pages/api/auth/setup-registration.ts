@@ -31,6 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { 
         email, 
         plan, 
+        paymentMethodId,
         idToken,
         faceUrl,
         styleId,
@@ -38,8 +39,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         gender
     } = req.body;
 
-    if (!email || !plan || !idToken || !faceUrl || !styleId || !nickname || !gender) {
-        const missing = Object.entries({email, plan, idToken, faceUrl, styleId, nickname, gender})
+    if (!email || !plan || !paymentMethodId || !idToken || !faceUrl || !styleId || !nickname || !gender) {
+        const missing = Object.entries({email, plan, paymentMethodId, idToken, faceUrl, styleId, nickname, gender})
             .filter(([, value]) => !value)
             .map(([key]) => key);
         return res.status(400).json({ message: `Missing required parameters: ${missing.join(', ')}` });
@@ -52,15 +53,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const decodedToken = await verifyIdToken(idToken);
         const uid = decodedToken.uid;
         
-        // --- Streamlined Subscription Flow ---
+        // --- Final, Correct Subscription Flow ---
 
         // Step 1: Create a Stripe Customer.
         const customer = await stripe.customers.create({
             email: email,
         });
 
-        // Step 2: Create the subscription with payment behavior set to 'default_incomplete'.
-        // It will save the payment method automatically on successful confirmation.
+        // Step 2: Create the subscription with the default payment method attached.
         const priceId = PRICE_IDS[plan];
         if (!priceId) {
             return res.status(400).json({ message: `Invalid plan: ${plan}` });
@@ -71,10 +71,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
             items: [{ price: priceId }],
+            default_payment_method: paymentMethodId,
             payment_behavior: 'default_incomplete',
-            payment_settings: { 
-                save_default_payment_method: 'on_subscription',
-            },
+            payment_settings: { save_default_payment_method: 'on_subscription' },
             expand: ['latest_invoice.payment_intent'],
         }, {
             idempotencyKey: idempotencyKey,

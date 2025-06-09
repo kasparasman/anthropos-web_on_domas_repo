@@ -155,6 +155,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 }
                 break;
             }
+            case 'invoice.payment_action_required': {
+                // This event is expected during 3DS flows. The client-side handles the action.
+                // We log it for observability and return a 200 OK to acknowledge receipt.
+                console.log(`🔔 Invoice requires customer action, client-side will handle: ${event.id}`);
+                break;
+            }
             case 'customer.subscription.deleted':
             case 'customer.subscription.updated': {
                 const subscription = event.data.object as Stripe.Subscription;

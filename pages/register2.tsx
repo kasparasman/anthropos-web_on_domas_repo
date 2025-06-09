@@ -541,17 +541,27 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     let idToken = ''; // Keep idToken in a wider scope
 
     try {
-      // Step 1: Validate payment form.
+      // Step 1: User has clicked "Pay". We first create a PaymentMethod.
+      // No need for elements.submit() here as createPaymentMethod does its own validation.
       setProgressMessage('Validating payment information...');
-      const { error: submitError } = await elements.submit();
-      if (submitError) throw new Error(submitError.message || "Payment form validation failed.");
+      const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+        elements,
+        params: { billing_details: { email } },
+      });
+
+      if (pmError) {
+        throw new Error(pmError.message || 'Could not create payment method.');
+      }
+      if (!paymentMethod) {
+        throw new Error('Failed to create payment method. Please try again.');
+      }
 
       // Step 2: Create Firebase user
       setProgressMessage('Creating your citizen account...');
       const cred = await registerClient(email, password);
       idToken = await cred.user.getIdToken();
 
-      // Step 3: Call the backend to create the subscription and get a client secret
+      // Step 3: Send the new PaymentMethod ID to the backend
       setProgressMessage('Submitting registration...');
       const setupResponse = await fetch('/api/auth/setup-registration', {
         method: 'POST',
@@ -559,7 +569,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         body: JSON.stringify({
           email,
           plan: props.plan,
-          // No longer sending paymentMethodId
+          paymentMethodId: paymentMethod.id,
           idToken,
           faceUrl: uploadedFaceUrl,
           styleId: selectedStyleId,
@@ -576,26 +586,22 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       const setupData = await setupResponse.json();
 
       // Step 4: The backend has prepared the payment. Now, confirm it on the frontend.
-      // This is the step that handles the 3DS popup.
       setProgressMessage('Awaiting payment confirmation...');
 
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret: setupData.clientSecret,
-        redirect: 'if_required',
+        confirmParams: {
+          return_url: `${window.location.origin}/`,
+        },
+        redirect: 'if_required', 
       });
 
       if (confirmError) {
-        // Handle specific payment errors for better UX
-        let userMessage = confirmError.message || 'Payment confirmation failed. Please try again.';
-        if (confirmError.code === 'card_declined' || confirmError.code === 'issuer_declined') {
-            userMessage = 'Your card was declined. Please use a different card or contact your bank.';
-        }
-        throw new Error(userMessage);
+        throw new Error(confirmError.message || 'Payment confirmation failed. Please try again.');
       }
 
       if (paymentIntent?.status !== 'succeeded') {
-        // This can happen if the user closes the 3DS modal or authentication fails
         throw new Error(`Payment not successful (status: ${paymentIntent?.status}). Please try again.`);
       }
 
