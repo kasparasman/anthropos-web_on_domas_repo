@@ -61,85 +61,31 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
                 // --- New User Activation Flow ---
                 if (profile && profile.status === 'PENDING_PAYMENT') {
-                    if (!profile.tmpFaceUrl || !profile.styleId || !profile.gender) {
-                        console.error(`Profile ${profile.id} is missing required data for activation.`, {
-                            hasFace: !!profile.tmpFaceUrl,
-                            hasStyle: !!profile.styleId,
-                            hasGender: !!profile.gender,
-                        });
-                        // Don't throw, just log and exit. Prevents Stripe from retrying a doomed request.
-                        return res.status(200).send('Profile data missing, cannot activate.');
-                    }
-                    
-                    console.log(`🚀 Activating profile for user ${profile.id}...`);
-                    
-                    try {
-                        // Step 1: Generate the Avatar
-                        const avatarUrl = await generateAvatar(profile.tmpFaceUrl, profile.styleId);
-                        
-                        // Step 2: Determine Archetype for Nickname Generation
-                        const { archetype } = getPromptForStyle(profile.styleId);
-
-                        // Step 3: Generate a Unique Nickname
-                        const nickname = await generateUniqueNickname({
-                            avatarUrl,
-                            gender: profile.gender as 'male' | 'female',
-                            archetype,
-                        });
-
-                        // Step 4: Update Profile to ACTIVE
-                        await withPrismaRetry(() => prisma.profile.update({
+                    // First, update the status to show that generation is in progress.
+                    // This is a quick operation.
+                    await withPrismaRetry(
+                        () => prisma.profile.update({
                             where: { id: profile.id },
-                            data: {
-                                status: 'ACTIVE',
-                                avatarUrl: avatarUrl,
-                                nickname: nickname,
-                                tmpFaceUrl: null, // Clean up temporary data
-                                styleId: null, // Clean up temporary data
-                            },
-                        }));
-                        console.log(`✅ Successfully activated profile for user ${profile.id} with nickname "${nickname}"`);
+                            data: { status: 'GENERATING_ASSETS' },
+                        })
+                    );
+                    console.log(`🚀 Set status to GENERATING_ASSETS for user ${profile.id}. Triggering background job.`);
 
-                    } catch (generationError) {
-                        console.error(`❌ Failed to generate avatar or nickname for user ${profile.id}:`, generationError);
-                        // Update status to FAILED so we know not to retry this user automatically.
-                        await withPrismaRetry(() => prisma.profile.update({
-                            where: { id: profile.id },
-                            data: { status: 'ACTIVATION_FAILED' },
-                        }));
-
-                        // --- Compensation logic: refund and cleanup ---
-                        try {
-                            const invoiceIds = invoice as unknown as { payment_intent?: string; subscription?: string };
-                            const paymentIntentId = invoiceIds.payment_intent;
-                            if (paymentIntentId) {
-                                await stripe.refunds.create({ payment_intent: paymentIntentId });
-                                console.log(`💸 Issued refund for user ${profile.id}`);
-                            }
-
-                            const subscriptionId = invoiceIds.subscription;
-                            if (subscriptionId) {
-                                // Some Stripe typings may not include the `.del` method on subscriptions.
-                                // Use a safe cast to access it.
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-explicit-any
-                                await (stripe.subscriptions as unknown as { del: (id: string) => Promise<Stripe.Subscription> }).del(subscriptionId);
-                                console.log(`✂️  Cancelled subscription ${subscriptionId} for user ${profile.id}`);
-                            }
-                        } catch (compErr) {
-                            console.error(`⚠️  Compensation steps (refund/cancel) failed for user ${profile.id}:`, compErr);
-                        }
-
-                        // Delete the Firebase auth user so they can restart the flow
-                        try {
-                            await admin.auth().deleteUser(profile.id);
-                            console.log(`🗑️  Deleted Firebase user ${profile.id} after failed activation.`);
-                        } catch (firebaseErr) {
-                            console.error(`⚠️  Failed to delete Firebase user ${profile.id}:`, firebaseErr);
-                        }
-
-                        // Return 200 to Stripe so it doesn't keep retrying a failed generation.
-                        return res.status(200).send('Activation failed during generation step.');
-                    }
+                    // Now, trigger the background job. We DO NOT wait for it to finish.
+                    // This is a "fire-and-forget" call.
+                    const generatorUrl = new URL('/api/user/generate-assets', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString();
+                    
+                    fetch(generatorUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: profile.id }),
+                    }).catch(error => {
+                        // If the trigger fails, we should log it, but the user is in a recoverable state.
+                        console.error(`CRITICAL: Failed to trigger asset generator for user ${profile.id}`, error);
+                    });
+                    
+                    // Respond to Stripe immediately.
+                    console.log(`✅ Webhook finished for ${profile.id}. Background job is running.`);
 
                 // --- Recurring Payment for Existing User ---
                 } else if (profile) {
