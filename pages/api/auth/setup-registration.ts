@@ -101,6 +101,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let statusCode = 500;
 
         if (error instanceof Stripe.errors.StripeError) {
+            // Handle card errors that require 3DS authentication
+            if (error.code === 'card_error' && error.decline_code === 'authentication_required') {
+                const paymentIntent = error.payment_intent;
+                if (paymentIntent) {
+                    console.log('[3DS] Authentication required. Sending client_secret to frontend.');
+                    return res.status(402).json({
+                        requiresAction: true,
+                        clientSecret: paymentIntent.client_secret,
+                        userId: (error as { doc?: { userId_for_logging?: string } })?.doc?.userId_for_logging
+                    });
+                }
+            }
             message = `Stripe Error: ${error.message}`;
             statusCode = error.statusCode || 500;
         } else if (error instanceof Error) {

@@ -462,6 +462,38 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
   const elements = useElements();
   const submissionGuard = React.useRef(false);
 
+  // --- New Polling Logic ---
+  const startPollingForStatus = (userId: string, idToken: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
+        const statusData = await statusResponse.json();
+
+        if (statusData.status !== 'ACTIVE') {
+          setProgressMessage('Forging your passport. This may take up to a minute...');
+          return;
+        }
+
+        if (statusData.avatarUrl && statusData.nickname) {
+          clearInterval(pollInterval);
+          setProgressMessage('Logging you in...');
+          const signInResult = await signIn('credentials', { idToken, redirect: false });
+
+          if (signInResult?.error) {
+            throw new Error(`Login failed after registration: ${signInResult.error}`);
+          }
+          
+          setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl, citizenId: statusData.citizenId });
+          setProgressMessage(null);
+          setIsLoading(false);
+        }
+      } catch (pollError) {
+        clearInterval(pollInterval);
+        throw new Error('Failed to check registration status. Please try logging in later.');
+      }
+    }, 3000);
+  };
+
   const handleGeneratePassport = async () => {
     if (submissionGuard.current) {
       toast({
@@ -527,49 +559,29 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       });
 
       const setupData = await setupResponse.json();
-      if (!setupResponse.ok) throw new Error(setupData.message || "An error occurred during registration setup.");
+      
+      // --- 3DS Handling ---
+      if (setupResponse.status === 402 && setupData.requiresAction) {
+        setProgressMessage('Please complete authentication to continue.');
+        const { error: authError } = await stripe.confirmCardPayment(setupData.clientSecret);
+        if (authError) {
+          throw new Error(authError.message || '3D Secure authentication failed.');
+        }
+        // If 3DS is successful, the webhook will handle activation.
+        // We can start polling immediately.
+        const userId = setupData.userId || (await registerClient(email, password)).user.uid;
+        startPollingForStatus(userId, idToken);
+        return; // Stop execution here, polling will handle the rest
+      }
+      
+      if (!setupResponse.ok) {
+        throw new Error(setupData.message || "An error occurred during registration setup.");
+      }
 
       // Step 5: Start polling for activation status (payment is now complete)
       setProgressMessage('Forging your passport. This may take up to a minute...');
 
-      const userId = setupData.userId;
-      const pollInterval = setInterval(async () => {
-        try {
-          const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
-          const statusData = await statusResponse.json();
-
-          // While we wait for avatar generation & nickname creation, keep the user informed.
-          if (statusData.status !== 'ACTIVE') {
-            setProgressMessage('Forging your passport. This may take up to a minute...');
-            return; // Continue polling until the profile becomes ACTIVE
-          }
-
-          // --- Profile is ACTIVE: finalize the flow ---
-          if (statusData.avatarUrl && statusData.nickname) {
-            clearInterval(pollInterval);
-
-            setProgressMessage('Logging you in...');
-            const signInResult = await signIn('credentials', {
-              idToken,
-              redirect: false,
-            });
-
-            if (signInResult?.error) {
-              throw new Error(`Login failed after registration: ${signInResult.error}`);
-            }
-
-            // Success!
-            setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl, citizenId: statusData.citizenId });
-            setProgressMessage(null);
-            setIsLoading(false);
-          }
-
-        } catch (pollError) {
-          // Stop polling on error
-          clearInterval(pollInterval);
-          throw new Error('Failed to check registration status. Please try logging in later.');
-        }
-      }, 3000); // Poll every 3 seconds
+      startPollingForStatus(setupData.userId, idToken);
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unknown error occurred.";
