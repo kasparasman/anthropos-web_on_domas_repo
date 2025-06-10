@@ -22,7 +22,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 select: {
                     status: true,
                     avatarUrl: true,
+                    avatarUrls: true,
                     nickname: true,
+                    nicknameOptions: true,
                     citizenId: true,
                 },
             })
@@ -35,7 +37,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(200).json({
             status: profile.status,
             avatarUrl: profile.avatarUrl,
+            avatarUrls: profile.avatarUrls ?? [],
             nickname: profile.nickname,
+            nicknameOptions: profile.nicknameOptions ?? [],
             citizenId: profile.citizenId,
         });
 
@@ -43,4 +47,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error(`Error fetching status for user ${userId}:`, error);
         res.status(500).json({ message: 'An internal server error occurred.' });
     }
-} 
+}

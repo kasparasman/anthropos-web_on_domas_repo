@@ -59,53 +59,6 @@ const displayAvatars: DisplayAvatar[] = [
   },
 ];
 
-// --- Helper: Generate Avatar (with MOCKING) ---
-async function generateAvatar(selfieB64: string, styleB64: string): Promise<string> {
-  const MOCK_AVATAR_GEN = process.env.NEXT_PUBLIC_MOCK_AVATAR_GEN === 'true';
-
-  if (MOCK_AVATAR_GEN) {
-    console.log("--- MOCKING AVATAR GENERATION ---");
-    await new Promise(resolve => setTimeout(resolve, 4000)); // Simulate delay
-
-    // Determine if we should use female or male styles based on the styleB64
-    const isFemaleStyle = styleB64.includes("female");
-    const stylesArray = isFemaleStyle ? femaleStyles : maleStyles;
-
-    // Get a random style from the appropriate gender array
-    const randomIndex = Math.floor(Math.random() * stylesArray.length);
-    return stylesArray[randomIndex].src;
-  }
-
-  const res = await fetch('/api/avatar-gen', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ selfieBase64: selfieB64, styleBase64: styleB64 }),
-  });
-  if (!res.ok || !res.body) {
-    const errorText = await res.text();
-    throw new Error(`Avatar generation failed: ${errorText}`);
-  }
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let url: string | null = null;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n\n');
-    buffer = parts.pop() || '';
-    for (const part of parts) {
-      if (part.includes('event: uploaded')) {
-        const line = part.split('\n').find(l => l.startsWith('data:'));
-        if (line) url = line.slice(6);
-      }
-    }
-  }
-  if (!url) throw new Error('Avatar generation stream did not yield a URL.');
-  return url;
-}
-
 // --- Stripe Promise ---
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
@@ -209,17 +162,22 @@ const RegistrationFlow = ({
   activePassportTab,
   setActivePassportTab,
 }: RegistrationFlowProps) => {
+  // Combine male and female styles for preview cycling
+  const previewAvatars: Array<{ style: StyleItem; gender: 'male' | 'female' }> = [
+    ...maleStyles.map(style => ({ style, gender: 'male' as const })),
+    ...femaleStyles.map(style => ({ style, gender: 'female' as const })),
+  ];
   const [currentDisplayAvatarIndex, setCurrentDisplayAvatarIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentDisplayAvatarIndex(
-        (prevIndex) => (prevIndex + 1) % displayAvatars.length
+        (prevIndex) => (prevIndex + 1) % previewAvatars.length
       );
-    }, 2000); // Change avatar every 4 seconds
+    }, 2000); // Change avatar every 2 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [previewAvatars.length]);
 
   const handleVideoMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.currentTarget;
@@ -255,13 +213,13 @@ const RegistrationFlow = ({
           <Benefits className="absolute z-2 top-[-16px] right-[-50px]" text="Participation in Chat" delay="0s" />
           <Benefits className="absolute z-2 top-[40px] left-[-50px]" text="Anthropos Avatar" delay="0.3s" />
           <Benefits className="absolute z-2 top-[200px] right-[-40px]" text="Limitless knowledge" delay="0.6s" />
-          {displayAvatars.map((avatar, index) => (
+          {previewAvatars.map((avatar, index) => (
             <Passport
-              key={index}
+              key={avatar.style.id}
               className={`z-1 transition-opacity duration-1000 ${currentDisplayAvatarIndex === index ? "opacity-100" : "opacity-0 absolute"}`}
-              nickname={avatar.nickname}
+              nickname={avatar.style.alt.replace(/ (Style|style)$/i, "")}
               gender={avatar.gender}
-              avatarUrl={avatar.avatarUrl}
+              avatarUrl={avatar.style.src}
             />
           ))}
         </div>
@@ -462,6 +420,12 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
   const elements = useElements();
   const submissionGuard = React.useRef(false);
 
+  // --- Add state for avatar selection ---
+  const [avatarSelectionOptions, setAvatarSelectionOptions] = useState<{ avatarUrl: string; nickname: string }[] | null>(null);
+  const [selectedAvatarOptionIndex, setSelectedAvatarOptionIndex] = useState(0);
+  const [isFinalizingPassport, setIsFinalizingPassport] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null); // Assume you can get this from registration or auth context
+
   // --- New Polling Logic ---
   const startPollingForStatus = (userId: string, idToken: string) => {
     const pollInterval = setInterval(async () => {
@@ -488,6 +452,24 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
         const statusData = await statusResponse.json();
         
+        if (statusData.status === 'AVATAR_SELECTION') {
+          if (statusData.avatarUrls?.length === 3 && statusData.nicknameOptions?.length === 3) {
+            // Shuffle nicknames for random pairing
+            const shuffledNicknames = [...statusData.nicknameOptions].sort(() => Math.random() - 0.5);
+            const options = statusData.avatarUrls.map((avatarUrl: string, i: number) => ({
+              avatarUrl,
+              nickname: shuffledNicknames[i],
+            }));
+            setAvatarSelectionOptions(options);
+            setIsLoading(false);
+            setProgressMessage(null);
+            setIsGenerated(true);
+            props.setShowPopup(true);
+            clearInterval(pollInterval);
+          }
+          return;
+        }
+
         if (statusData.status !== 'ACTIVE') {
           setProgressMessage('Forging your passport. This may take up to a minute...');
           return;
@@ -626,6 +608,36 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       setIsLoading(false);
       setProgressMessage(null);
       props.setRegistrationInProgress(false);
+    }
+  };
+
+  // --- Finalize passport selection ---
+  const handleFinishPassportCreation = async () => {
+    if (!avatarSelectionOptions || selectedAvatarOptionIndex == null || !userId) return;
+    setIsFinalizingPassport(true);
+    try {
+      const selected = avatarSelectionOptions[selectedAvatarOptionIndex];
+      const res = await fetch('/api/user/finalize-passport', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          avatarUrl: selected.avatarUrl,
+          nickname: selected.nickname,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to finalize passport.');
+      // After success, poll again to get ACTIVE status
+      setIsFinalizingPassport(false);
+      setIsLoading(true);
+      setProgressMessage('Finalizing your passport...');
+      setIsGenerated(false);
+      props.setShowPopup(false);
+      setAvatarSelectionOptions(null);
+      setTimeout(() => startPollingForStatus(userId, ''), 1000);
+    } catch (err) {
+      setIsFinalizingPassport(false);
+      toast({ title: 'Error', description: 'Could not finalize passport. Please try again.' });
     }
   };
 
