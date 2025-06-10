@@ -6,6 +6,8 @@ import { useState, useEffect } from 'react';
 //import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
+import { stripe } from '@/lib/stripe';
+import Stripe from 'stripe';
 
 // Dynamically import components with client-side dependencies
 const UserAccountControls = dynamic(
@@ -44,6 +46,10 @@ type SerializableProfile = {
   stripeCurrentPeriodEnd: string | null;
   bannedAt: string | null;
   deletedAt: string | null;
+  subscription?: {
+    cancel_at_period_end: boolean;
+    current_period_end: number;
+  } | null;
 };
 
 interface UserProfilePageProps {
@@ -90,7 +96,7 @@ const UserProfilePage: NextPage<UserProfilePageProps> = ({ profile }) => {
           gender={profile.gender as 'male' | 'female' || 'male'}
           avatarUrl={profile.avatarUrl || '/default-avatar.svg'}
         />
-        {isOwner && <UserAccountControls />}
+        {isOwner && <UserAccountControls profile={profile} />}
       </div>
     </main>
   );
@@ -104,18 +110,38 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       where: { nickname },
     });
 
+    if (!profile) {
+      return {
+        props: { profile: null },
+      };
+    }
+
+    let subscription: Stripe.Subscription | null = null;
+    if (profile.stripeSubscriptionId) {
+      try {
+        subscription = await stripe.subscriptions.retrieve(profile.stripeSubscriptionId);
+      } catch (error) {
+        console.error(`Failed to fetch Stripe subscription for profile ${profile.id}:`, error);
+        // Don't fail the whole page load if Stripe call fails
+      }
+    }
+
     // The profile object contains dates, which are not directly serializable.
     // We need to convert them to strings or numbers.
-    const serializableProfile = profile
-      ? {
-          ...profile,
-          createdAt: profile.createdAt.toISOString(),
-          lastModifiedAt: profile.lastModifiedAt.toISOString(),
-          stripeCurrentPeriodEnd: profile.stripeCurrentPeriodEnd?.toISOString() || null,
-          bannedAt: profile.bannedAt?.toISOString() || null,
-          deletedAt: profile.deletedAt?.toISOString() || null,
-        }
-      : null;
+    const serializableProfile = {
+      ...profile,
+      createdAt: profile.createdAt.toISOString(),
+      lastModifiedAt: profile.lastModifiedAt.toISOString(),
+      stripeCurrentPeriodEnd: profile.stripeCurrentPeriodEnd?.toISOString() || null,
+      bannedAt: profile.bannedAt?.toISOString() || null,
+      deletedAt: profile.deletedAt?.toISOString() || null,
+      subscription: subscription
+        ? {
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            current_period_end: subscription.current_period_end,
+          }
+        : null,
+    };
 
     return {
       props: {

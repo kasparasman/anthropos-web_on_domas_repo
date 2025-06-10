@@ -3,13 +3,20 @@ import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
 import { useAuthSync } from '@/lib/hooks/useFirebaseNextAuth';
 
-export default function UserAccountControls() {
+type Profile = {
+    subscription?: {
+      cancel_at_period_end: boolean;
+      current_period_end: number;
+    } | null;
+  };
+
+export default function UserAccountControls({ profile }: { profile: Profile }) {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deletionInProgress, setDeletionInProgress] = useState(false);
   const [deletionError, setDeletionError] = useState<string | null>(null);
-  const [showUnsubscribeConfirmation, setShowUnsubscribeConfirmation] = useState(false)
-  const [unsubscribeInProgress, setUnsubscribeInProgress] = useState(false)
-  const [unsubscribeError, setUnsubscribeError] = useState<string | null>(null)
+  const [showUnsubscribeConfirmation, setShowUnsubscribeConfirmation] = useState(false);
+  const [unsubscribeInProgress, setUnsubscribeInProgress] = useState(false);
+  const [unsubscribeError, setUnsubscribeError] = useState<string | null>(null);
   const router = useRouter();
   const { signOutFirebase } = useAuthSync();
 
@@ -60,6 +67,7 @@ export default function UserAccountControls() {
       if (response.data.success) {
         setShowUnsubscribeConfirmation(false)
         // Could add a success message or redirect if needed
+        router.reload(); // Reload the page to get fresh server-side props
       } else {
         setUnsubscribeError(response.data.message || 'Failed to cancel subscription')
       }
@@ -81,6 +89,12 @@ export default function UserAccountControls() {
     }
   }
 
+  const isSubscriptionActive = profile.subscription && !profile.subscription.cancel_at_period_end;
+  const isCancelling = profile.subscription && profile.subscription.cancel_at_period_end;
+  const periodEndDate = isCancelling
+    ? new Date(profile.subscription!.current_period_end * 1000).toLocaleDateString()
+    : '';
+
   return (
     <div className="mt-6 flex flex-col items-center gap-3 w-full max-w-sm">
       <button
@@ -89,7 +103,8 @@ export default function UserAccountControls() {
       >
         Sign out
       </button>
-      {!showUnsubscribeConfirmation && (
+
+      {isSubscriptionActive && !showUnsubscribeConfirmation && (
         <button
           onClick={() => {
             setShowUnsubscribeConfirmation(true)
@@ -99,6 +114,14 @@ export default function UserAccountControls() {
         >
           Cancel subscription
         </button>
+      )}
+
+      {isCancelling && (
+         <div className="mt-4 p-4 border border-yellow-500 rounded-md bg-yellow-900/20 text-center">
+            <p className="text-yellow-400">
+                Your subscription is scheduled to be cancelled on {periodEndDate}.
+            </p>
+         </div>
       )}
 
       {showUnsubscribeConfirmation && (
