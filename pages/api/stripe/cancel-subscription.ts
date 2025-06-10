@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { authOptions } from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
-import { stripe } from '@/lib/stripe';
+import { createStripeClient } from '../../../lib/stripe/factory';
 import { z } from 'zod';
 
 const cancelSubscriptionSchema = z.object({
@@ -14,6 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Allow', 'POST');
     return res.status(405).end('Method Not Allowed');
   }
+  const stripe = createStripeClient();
 
   const session = await getServerSession(req, res, authOptions);
 
