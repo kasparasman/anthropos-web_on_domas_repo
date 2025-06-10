@@ -3,4 +3,4 @@ description:
 globs: 
 alwaysApply: false
 ---
-THE openai rule: Eveyrthing regarding openai API call is correct, the user already did research and proving that it is correct, ignore ts or linter errors regarding openai
+THE openai rule: Eveyrthing regarding openai and strupe API call is correct, the user already did research and proving that it is correct, ignore ts or linter errors regarding openai and stripe

@@ -17,6 +17,7 @@ import Benefits from "@/components/UI/benefits";
 import GridWithRays from "@/components/GridWithRays";
 import benefitsStyles from "@/components/UI/benefits.module.css";
 import { Lock } from "@/components/UI/lock";
+import ProgressBarWithTimer from "@/components/UI/ProgressBarWithTimer";
 
 // --- Services & Config ---
 import { registerClient } from '../lib/firebase-client';
@@ -70,6 +71,9 @@ interface RegistrationFlowProps {
   isFaceChecking: boolean;
   isFaceUnique: boolean | null;
   faceCheckError: string | null;
+  rotatingMessages: string[];
+  currentMessageIndex: number;
+  messageOpacity: number;
   setEmail: (value: string) => void;
   setPassword: (value: string) => void;
   setFaceFile: (file: File | null) => void;
@@ -112,12 +116,14 @@ interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
   }) => void;
 }
 
+
+
 // --- The Main Registration Component (Now Dumb) ---
 const RegistrationFlow = ({
   // State
   email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
   isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
-  isFaceChecking, isFaceUnique, faceCheckError,
+  isFaceChecking, isFaceUnique, faceCheckError, rotatingMessages, currentMessageIndex, messageOpacity,
 
   // Setters
   setEmail, setPassword, setFaceFile, setPlan, setGender, setSelectedStyleId, setCurrentStep,
@@ -216,7 +222,7 @@ const RegistrationFlow = ({
         </div>
         <div
           className="w-full max-w-md border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
-          style={{ 
+          style={{
             aspectRatio: webcamAspectRatio || videoAspectRatio || '4/3',
             minWidth: '320px'
           }}
@@ -235,14 +241,14 @@ const RegistrationFlow = ({
             />
           ) : (
             <>
-              <video 
-                src="https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/facescancropped.mp4" 
-                autoPlay 
-                loop 
-                muted 
+              <video
+                src="https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/facescancropped.mp4"
+                autoPlay
+                loop
+                muted
                 playsInline
                 onLoadedMetadata={handleVideoMetadata}
-                className="absolute inset-0 object-contain pointer-events-none" 
+                className="absolute inset-0 object-contain pointer-events-none"
               />
               <MainButton className="z-10" onClick={handleStartScan} disabled={isLoading}>Scan Your Face</MainButton>
             </>
@@ -332,18 +338,21 @@ const RegistrationFlow = ({
               </>
             ) : (
               <>
-                <h1 className="text-3xl font-bold mb-4 animate-pulse">Forging Your Passport...</h1>
+                <h1 className="text-3xl font-bold mb-4">Forging Your Passport...</h1>
+
+                {/* Progress Bar and Time Remaining */}
+                <ProgressBarWithTimer />
 
                 <div className="relative flex items-center justify-center">
                   {/* Blurred glow behind the passport */}
-                  <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[100px] opacity-70 animate-pulse" />
+                  <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[100px] opacity-80 animate-pulse" />
 
                   {/* Passport placeholder that will update automatically once finalPassport is ready */}
                   {(() => {
                     const selectedStyle = stylesToShow.find((s) => s.id === selectedStyleId);
                     const placeholderAvatar = selectedStyle?.src || '/default-avatar.svg';
                     return (
-                      <div className="relative">
+                      <div className="flex flex-col items-center relative">
                         <Passport
                           className="z-10 animate-pulse"
                           nickname={progressMessage ? '...' : 'Forging'}
@@ -352,9 +361,16 @@ const RegistrationFlow = ({
                         />
 
                         {/* Overlay shimmer to indicate forging */}
-                        <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-[16px]">
-                          <p className="text-white text-center px-4 animate-pulse">
+                        {/*
+                        <div className="absolute inset-0 -top-50 flex flex-col items-center justify-center rounded-[16px] max-w-60 mx-auto">
+                          <p className="text-white text-center px- animate-pulse">
                             {progressMessage || 'Generating avatar & citizen name...'}
+                          </p>
+                        </div>
+                        */}
+                        <div className="relative inset-0  flex flex-col items-center justify-center rounded-[16px] max-w-80 mx-auto mt-8">
+                          <p className="text-smoke text-center px-4 transition-opacity duration-1000 h-16" style={{ opacity: messageOpacity }}>
+                            {rotatingMessages[currentMessageIndex]}
                           </p>
                         </div>
                       </div>
@@ -407,7 +423,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         }
 
         const statusData = await statusResponse.json();
-        
+
         if (statusData.status === 'ACTIVE') {
           clearInterval(pollInterval);
           setProgressMessage('Logging you in...');
@@ -416,7 +432,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
           if (signInResult?.error) {
             throw new Error(`Login failed after registration: ${signInResult.error}`);
           }
-          
+
           setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl, citizenId: statusData.citizenId });
           setProgressMessage(null);
           setIsLoading(false);
@@ -500,7 +516,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       if (!setupData.clientSecret) {
         throw new Error("Backend did not return a client secret for payment confirmation.");
       }
-      
+
       // 4. CONFIRM THE INVOICE PAYMENTINTENT
       setProgressMessage('Awaiting payment confirmation...');
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
@@ -584,6 +600,15 @@ const Register2Page = () => {
   const [isGenerated, setIsGenerated] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [finalPassport, setFinalPassport] = useState<{ nickname: string, avatarUrl: string, citizenId: number } | null>(null);
+
+  // --- Rotating messages state ---
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [messageOpacity, setMessageOpacity] = useState(1);
+  const rotatingMessages = [
+    "Did you know that Anthropos City crypto currency is designed to always go up in price?",
+    "You can buy Anthropos City Token on our home page by pressing \"BUY NOW\" button.",
+    "Tired of not realizing your goals? Try our AI productivity system."
+  ];
 
   const stylesToShow = gender === "male" ? maleStyles : femaleStyles;
 
@@ -761,10 +786,26 @@ const Register2Page = () => {
     }
   }, [faceFile, currentStep]);
 
+  // --- Effect for rotating messages ---
+  useEffect(() => {
+    const messageInterval = setInterval(() => {
+      // Fade out
+      setMessageOpacity(0);
+
+      // After fade out completes, change message and fade in
+      setTimeout(() => {
+        setCurrentMessageIndex((prevIndex) => (prevIndex + 1) % rotatingMessages.length);
+        setMessageOpacity(1);
+      }, 1000); // Wait for fade out transition to complete
+    }, 15000); // 15 seconds
+
+    return () => clearInterval(messageInterval);
+  }, [rotatingMessages.length]);
+
   const props = {
     email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
     isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
-    isFaceChecking, isFaceUnique, faceCheckError,
+    isFaceChecking, isFaceUnique, faceCheckError, rotatingMessages, currentMessageIndex, messageOpacity,
     setEmail, setPassword, setFaceFile, setPlan, setGender, setSelectedStyleId, setCurrentStep,
     setClientSecret, setIsScanning, setIsLoading, setErrorMessage, setProgressMessage,
     setIsGenerated, setShowPopup, setFinalPassport,
