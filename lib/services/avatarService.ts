@@ -45,7 +45,15 @@ export async function generateAvatar(faceUrl: string, styleId: string): Promise<
         const style = [...maleStyles, ...femaleStyles].find(s => s.id === styleId);
         if (!style) throw new Error(`Could not find style for ID ${styleId}`);
         
-        console.log(`Using archetype "${archetype}" with instructions and passing image URLs directly.`);
+        console.log(`Using archetype "${archetype}" with instructions.`);
+        
+        // --- DIAGNOSTIC LOGGING ---
+        console.log('[AvatarGen] URLs being sent to OpenAI:');
+        console.log(`  - User Face URL: ${faceUrl}`);
+        console.log(`  - Style Ref URL: ${style.src}`);
+        console.log(`  - Crest URL:     ${LIMITLESS_CREST_URL}`);
+        console.log('[AvatarGen] Sending request to OpenAI...');
+        // --- END DIAGNOSTIC LOGGING ---
 
         // The API expects direct URLs, not base64 data, so we pass them straight through.
         
@@ -75,6 +83,8 @@ export async function generateAvatar(faceUrl: string, styleId: string): Promise<
             }],
         });
         
+        console.log('[AvatarGen] Received response from OpenAI.');
+
         // Correctly extract the result from the 'output' array for non-streaming responses.
         const imagesB64 = (response as any).output
             ?.filter((output: any) => output.type === "image_generation_call")

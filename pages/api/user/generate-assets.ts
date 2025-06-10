@@ -28,9 +28,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(202).json({ message: 'Asset generation started.' });
 
     // --- Start background processing ---
-    console.log(`[GENERATOR] Starting asset generation for user ${userId}`);
-
+    // High-level try-catch to ensure any unexpected error is logged.
     try {
+        console.log(`[GENERATOR] Starting asset generation for user ${userId}`);
+
         const profile = await withPrismaRetry(() => prisma.profile.findUnique({
             where: { id: userId },
         })) as (Profile & { tmpFaceUrl?: string | null; styleId?: string | null; gender?: string | null; });
@@ -69,15 +70,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log(`[GENERATOR] ✅ Assets generated and profile activated for user ${userId}`);
 
     } catch (error) {
-        console.error(`[GENERATOR] ❌ Failed to generate assets for user ${userId}:`, error);
-        
-        // If generation fails, mark the profile so we know not to retry automatically.
-        await withPrismaRetry(() => prisma.profile.update({
-            where: { id: userId },
-            data: { status: 'ACTIVATION_FAILED' },
-        })).catch(err => {
-            // Log if even the failure update fails, but don't crash
-            console.error(`[GENERATOR] CRITICAL: Failed to update profile status to ACTIVATION_FAILED for user ${userId}`, err);
-        });
+        console.error(`[GENERATOR] ❌ An unhandled error occurred in the asset generator for user ${userId}.`);
+        console.error(`[GENERATOR] Error Message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error(`[GENERATOR] Error Stack: ${error instanceof Error ? error.stack : 'No stack available'}`);
+        console.error(`[GENERATOR] Full Error Object:`, JSON.stringify(error, null, 2));
+
+        // Attempt to mark the profile as failed to prevent it from being stuck.
+        try {
+            await withPrismaRetry(() => prisma.profile.update({
+                where: { id: userId },
+                data: { status: 'ACTIVATION_FAILED' },
+            }));
+            console.log(`[GENERATOR] Successfully marked profile ${userId} as ACTIVATION_FAILED.`);
+        } catch (dbError) {
+            console.error(`[GENERATOR] CRITICAL: Failed to update profile status to ACTIVATION_FAILED for user ${userId}. Manual intervention required.`, dbError);
+        }
     }
 } 
