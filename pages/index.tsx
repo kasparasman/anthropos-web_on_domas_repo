@@ -1,18 +1,14 @@
 // pages/index.tsx
 import React from 'react'
 import Banner from '../components/Banner'
-import StatsSection from '../components/StatsSection'
-import RightPanel from '../components/RightPanel'
 import AssetsCounter from '@/components/AssetCounter'
 import AssetCarousel from '../components/AssetCarousel'
 import TotalAssetIncome from '@/components/TotalAssetIncome'
+import dynamic from 'next/dynamic'
 
 import Input from '@/components/UI/input'
 import MainButton from '@/components/UI/button'
 import PricingToggle from '@/components/UI/PricingToggle'
-
-
-
 
 import Passport from '@/components/Passport'
 
@@ -23,6 +19,9 @@ import { Asset } from '../types/asset'
 /* ------------------------------------------------------------------ */
 /*  Props                                                             */
 /* ------------------------------------------------------------------ */
+const StatsSection = dynamic(() => import('../components/StatsSection'), { ssr: false })
+const RightPanel = dynamic(() => import('../components/RightPanel'), { ssr: false })
+
 interface HomeProps {
   dexData: DexToolsResponse
   topics: Topic[]
