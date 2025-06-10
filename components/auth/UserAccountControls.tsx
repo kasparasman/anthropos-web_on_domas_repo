@@ -111,7 +111,7 @@ export default function UserAccountControls() {
             </div>
           )}
 
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-col max-w-60 gap-4 justify-center mx-auto">
             <button
               onClick={() => {
                 setShowUnsubscribeConfirmation(false)
@@ -120,7 +120,7 @@ export default function UserAccountControls() {
               className="px-4 py-2 bg-gray text-smoke rounded-md hover:ring hover:ring-dim_smoke transition-all duration-300"
               disabled={unsubscribeInProgress}
             >
-              Stay subscribed
+              No, stay subscribed
             </button>
             <button
               onClick={handleSubscriptionCancellation}
