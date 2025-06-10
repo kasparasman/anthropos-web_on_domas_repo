@@ -1,7 +1,16 @@
 {
   "functions": {
     "pages/api/stripe/webhook.ts": {
-      "maxDuration": 60
+      "maxDuration": 360
+    },
+    "pages/api/user/generate-assets.ts": {
+      "maxDuration": 360
+    },
+    "pages/api/auth/setup-registration.ts": {
+      "maxDuration": 360
+    },
+    "pages/api/auth/check-face-uniqueness.ts": {
+      "maxDuration": 360
     }
   }
 } 
