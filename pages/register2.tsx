@@ -221,7 +221,7 @@ const RegistrationFlow = ({
           <Image src="/Step1.png" alt="Step 1 visual" width={120} height={32} className="mb-6" />
         </div>
         <div
-          className="w-full max-w-md border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
+          className="w-full max-w-md h-auto border border-main rounded-2xl relative bg-black flex flex-col justify-center items-center overflow-hidden transition-all duration-300"
           style={{
             aspectRatio: webcamAspectRatio || videoAspectRatio || '4/3',
             minWidth: '320px'
@@ -248,7 +248,7 @@ const RegistrationFlow = ({
                 muted
                 playsInline
                 onLoadedMetadata={handleVideoMetadata}
-                className="absolute inset-0 object-contain pointer-events-none"
+                className="absolute inset-0 object-contain pointer-events-none aspect-auto"
               />
               <MainButton className="z-10" onClick={handleStartScan} disabled={isLoading}>Scan Your Face</MainButton>
             </>
@@ -607,7 +607,7 @@ const Register2Page = () => {
   const rotatingMessages = [
     "Did you know that Anthropos City crypto currency is designed to always go up in price?",
     "You can buy Anthropos City Token on our home page by pressing \"BUY NOW\" button.",
-    "Tired of not realizing your goals? Try our AI productivity system."
+    "Tired of not acomplishing your goals? Try our AI productivity system."
   ];
 
   const stylesToShow = gender === "male" ? maleStyles : femaleStyles;

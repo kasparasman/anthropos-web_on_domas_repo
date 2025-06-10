@@ -36,7 +36,7 @@ const ProgressBarWithTimer = () => {
         }, 30000);
 
         // Initial text update
-        setTimeText("Estimated time: 90 seconds");
+        setTimeText("Estimated time: 110 seconds");
 
         // Cleanup intervals
         return () => {
