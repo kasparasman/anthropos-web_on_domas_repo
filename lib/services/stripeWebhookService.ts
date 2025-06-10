@@ -116,14 +116,17 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
 
         // --- NEW QSTASH LOGIC ---
         // We hand off the job to QStash for reliable background processing.
-        const qstashUrl = process.env.QSTASH_URL;
+        const qstashBaseUrl = process.env.QSTASH_URL;
         const qstashToken = process.env.QSTASH_TOKEN;
         
-        if (!qstashUrl || !qstashToken) {
+        if (!qstashBaseUrl || !qstashToken) {
             console.error('❌ CRITICAL: QSTASH_URL or QSTASH_TOKEN is not set. Cannot queue asset generation.');
             // In a real app, you might want to mark the profile as failed here.
             return;
         }
+
+        // The publish endpoint is at the /v2/publish path
+        const qstashUrl = new URL('/v2/publish', qstashBaseUrl).toString();
 
         // The target URL for the job is our own API endpoint.
         const targetUrl = new URL('/api/user/generate-assets', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString();
