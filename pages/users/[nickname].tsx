@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { Profile } from '@prisma/client';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import axios, { AxiosError } from 'axios';
+//import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 
