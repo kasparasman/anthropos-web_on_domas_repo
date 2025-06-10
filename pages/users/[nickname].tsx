@@ -5,9 +5,15 @@ import { Profile } from '@prisma/client';
 import GridWithRays from '@/components/GridWithRays';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { useAuthSync } from '@/lib/hooks/useFirebaseNextAuth';
 import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the UserAccountControls to prevent SSR issues with its hooks
+const UserAccountControls = dynamic(
+  () => import('@/components/auth/UserAccountControls'),
+  { ssr: false, loading: () => <div className="h-24" /> } // Render a placeholder during load
+);
 
 // This type accurately reflects the serialized profile data passed as props
 type SerializableProfile = {
@@ -39,88 +45,8 @@ interface UserProfilePageProps {
   profile: SerializableProfile | null;
 }
 
-const UserAccountControls = ({ onSignOut }: { onSignOut: () => void }) => {
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [deletionInProgress, setDeletionInProgress] = useState(false);
-  const [deletionError, setDeletionError] = useState<string | null>(null);
-  const router = useRouter();
-
-  const handleAccountDeletion = async () => {
-    try {
-      setDeletionInProgress(true);
-      setDeletionError(null);
-      const response = await axios.post('/api/user/delete-account', {
-        reason: 'User requested deletion'
-      });
-      if (response.data.success) {
-        await onSignOut();
-        router.push('/deleted-confirmation');
-      } else {
-        setDeletionError(response.data.message || 'Failed to delete account');
-      }
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<{ message?: string }>;
-        setDeletionError(axiosError.response?.data?.message || axiosError.message || 'An unexpected error occurred.');
-      } else {
-        setDeletionError('An unexpected error occurred.');
-      }
-    } finally {
-      setDeletionInProgress(false);
-    }
-  };
-
-  return (
-    <div className="mt-6 flex flex-col items-center gap-2 w-full max-w-sm">
-      <button
-        onClick={onSignOut}
-        className="w-full px-4 py-2 bg-main text-black font-semibold uppercase rounded-md"
-      >
-        Sign out
-      </button>
-      <button
-        onClick={() => setShowDeleteConfirmation(true)}
-        className="px-4 py-2 text-red-500 hover:underline"
-      >
-        Delete my account
-      </button>
-
-      {showDeleteConfirmation && (
-        <div className="mt-4 p-4 border border-red-500 rounded-md bg-black/50 w-full">
-          <p className="text-white text-center mb-4">Are you sure you want to delete your account? This action cannot be undone.</p>
-          {deletionError && (
-            <div className="mb-4 p-2 bg-red-900/50 border border-red-500 rounded text-white text-center">
-              {deletionError}
-            </div>
-          )}
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={() => { setShowDeleteConfirmation(false); setDeletionError(null); }}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-              disabled={deletionInProgress}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAccountDeletion}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-              disabled={deletionInProgress}
-            >
-              {deletionInProgress ? 'Deleting...' : 'Delete Account'}
-            </button>
-          </div>
-          <p className="mt-4 text-xs text-gray-400 text-center">
-            Note: As per our security policy, you cannot register a new account using the same face.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
 const UserProfilePage: NextPage<UserProfilePageProps> = ({ profile }) => {
   const { data: session } = useSession();
-  const { signOutFirebase } = useAuthSync();
   const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
@@ -144,10 +70,6 @@ const UserProfilePage: NextPage<UserProfilePageProps> = ({ profile }) => {
     );
   }
   
-  const handleSignOut = async () => {
-      await signOutFirebase();
-  };
-
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen text-white p-4">
       <GridWithRays />
@@ -163,7 +85,7 @@ const UserProfilePage: NextPage<UserProfilePageProps> = ({ profile }) => {
           gender={profile.gender as 'male' | 'female' || 'male'}
           avatarUrl={profile.avatarUrl || '/default-avatar.svg'}
         />
-        {isOwner && <UserAccountControls onSignOut={handleSignOut} />}
+        {isOwner && <UserAccountControls />}
       </div>
     </main>
   );
