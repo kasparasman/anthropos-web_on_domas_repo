@@ -1,6 +1,5 @@
 import { GetServerSideProps, NextPage } from 'next';
 import { prisma } from '@/lib/prisma';
-import Passport from '@/components/Passport';
 import { Profile } from '@prisma/client';
 import GridWithRays from '@/components/GridWithRays';
 import { useSession } from 'next-auth/react';
@@ -9,11 +8,15 @@ import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 
-// Dynamically import the UserAccountControls to prevent SSR issues with its hooks
+// Dynamically import components with client-side dependencies
 const UserAccountControls = dynamic(
   () => import('@/components/auth/UserAccountControls'),
-  { ssr: false, loading: () => <div className="h-24" /> } // Render a placeholder during load
+  { ssr: false, loading: () => <div className="h-24" /> }
 );
+const Passport = dynamic(() => import('@/components/Passport'), {
+  ssr: false,
+  loading: () => <div className="w-60 h-96 bg-black/20 rounded-lg animate-pulse" />,
+});
 
 // This type accurately reflects the serialized profile data passed as props
 type SerializableProfile = {
