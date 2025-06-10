@@ -4,9 +4,13 @@ import { admin } from '@/lib/firebase-admin';
 import { withPrismaRetry } from '@/lib/prisma/util';
 import { createStripeClient } from '@/lib/stripe/factory';
 import { Profile } from '@prisma/client';
+import { Client as QStash } from "@upstash/qstash";
 
 const stripe = createStripeClient();
-
+const qstash = new QStash({
+    token: process.env.QSTASH_TOKEN!,      // ← throws early if missing
+  });
+  
 /**
  * Handles subscription-related events ('customer.subscription.created', 'updated', 'deleted').
  * @param subscription - The Stripe Subscription object from the webhook event.
@@ -114,44 +118,25 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
             data: { status: 'GENERATING_ASSETS' },
         }));
 
-        // --- NEW QSTASH LOGIC ---
-        // We hand off the job to QStash for reliable background processing.
-        const qstashBaseUrl = process.env.QSTASH_URL;
-        const qstashToken = process.env.QSTASH_TOKEN;
-        
-        if (!qstashBaseUrl || !qstashToken) {
-            console.error('❌ CRITICAL: QSTASH_URL or QSTASH_TOKEN is not set. Cannot queue asset generation.');
-            // In a real app, you might want to mark the profile as failed here.
-            return;
-        }
-
-        // The publish endpoint is at the /v2/publish path
-        const qstashUrl = new URL('/v2/publish', qstashBaseUrl).toString();
-
-        // The target URL for the job is our own API endpoint.
-        const targetUrl = new URL('/api/user/generate-assets', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString();
-
-        try {
-            const response = await fetch(qstashUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${qstashToken}`,
-                    'Upstash-Target': targetUrl,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ userId: profile.id }),
-            });
-
-            if (response.ok) {
-                console.log(`[Webhook] ✅ Successfully queued asset generation for user ${profile.id} with QStash. Message ID: ${(await response.json()).messageId}`);
-            } else {
-                console.error(`[Webhook] ❌ CRITICAL: Failed to queue job with QStash for user ${profile.id}. Status: ${response.status}`, await response.text());
-            }
-        } catch (error) {
-            console.error(`[Webhook] ❌ CRITICAL: fetch() call to QStash failed for user ${profile.id}.`, error);
-        }
-        // --- END QSTASH LOGIC ---
-
+        await qstash.publishJSON({
+            /*  full https URL the queue will POST to  */
+            url:
+              (process.env.NEXT_PUBLIC_BASE_URL ?? "https://www.anthroposcity.com")
+                .replace(/\/$/, "") +               // strip trailing slash
+              "/api/user/generate-assets",      // Reverted to public-facing route as requested
+          
+            /*  arbitrary JSON payload delivered in req.body  */
+            body: { userId: profile.id },
+          
+            /*  optional back-off / retries  */
+            retries: 3,
+            delay: 0,
+          });
+          
+          console.log(
+            `[Webhook] ✅ QStash message published for user ${profile.id}.`
+          );
+          
     } else if (paymentIntent.status === 'requires_payment_method') { // This is the status for a failure
         const failureReason = paymentIntent.last_payment_error?.message || 'No specific reason provided.';
         console.log(`❌ Payment failed for new user ${profile.id}. Reason: ${failureReason}. Rolling back registration.`);

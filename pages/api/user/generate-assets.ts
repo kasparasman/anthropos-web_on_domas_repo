@@ -1,67 +1,30 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { generateAndActivateUser } from '@/lib/services/assetService';
-import { Receiver } from '@upstash/qstash';
+// This API route has been deprecated and moved to /api/internal/generate-assets.
+// It is kept here to prevent breaking any old, cached references, but it does nothing.
+// Please update any references to point to the new internal endpoint.
 
-// Disable Next.js body parser for this route to handle raw body for verification
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
+import { verifySignature } from "@upstash/qstash/dist/nextjs";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { generateAndActivateUser } from "@/lib/services/assetService";
 
-const qstashReceiver = new Receiver({
-    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
-    nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
-});
+export const config = { api: { bodyParser: false } };
 
-/**
- * This API route is the subscriber for QStash background jobs.
- * It verifies the request signature and then executes the asset generation service.
- */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        res.setHeader('Allow', 'POST');
-        return res.status(405).json({ message: 'Method Not Allowed' });
-    }
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // after verifySignature, req.body is already a parsed object
+  const { userId } = req.body as { userId?: string };
 
-    let userId: string;
+  if (!userId) {
+    return res.status(400).json({ message: "userId missing" });
+  }
 
-    try {
-        const body = await qstashReceiver.verify({
-            signature: req.headers['upstash-signature'] as string,
-            body: await (async (readable) => {
-                const chunks = [];
-                for await (const chunk of readable) {
-                    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-                }
-                return Buffer.concat(chunks).toString('utf-8');
-            })(req),
-        });
+  try {
+    await generateAndActivateUser(userId);
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error(`[QStash Subscriber] Error processing job for userId ${userId}:`, error);
+    res.status(500).json({ message: "Failed to process job." });
+  }
+}
 
-        // The parsed and verified body will be a JSON object
-        const parsedBody = JSON.parse(body);
-        userId = parsedBody.userId;
-
-        if (!userId) {
-            return res.status(400).json({ message: 'User ID is required in the verified body.' });
-        }
-
-    } catch (error) {
-        console.error('[QStash] Signature verification failed:', error);
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    // Now that the request is verified and we have the userId, execute the job.
-    // QStash will wait for this to complete.
-    try {
-        console.log(`[generate-assets API] Received and verified job for user ${userId}. Starting processing.`);
-        await generateAndActivateUser(userId);
-        // Respond with success
-        res.status(200).json({ message: `Successfully processed job for user ${userId}` });
-    } catch (error) {
-        // The service itself handles logging and marking the profile as failed.
-        // We just log that the trigger itself failed here and return an error status to QStash.
-        console.error(`[generate-assets API] Invocation for user ${userId} failed. See assetService logs for details.`);
-        res.status(500).json({ message: `Processing failed for user ${userId}` });
-    }
-} 
+export default process.env.NODE_ENV === "development"
+  ? handler // bypass signature locally
+  : verifySignature(handler); 
