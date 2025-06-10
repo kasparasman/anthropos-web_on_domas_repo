@@ -10,8 +10,6 @@ import Input from '@/components/UI/input'
 import MainButton from '@/components/UI/button'
 import PricingToggle from '@/components/UI/PricingToggle'
 
-import Passport from '@/components/Passport'
-
 import { DexToolsResponse } from '../types/dex-tools'
 import { Topic } from '../types/topic'
 import { Asset } from '../types/asset'
