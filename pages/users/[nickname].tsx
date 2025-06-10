@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 //import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
-import { stripe } from '@/lib/stripe';
+import { createStripeClient } from '@/lib/stripe/factory';
 import Stripe from 'stripe';
 
 // Dynamically import components with client-side dependencies
@@ -119,6 +119,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     let subscription: Stripe.Subscription | null = null;
     if (profile.stripeSubscriptionId) {
       try {
+        const stripe = createStripeClient();
         subscription = await stripe.subscriptions.retrieve(profile.stripeSubscriptionId);
       } catch (error) {
         console.error(`Failed to fetch Stripe subscription for profile ${profile.id}:`, error);
