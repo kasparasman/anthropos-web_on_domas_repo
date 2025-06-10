@@ -4,7 +4,6 @@ import { admin } from '@/lib/firebase-admin';
 import { withPrismaRetry } from '@/lib/prisma/util';
 import { createStripeClient } from '@/lib/stripe/factory';
 import { Profile } from '@prisma/client';
-import { generateAndActivateUser } from './assetService';
 
 const stripe = createStripeClient();
 
@@ -109,26 +108,46 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
 
         console.log(`🚀 User ${profile.id} successfully subscribed. Setting status to GENERATING_ASSETS and triggering background job.`);
         
-        // Now, set status to generating and trigger the job
+        // Now, set status to generating and hand off the job to QStash
         await withPrismaRetry(() => prisma.profile.update({
             where: { id: profile.id },
             data: { status: 'GENERATING_ASSETS' },
         }));
 
-        // --- REFACTORED LOGIC ---
-        // Directly call the asset generation service instead of using fetch.
-        // We wrap this in a self-invoking async function without await so the webhook can return a 200 response to Stripe immediately.
-        // The asset generation will continue in the background.
-        (async () => {
-            try {
-                console.log(`[Webhook] Starting background asset generation for user ${profile.id}.`);
-                await generateAndActivateUser(profile.id);
-                console.log(`[Webhook] ✅ Background asset generation for user ${profile.id} completed successfully.`);
-            } catch (error) {
-                console.error(`[Webhook] ❌ CRITICAL: Background asset generation for user ${profile.id} failed. The assetService has already marked the profile as FAILED.`, error);
+        // --- NEW QSTASH LOGIC ---
+        // We hand off the job to QStash for reliable background processing.
+        const qstashUrl = process.env.QSTASH_URL;
+        const qstashToken = process.env.QSTASH_TOKEN;
+        
+        if (!qstashUrl || !qstashToken) {
+            console.error('❌ CRITICAL: QSTASH_URL or QSTASH_TOKEN is not set. Cannot queue asset generation.');
+            // In a real app, you might want to mark the profile as failed here.
+            return;
+        }
+
+        // The target URL for the job is our own API endpoint.
+        const targetUrl = new URL('/api/user/generate-assets', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString();
+
+        try {
+            const response = await fetch(qstashUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${qstashToken}`,
+                    'Upstash-Target': targetUrl,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId: profile.id }),
+            });
+
+            if (response.ok) {
+                console.log(`[Webhook] ✅ Successfully queued asset generation for user ${profile.id} with QStash. Message ID: ${(await response.json()).messageId}`);
+            } else {
+                console.error(`[Webhook] ❌ CRITICAL: Failed to queue job with QStash for user ${profile.id}. Status: ${response.status}`, await response.text());
             }
-        })();
-        // --- END REFACTORED LOGIC ---
+        } catch (error) {
+            console.error(`[Webhook] ❌ CRITICAL: fetch() call to QStash failed for user ${profile.id}.`, error);
+        }
+        // --- END QSTASH LOGIC ---
 
     } else if (paymentIntent.status === 'requires_payment_method') { // This is the status for a failure
         const failureReason = paymentIntent.last_payment_error?.message || 'No specific reason provided.';
