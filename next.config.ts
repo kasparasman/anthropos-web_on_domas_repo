@@ -5,16 +5,6 @@ require('dotenv').config();
 const nextConfig = {
   reactStrictMode: true,
 
-  webpack: (config, { isServer }) => {
-    // For client-side bundles, provide a fallback for 'fs'
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-      };
-    }
-    return config;
-  },
 
   // Make sure you have NO custom `postcssLoaderOptions`
   // or CSS module overrides here
