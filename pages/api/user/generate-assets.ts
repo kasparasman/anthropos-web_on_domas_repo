@@ -32,29 +32,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
         console.log(`[GENERATOR] Starting asset generation for user ${userId}`);
 
+        console.log('[GENERATOR BREADCRUMB] 1. About to fetch profile.');
         const profile = await withPrismaRetry(() => prisma.profile.findUnique({
             where: { id: userId },
         })) as (Profile & { tmpFaceUrl?: string | null; styleId?: string | null; gender?: string | null; });
+        console.log('[GENERATOR BREADCRUMB] 2. Profile fetched successfully.');
 
         if (!profile || !profile.tmpFaceUrl || !profile.styleId || !profile.gender) {
+            console.error('[GENERATOR] Profile data is missing or incomplete.');
             throw new Error(`Profile ${userId} is missing data required for generation.`);
         }
+        console.log('[GENERATOR BREADCRUMB] 3. Profile data validated.');
 
         // 1. Generate Avatar
+        console.log('[GENERATOR BREADCRUMB] 4. About to generate avatar.');
         const avatarUrl = await generateAvatar(profile.tmpFaceUrl, profile.styleId);
+        console.log('[GENERATOR BREADCRUMB] 5. Avatar generated successfully.');
 
         // 2. Index Face in Rekognition
+        console.log('[GENERATOR BREADCRUMB] 6. About to index face.');
         const rekFaceId = await indexFace(profile.tmpFaceUrl, userId);
+        console.log('[GENERATOR BREADCRUMB] 7. Face indexed successfully.');
 
         // 3. Generate Nickname
+        console.log('[GENERATOR BREADCRUMB] 8. About to generate nickname.');
         const { archetype } = getPromptForStyle(profile.styleId);
         const nickname = await generateUniqueNickname({
             avatarUrl,
             gender: profile.gender as 'male' | 'female',
             archetype,
         });
+        console.log('[GENERATOR BREADCRUMB] 9. Nickname generated successfully.');
 
         // 4. Update Profile to ACTIVE
+        console.log('[GENERATOR BREADCRUMB] 10. About to update profile to ACTIVE.');
         await withPrismaRetry(() => prisma.profile.update({
             where: { id: userId },
             data: {
@@ -66,6 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 styleId: null,
             },
         }));
+        console.log('[GENERATOR BREADCRUMB] 11. Profile updated successfully.');
 
         console.log(`[GENERATOR] ✅ Assets generated and profile activated for user ${userId}`);
 
