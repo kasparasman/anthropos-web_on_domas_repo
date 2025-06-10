@@ -5,6 +5,17 @@ require('dotenv').config();
 const nextConfig = {
   reactStrictMode: true,
 
+  webpack: (config, { isServer }) => {
+    // For client-side bundles, provide a fallback for 'fs'
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
+    return config;
+  },
+
   // Make sure you have NO custom `postcssLoaderOptions`
   // or CSS module overrides here
   // (remove/disable any webpack.modify or experimental.css settings)
@@ -12,10 +23,15 @@ const nextConfig = {
   // If you were experimenting with the App Dir, disable it:
 
   images: {
-    domains: [
-      'pub-0539ca942f4a457a83573a5585904cba.r2.dev',  // Your R2 domain
-      'your-r2-bucket.r2.dev', // Added for female style images
-      'storage.googleapis.com'
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'pub-0539ca942f4a457a83573a5585904cba.r2.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+      },
     ],
   },
 
