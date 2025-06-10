@@ -115,12 +115,27 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
         }));
 
         const generatorUrl = new URL('/api/user/generate-assets', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString();
+        
+        // --- DIAGNOSTIC LOGGING ---
+        console.log(`[Webhook] Attempting to trigger background job by calling: ${generatorUrl}`);
+        // ---
+
         fetch(generatorUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: profile.id }),
-        }).catch(error => {
-            console.error(`CRITICAL: Failed to trigger asset generator for user ${profile.id}`, error);
+        })
+        .then(response => {
+            // We don't need to wait for the body, just that the request was accepted.
+            if (response.status === 202) {
+                console.log(`[Webhook] ✅ Successfully triggered asset generator for user ${profile.id}.`);
+            } else {
+                // Log an unexpected response status from our own endpoint.
+                console.error(`[Webhook] ❌ CRITICAL: Asset generator for user ${profile.id} returned an unexpected status: ${response.status} ${response.statusText}`);
+            }
+        })
+        .catch(error => {
+            console.error(`[Webhook] ❌ CRITICAL: fetch() call to asset generator failed for user ${profile.id}. This is likely a configuration issue with NEXT_PUBLIC_BASE_URL.`, error);
         });
 
     } else if (paymentIntent.status === 'requires_payment_method') { // This is the status for a failure
