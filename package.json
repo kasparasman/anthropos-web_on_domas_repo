@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:mcp": "npx figma-developer-mcp --stdio",
     "postinstall": "prisma generate",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "prisma:migrate": "prisma migrate dev",
