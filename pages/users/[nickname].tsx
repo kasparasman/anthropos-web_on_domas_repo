@@ -1,7 +1,6 @@
 import { GetServerSideProps, NextPage } from 'next';
 import { prisma } from '@/lib/prisma';
 import { Profile } from '@prisma/client';
-import GridWithRays from '@/components/GridWithRays';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
@@ -16,6 +15,9 @@ const UserAccountControls = dynamic(
 const Passport = dynamic(() => import('@/components/Passport'), {
   ssr: false,
   loading: () => <div className="w-60 h-96 bg-black/20 rounded-lg animate-pulse" />,
+});
+const GridWithRays = dynamic(() => import('@/components/GridWithRays'), {
+  ssr: false,
 });
 
 // This type accurately reflects the serialized profile data passed as props
