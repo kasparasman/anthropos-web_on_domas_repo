@@ -1,11 +1,5 @@
 // lib/prisma.ts
 import { PrismaClient } from '@prisma/client'
-import { on } from 'node:process'
-
-// Runtime guard for fatal errors
-on('uncaughtException', (err) => {
-  console.error('[FATAL] Uncaught exception:', err)
-})
 
 declare global {
   // allow global var reuse in dev

@@ -1,15 +1,19 @@
 // next.config.js
 require('dotenv').config();
-const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config) => {
-    if (!config.isServer) config.resolve.fallback = { fs: false };
+
+  webpack: (config, { isServer }) => {
+    // For client-side bundles, provide a fallback for 'fs'
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+      };
+    }
     return config;
   },
-
 
   // Make sure you have NO custom `postcssLoaderOptions`
   // or CSS module overrides here
