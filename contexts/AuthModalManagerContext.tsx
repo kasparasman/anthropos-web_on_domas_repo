@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext } from 'react';
-import { useAuthModalManager as useAuthModalManagerHook, AuthStep } from '../hooks/useAuthModalManager'; // Adjust path as needed
+import { useAuthModalManager as useAuthModalManagerHook, AuthStep } from '@/lib/hooks/useAuthModalManager'; // Adjust path as needed
 
 // Define the shape of the context value
 // This should mirror the return type of useAuthModalManagerHook

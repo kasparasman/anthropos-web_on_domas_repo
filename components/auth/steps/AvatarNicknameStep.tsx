@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useAvatarGeneration } from '../../../hooks/useAvatarGeneration'; // Adjusted path
+import { useAvatarGeneration } from '@/lib/hooks/useAvatarGeneration'; // Adjusted path
 
 interface AvatarNicknameStepProps {
   initialFaceUrl: string | null; // From useAuthModalManager.state.tmpFaceUrl

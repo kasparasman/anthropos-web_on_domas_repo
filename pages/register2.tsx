@@ -3,9 +3,9 @@ import { useRouter, NextRouter } from "next/router";
 import Image from "next/image";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/lib/hooks/use-toast";
 import { signIn } from "next-auth/react";
-import { useRegistrationStatus } from '@/hooks/useRegistrationStatus';
+import { useRegistrationStatus } from '@/lib/hooks/useRegistrationStatus';
 
 // --- UI Components ---
 import Input from '@/components/UI/input';
@@ -25,38 +25,18 @@ import { uploadFileToStorage } from '../lib/services/fileUploadService';
 import { maleStyles, femaleStyles, StyleItem } from "@/lib/avatarStyles";
 import { blobToBase64, fileToBase64 } from "@/lib/base64";
 
-interface DisplayAvatar {
-  nickname: string;
-  gender: "male" | "female";
-  avatarUrl: string;
-}
-
-const displayAvatars: DisplayAvatar[] = [
-  {
-    nickname: "Aether",
-    gender: "male",
-    avatarUrl: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_male_creator.png",
-  },
-  {
-    nickname: "Nova",
-    gender: "female",
-    avatarUrl: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_trader.png",
-  },
-  {
-    nickname: "Voyager",
-    gender: "male",
-    avatarUrl: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_male_explorer.png",
-  },
-  {
-    nickname: "Spark",
-    gender: "female",
-    avatarUrl: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_female_innovator.png",
-  },
-  {
-    nickname: "Sentinel",
-    gender: "male",
-    avatarUrl: "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_male_guardian.png",
-  },
+// Dynamically generate displayAvatars from all maleStyles and femaleStyles
+const displayAvatars = [
+  ...maleStyles.map(style => ({
+    nickname: style.archetype,
+    gender: "male" as const,
+    avatarUrl: style.src,
+  })),
+  ...femaleStyles.map(style => ({
+    nickname: style.archetype,
+    gender: "female" as const,
+    avatarUrl: style.src,
+  })),
 ];
 
 // --- Stripe Promise ---
@@ -217,7 +197,7 @@ const RegistrationFlow = ({
             <Passport
               key={avatar.style.id}
               className={`z-1 transition-opacity duration-1000 ${currentDisplayAvatarIndex === index ? "opacity-100" : "opacity-0 absolute"}`}
-              nickname={avatar.style.alt.replace(/ (Style|style)$/i, "")}
+              nickname={avatar.style.archetype}
               gender={avatar.gender}
               avatarUrl={avatar.style.src}
             />
@@ -256,13 +236,13 @@ const RegistrationFlow = ({
           ) : (
             <>
               <video 
-                src="https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/FaceScan.mp4" 
+                src="https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/facescancropped.mp4" 
                 autoPlay 
                 loop 
                 muted 
                 playsInline
                 onLoadedMetadata={handleVideoMetadata}
-                className="absolute inset-0 m-auto object-contain max-w-[80%] max-h-[80%] pointer-events-none" 
+                className="absolute inset-0 object-contain pointer-events-none" 
               />
               <MainButton className="z-10" onClick={handleStartScan} disabled={isLoading}>Scan Your Face</MainButton>
             </>
@@ -319,7 +299,7 @@ const RegistrationFlow = ({
         <div className="w-80 grid grid-cols-3 gap-2">
           {stylesToShow.map((item: StyleItem) => (
             <div key={item.id} onClick={() => setSelectedStyleId(item.id)} className={`relative cursor-pointer rounded-lg overflow-hidden transition ${selectedStyleId === item.id ? "ring-2 ring-main" : "ring-2 ring-transparent hover:ring-gray-500"}`}>
-              <Image src={item.src} width={100} height={100} alt={item.alt} className="object-cover" loading="eager" />
+              <Image src={item.src} width={100} height={100} alt={item.archetype} className="object-cover" loading="eager" />
               {selectedStyleId === item.id && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-main text-black flex items-center justify-center font-bold">✓</div></div>}
             </div>
           ))}
@@ -338,31 +318,13 @@ const RegistrationFlow = ({
               <>
                 <GridWithRays />
                 <h1 className="text-3xl font-bold">Your Passport is Ready!</h1>
-                <div className="flex space-x-4 mt-4">
-                  {[1, 2, 3].map((tab) => (
-                    <MainButton
-                      key={tab}
-                      variant={activePassportTab === tab ? "solid" : "outline"}
-                      onClick={() => setActivePassportTab(tab)}
-                      className="w-10 h-10 flex items-center justify-center text-lg"
-                    >
-                      {tab}
-                    </MainButton>
-                  ))}
-                </div>
                 <div className="relative flex items-center justify-center">
                   <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[80px]"></div>
                   <Passport
                     className="z-1"
                     nickname={finalPassport.nickname}
                     gender={gender}
-                    avatarUrl={
-                      activePassportTab === 1
-                        ? finalPassport.avatarUrl
-                        : activePassportTab === 2
-                          ? "/placeholder-avatar-2.svg"
-                          : "/placeholder-avatar-3.svg"
-                    }
+                    avatarUrl={finalPassport.avatarUrl}
                     citizenId={finalPassport.citizenId}
                   />
                 </div>
@@ -420,12 +382,6 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
   const elements = useElements();
   const submissionGuard = React.useRef(false);
 
-  // --- Add state for avatar selection ---
-  const [avatarSelectionOptions, setAvatarSelectionOptions] = useState<{ avatarUrl: string; nickname: string }[] | null>(null);
-  const [selectedAvatarOptionIndex, setSelectedAvatarOptionIndex] = useState(0);
-  const [isFinalizingPassport, setIsFinalizingPassport] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null); // Assume you can get this from registration or auth context
-
   // --- New Polling Logic ---
   const startPollingForStatus = (userId: string, idToken: string) => {
     const pollInterval = setInterval(async () => {
@@ -452,30 +408,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
         const statusData = await statusResponse.json();
         
-        if (statusData.status === 'AVATAR_SELECTION') {
-          if (statusData.avatarUrls?.length === 3 && statusData.nicknameOptions?.length === 3) {
-            // Shuffle nicknames for random pairing
-            const shuffledNicknames = [...statusData.nicknameOptions].sort(() => Math.random() - 0.5);
-            const options = statusData.avatarUrls.map((avatarUrl: string, i: number) => ({
-              avatarUrl,
-              nickname: shuffledNicknames[i],
-            }));
-            setAvatarSelectionOptions(options);
-            setIsLoading(false);
-            setProgressMessage(null);
-            setIsGenerated(true);
-            props.setShowPopup(true);
-            clearInterval(pollInterval);
-          }
-          return;
-        }
-
-        if (statusData.status !== 'ACTIVE') {
-          setProgressMessage('Forging your passport. This may take up to a minute...');
-          return;
-        }
-
-        if (statusData.avatarUrl && statusData.nickname) {
+        if (statusData.status === 'ACTIVE') {
           clearInterval(pollInterval);
           setProgressMessage('Logging you in...');
           const signInResult = await signIn('credentials', { idToken, redirect: false });
@@ -554,7 +487,6 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
           idToken,
           faceUrl: uploadedFaceUrl,
           styleId: selectedStyleId,
-          nickname: email.split('@')[0],
           gender: props.gender,
         }),
       });
@@ -611,36 +543,6 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     }
   };
 
-  // --- Finalize passport selection ---
-  const handleFinishPassportCreation = async () => {
-    if (!avatarSelectionOptions || selectedAvatarOptionIndex == null || !userId) return;
-    setIsFinalizingPassport(true);
-    try {
-      const selected = avatarSelectionOptions[selectedAvatarOptionIndex];
-      const res = await fetch('/api/user/finalize-passport', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          avatarUrl: selected.avatarUrl,
-          nickname: selected.nickname,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to finalize passport.');
-      // After success, poll again to get ACTIVE status
-      setIsFinalizingPassport(false);
-      setIsLoading(true);
-      setProgressMessage('Finalizing your passport...');
-      setIsGenerated(false);
-      props.setShowPopup(false);
-      setAvatarSelectionOptions(null);
-      setTimeout(() => startPollingForStatus(userId, ''), 1000);
-    } catch (err) {
-      setIsFinalizingPassport(false);
-      toast({ title: 'Error', description: 'Could not finalize passport. Please try again.' });
-    }
-  };
-
   return <RegistrationFlow {...props} handleGeneratePassport={handleGeneratePassport} />;
 }
 
@@ -682,7 +584,6 @@ const Register2Page = () => {
   const [isGenerated, setIsGenerated] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [finalPassport, setFinalPassport] = useState<{ nickname: string, avatarUrl: string, citizenId: number } | null>(null);
-  const [activePassportTab, setActivePassportTab] = useState(1);
 
   const stylesToShow = gender === "male" ? maleStyles : femaleStyles;
 
@@ -877,8 +778,8 @@ const Register2Page = () => {
     setVideoAspectRatio,
     toast,
     setIsPaymentDetailsComplete,
-    activePassportTab,
-    setActivePassportTab,
+    activePassportTab: 1,
+    setActivePassportTab: () => { },
   };
 
   const appearance = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useVisitorCount } from "@/hooks/useVisitorCount";
+import { useVisitorCount } from "@/lib/hooks/useVisitorCount";
 
 export default function VisitorCount() {
   const { count, isLoading, error } = useVisitorCount();

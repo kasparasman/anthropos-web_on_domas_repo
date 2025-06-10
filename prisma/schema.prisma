@@ -18,9 +18,7 @@ model Profile {
   warnings       Int         @default(0)
   banned         Boolean     @default(false)
   avatarUrl      String?
-  avatarUrls     String[]   // NEW: Array of generated avatar URLs
-  nicknameOptions String[]  // NEW: Array of generated nickname options
-  status         String    @default("PENDING") // Possible values: PENDING, AVATAR_SELECTION, ACTIVE, etc.
+  status         String    @default("PENDING") // Possible values: PENDING, FACE_SCANNED, SUBSCRIBED, GENERATING_ASSETS, AVATAR_GENERATED, ACTIVE, ACTIVATION_FAILED
   rekFaceId      String?   @unique
   stripeCustomerId String?   @unique
   stripeSubscriptionId String? @unique

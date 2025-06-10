@@ -2,9 +2,10 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { Profile } from '@prisma/client';
 import { generateAvatar } from '@/lib/services/avatarService';
-import { generateUniqueNicknames } from '@/lib/services/nicknameService';
+import { generateUniqueNickname } from '@/lib/services/nicknameService';
 import { getPromptForStyle } from '@/lib/services/promptService';
 import { withPrismaRetry } from '@/lib/prisma/util';
+import { indexFace } from '@/lib/services/faceIndexingService';
 
 // This is our background job processor.
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -38,30 +39,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             throw new Error(`Profile ${userId} is missing data required for generation.`);
         }
 
-        // 1. Generate Avatars (returns 3)
-        const avatarUrls = await generateAvatar(profile.tmpFaceUrl, profile.styleId);
-        
-        // 2. Generate Nicknames (returns 3)
+        // 1. Generate Avatar
+        const avatarUrl = await generateAvatar(profile.tmpFaceUrl, profile.styleId);
+
+        // 2. Index Face in Rekognition
+        const rekFaceId = await indexFace(profile.tmpFaceUrl, userId);
+
+        // 3. Generate Nickname
         const { archetype } = getPromptForStyle(profile.styleId);
-        const nicknameOptions = await generateUniqueNicknames({
-            avatarUrl: avatarUrls[0], // Use the first avatar as the reference image for nickname gen
+        const nickname = await generateUniqueNickname({
+            avatarUrl,
             gender: profile.gender as 'male' | 'female',
             archetype,
         });
 
-        // 3. Update Profile to AVATAR_SELECTION, store arrays
+        // 4. Update Profile to ACTIVE
         await withPrismaRetry(() => prisma.profile.update({
             where: { id: userId },
             data: {
-                status: 'AVATAR_SELECTION',
-                avatarUrls: avatarUrls,
-                nicknameOptions: nicknameOptions,
-                tmpFaceUrl: null, // Clean up temporary data
+                status: 'ACTIVE',
+                avatarUrl: avatarUrl,
+                nickname: nickname,
+                rekFaceId: rekFaceId,
+                tmpFaceUrl: null,
                 styleId: null,
             },
         }));
 
-        console.log(`[GENERATOR] ✅ Avatar/nickname options ready for user ${userId}`);
+        console.log(`[GENERATOR] ✅ Assets generated and profile activated for user ${userId}`);
 
     } catch (error) {
         console.error(`[GENERATOR] ❌ Failed to generate assets for user ${userId}:`, error);

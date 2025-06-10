@@ -5,7 +5,7 @@ import { Profile } from '@prisma/client';
 import GridWithRays from '@/components/GridWithRays';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { useAuthSync } from '@/hooks/useFirebaseNextAuth';
+import { useAuthSync } from '@/lib/hooks/useFirebaseNextAuth';
 import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
 

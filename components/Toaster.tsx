@@ -1,5 +1,5 @@
 import React from 'react'
-import { useToast } from '../hooks/use-toast'
+import { useToast } from '@/lib/hooks/use-toast'
 
 export default function Toaster() {
   const { toasts, dismiss } = useToast()

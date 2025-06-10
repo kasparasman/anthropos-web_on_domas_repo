@@ -1,7 +1,7 @@
 // components/Banner.tsx
 import React from 'react'
 import BannerBase, { BannerBaseProps } from './BannerBase'
-import { useVisitorCount } from '../hooks/useVisitorCount'
+import { useVisitorCount } from '@/lib/hooks/useVisitorCount'
 
 export type BannerProps = Omit<BannerBaseProps, 'visitorCount'>
 

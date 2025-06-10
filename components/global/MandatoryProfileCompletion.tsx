@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useAuthModalManager } from '../../contexts/AuthModalManagerContext';
 import { firebaseAuth } from '../../lib/firebase-client'; // Import firebaseAuth to check currentUser
-import { useAuthSync } from '../../hooks/useFirebaseNextAuth'; // To use the ready state
+import { useAuthSync } from '@/lib/hooks/useFirebaseNextAuth'; // To use the ready state
 
 export default function MandatoryProfileCompletion() {
   const { data: session, status: nextAuthStatus } = useSession();

@@ -4,9 +4,9 @@ import {
   registerClient,
   signInClient,
   firebaseAuth
-} from '../lib/firebase-client';
-import * as authApiService from '../lib/services/authApiService';
-import { uploadFileToStorage } from '../lib/services/fileUploadService';
+} from '@/lib/firebase-client';
+import * as authApiService from '@/lib/services/authApiService';
+import { uploadFileToStorage } from '@/lib/services/fileUploadService';
 import { useRegistrationStatus } from './useRegistrationStatus';
 import { useAuthSync } from './useFirebaseNextAuth';
 

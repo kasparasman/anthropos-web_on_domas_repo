@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { generateAvatarStream, fetchNickname } from '../lib/services/avatarApiService'; // Correct path
+import { generateAvatarStream, fetchNickname } from '@/lib/services/avatarApiService'; // Correct path
 
 interface AvatarGenerationState {
   generatedAvatarUrl: string | null; // Can be base64 during generation, then CDN URL

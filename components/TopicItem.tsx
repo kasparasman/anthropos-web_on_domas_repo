@@ -2,9 +2,9 @@
 import React from 'react'
 import { Eye, Heart } from 'lucide-react'
 import { Topic } from '../types/topic'
-import useLikes from '../hooks/useLikes'
+import useLikes from '@/lib/hooks/useLikes'
 import { TopicWithBody } from '../types/topic-popup'
-import { useToast } from '../hooks/use-toast'
+import { useToast } from '@/lib/hooks/use-toast'
 
 interface TopicItemProps {
   topic: Topic

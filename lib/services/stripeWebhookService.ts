@@ -11,11 +11,21 @@ const stripe = createStripeClient();
  * Handles subscription-related events ('customer.subscription.created', 'updated', 'deleted').
  * @param subscription - The Stripe Subscription object from the webhook event.
  */
-export async function handleSubscriptionChange(subscription: Stripe.Subscription & { current_period_end?: number }): Promise<void> {
+export async function handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
+    // We only want to handle cancellations or other non-activating status changes here.
+    // The initial activation is handled by `handlePaymentIntentUpdate`.
+    if (subscription.status === 'active') {
+        console.log(`Skipping 'active' status update for subscription ${subscription.id} via webhook. This is handled by the initial payment success event.`);
+        return;
+    }
+
+    // Map Stripe's status to our internal status enum.
+    // Example: 'past_due' -> 'PAST_DUE', 'canceled' -> 'CANCELED'
     const newStatus = subscription.status.toUpperCase().replace('-', '_');
 
-    const dataToUpdate: { status: string; stripeCurrentPeriodEnd?: Date } = {
+    const dataToUpdate: { status: string; stripeCurrentPeriodEnd?: Date, stripePriceId?: string } = {
         status: newStatus,
+        stripePriceId: subscription.items.data[0]?.price.id,
     };
 
     if (subscription.current_period_end) {
@@ -23,9 +33,9 @@ export async function handleSubscriptionChange(subscription: Stripe.Subscription
     }
 
     const result = await withPrismaRetry(() => prisma.profile.updateMany({
-        where: {
+        where: { 
             stripeSubscriptionId: subscription.id,
-            NOT: { status: 'PENDING_PAYMENT' }, // Avoid overwriting initial state
+            NOT: { status: 'PENDING_PAYMENT' }
         },
         data: dataToUpdate,
     })) as { count: number };
@@ -33,7 +43,7 @@ export async function handleSubscriptionChange(subscription: Stripe.Subscription
     if (result.count > 0) {
         console.log(`Updated subscription ${subscription.id} to status ${newStatus} for ${result.count} profile(s).`);
     } else {
-        console.log(`Skipped status update for subscription ${subscription.id}, as profile is likely pending activation.`);
+        console.log(`Skipped status update for subscription ${subscription.id}, as profile is likely pending activation or no profile was found.`);
     }
 }
 
@@ -87,12 +97,23 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
     }
 
     if (paymentIntent.status === 'succeeded') {
+        // This is the single source of truth for activating a user after payment.
+        await withPrismaRetry(() => prisma.profile.update({
+            where: { id: profile.id },
+            data: { 
+                status: 'SUBSCRIBED', // First, confirm subscription
+                stripeSubscriptionId: paymentIntent.invoice ? (typeof paymentIntent.invoice === 'string' ? paymentIntent.invoice : paymentIntent.invoice.subscription) as string : null,
+            },
+        }));
+
+        console.log(`🚀 User ${profile.id} successfully subscribed. Setting status to GENERATING_ASSETS and triggering background job.`);
+        
+        // Now, set status to generating and trigger the job
         await withPrismaRetry(() => prisma.profile.update({
             where: { id: profile.id },
             data: { status: 'GENERATING_ASSETS' },
         }));
-        console.log(`🚀 Set status to GENERATING_ASSETS for user ${profile.id}. Triggering background job.`);
-        
+
         const generatorUrl = new URL('/api/user/generate-assets', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').toString();
         fetch(generatorUrl, {
             method: 'POST',

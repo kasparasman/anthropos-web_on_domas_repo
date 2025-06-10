@@ -1,4 +1,4 @@
-import { Comment as CommentType, organizeCommentsIntoTree } from '../hooks/useComments'
+import { Comment as CommentType, organizeCommentsIntoTree } from '@/lib/hooks/useComments'
 import Comment from './Comment'
 
 interface Props {

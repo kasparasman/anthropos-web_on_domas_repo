@@ -48,7 +48,12 @@ export default function Passport({ id, citizenId, nickname, gender, avatarUrl, c
       <span className="text-[20px] text-main font-semibold whitespace-nowrap text-center">Anthropos Citizen</span>
       <div className="grid grid-cols-2 gap-2 items-center">
         <div className="flex text-sm font-medium text-dim_smoke justify-end">Name</div>
-        <div className="block  font-semibold font-smoke">{nickname.charAt(0).toUpperCase() + nickname.slice(1)}</div>
+        <div className="block font-semibold font-smoke">
+          {nickname
+            ? nickname.charAt(0).toUpperCase() + nickname.slice(1)
+            : <span className="text-dim_smoke italic">Generating…</span>
+          }
+        </div>
         <div className="flex text-sm font-medium text-dim_smoke justify-end">Gender</div>
         <div className="block  font-semibold font-smoke">{gender.charAt(0).toUpperCase() + gender.slice(1)}</div>
       </div>

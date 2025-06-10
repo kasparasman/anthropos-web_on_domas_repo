@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { useAuthSync } from '../../hooks/useFirebaseNextAuth'
+import { useAuthSync } from '@/lib/hooks/useFirebaseNextAuth'
 import MainButton from '../UI/button'
 import { useRouter } from 'next/navigation'
 

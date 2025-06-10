@@ -8,7 +8,7 @@ import PaymentModal from '../PaymentModal'
 import { useAuthModalManager, AuthStep } from '../../contexts/AuthModalManagerContext'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js'
-import { usePreloadImages } from '../../hooks/usePreloadImages'
+import { usePreloadImages } from '@/lib/hooks/usePreloadImages'
 
 // Import Step Components
 import LoginStep from './steps/LoginStep'

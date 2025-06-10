@@ -105,42 +105,4 @@ export async function generateUniqueNickname(params: Omit<NicknameGenerationPara
     }
 
     return available;
-}
-
-/**
- * Generates an array of 3 unique nicknames for a user profile.
- * It tries to generate candidates and checks for uniqueness in the database.
- * If not enough unique names are found in the first batch, it retries once.
- */
-export async function generateUniqueNicknames(params: Omit<NicknameGenerationParams, 'exclude'>): Promise<string[]> {
-    // 1. Get first batch of candidates
-    const candidates = await getCandidates(params);
-
-    // 2. Check which are unique
-    const taken = await prisma.profile.findMany({
-        where: { nickname: { in: candidates } },
-        select: { nickname: true },
-    });
-    const takenSet = new Set(taken.map((p: { nickname: string | null }) => p.nickname!));
-    let available = candidates.filter(n => !takenSet.has(n));
-
-    // 3. If not enough unique, retry once, excluding the first batch
-    if (available.length < 3 && candidates.length > 0) {
-        console.log('Not enough unique nicknames in first batch, retrying...');
-        const newCandidates = await getCandidates({ ...params, exclude: candidates });
-        const newTaken = await prisma.profile.findMany({
-            where: { nickname: { in: newCandidates } },
-            select: { nickname: true },
-        });
-        const newTakenSet = new Set(newTaken.map((p: { nickname: string | null }) => p.nickname!));
-        const moreAvailable = newCandidates.filter(n => !newTakenSet.has(n));
-        available = [...available, ...moreAvailable];
-    }
-
-    // 4. If still not enough, fallback to archetype-based names
-    while (available.length < 3) {
-        available.push(`${params.archetype.toLowerCase()}_${Date.now().toString().slice(-6)}_${available.length}`);
-    }
-
-    return available.slice(0, 3);
 } 

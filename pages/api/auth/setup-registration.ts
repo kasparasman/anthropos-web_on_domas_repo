@@ -35,12 +35,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         idToken,
         faceUrl,
         styleId,
-        nickname,
         gender
     } = req.body;
 
-    if (!email || !plan || !paymentMethodId || !idToken || !faceUrl || !styleId || !nickname || !gender) {
-        const missing = Object.entries({email, plan, paymentMethodId, idToken, faceUrl, styleId, nickname, gender})
+    if (!email || !plan || !paymentMethodId || !idToken || !faceUrl || !styleId || !gender) {
+        const missing = Object.entries({email, plan, paymentMethodId, idToken, faceUrl, styleId, gender})
             .filter(([, value]) => !value)
             .map(([key]) => key);
         return res.status(400).json({ message: `Missing required parameters: ${missing.join(', ')}` });
@@ -99,7 +98,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             create: {
                 id: uid,
                 email: email,
-                nickname,
                 gender,
                 tmpFaceUrl: faceUrl,
                 styleId: styleId,
@@ -177,7 +175,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let message = 'An unknown error occurred.';
         let statusCode = 500;
 
-        if (error instanceof Stripe.errors.StripeError) {
+        if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+            message = 'An account with this email already exists. Please sign in or use a different email.';
+            statusCode = 409;
+        } else if (error instanceof Stripe.errors.StripeError) {
             // Handle card errors that require 3DS authentication
             if (error.code === 'card_error' && error.decline_code === 'authentication_required') {
                 const paymentIntent = error.payment_intent;

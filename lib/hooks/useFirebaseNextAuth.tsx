@@ -9,7 +9,7 @@ import {
   ReactNode,
 } from 'react'
 import { onAuthStateChanged, User } from 'firebase/auth'
-import { firebaseAuth, logOutClient } from '../lib/firebase-client'
+import { firebaseAuth, logOutClient } from '@/lib/firebase-client'
 import { signIn, signOut } from 'next-auth/react'
 import { useRegistrationStatus } from './useRegistrationStatus'
 
