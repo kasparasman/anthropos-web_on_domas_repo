@@ -180,11 +180,11 @@ const RegistrationFlow = ({
 
   return (
     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
-      
-      <Link href="/" className="absolute top-4 left-4 w-auto flex items-center text-white gap-1  px-2 bg-foreground mr-auto border border-gray rounded-md hover:border-dim_smoke transition-all duration-300">
-        <Image src="/Close_round.png" alt="Close" width={18} height={18} className="opacity-70 " />
-        <span className="self-center text-base font-regular whitespace-nowrap opacity-70 ">
-          back
+
+      <Link href="/" className="fixed top-4 left-4 w-auto flex items-center text-white gap-2  px-2 py-1 bg-foreground mr-auto border border-gray rounded-md hover:border-dim_smoke transition-all duration-300">
+        <Image src="/arrow-white.png" alt="Back" height={18} width={8} className="opacity-70 -rotate-90" />
+        <span className="self-center text-sm font-regular whitespace-nowrap opacity-70 leading-none">
+          Back
         </span>
       </Link>
 

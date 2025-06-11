@@ -15,7 +15,7 @@ const OptimizedBackground = () => {
     if (!shouldShow) return null
 
     return (
-        <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
+        <div className="h-full flex fixed justify-between items-end bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
             <div className="hidden lg:block ml-[-100px] relative w-[400px] h-full">
                 <Image
                     src="/BurjKalifa.png"
@@ -26,14 +26,14 @@ const OptimizedBackground = () => {
                     sizes="400px"
                 />
             </div>
-            <div className="hidden lg:block lg:mr-[-250px] relative w-[500px] h-full">
+            <div className="hidden flex lg:block lg:mr-[-400px] relative w-[600px] h-full items-end">
                 <Image
                     src="/Building2.png"
                     alt="background"
                     fill
-                    className="object-contain opacity-100 pointer-events-none"
+                        className="object-cover object-left opacity-100 pointer-events-none"
                     priority
-                    sizes="500px"
+                    sizes="600px"
                 />
             </div>
             {/* Keep people.png as CSS background for repeat-x functionality */}

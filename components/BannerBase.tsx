@@ -27,15 +27,15 @@ export default function BannerBase({
 
       {/* Title + logo row */}
       <div className="flex flex-wrap items-center md:gap-3 gap-2 justify-center">
-        <h1 className="text-smoke lg:text-6xl md:text-5xl text-3xl font-u font-extrabold tracking-wide">
+        <h1 className="text-center text-smoke lg:text-6xl md:text-5xl text-3xl font-monu font-[900]">
           {title}
         </h1>
         <div className="relative lg:w-[72px] lg:h-[72px] md:w-14 md:h-14 w-9 h-9">
           <Image
-          src={logoUrl}
-          alt={`${title} logo`}
-          fill
-          className="object-cover"
+            src={logoUrl}
+            alt={`${title} logo`}
+            fill
+            className="object-cover"
           />
         </div>
       </div>
