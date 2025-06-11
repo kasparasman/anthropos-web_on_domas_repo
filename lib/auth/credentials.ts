@@ -7,6 +7,13 @@ type Creds = {
   idToken: string
 }
 
+const ALLOWED_STATUSES = [
+  'ACTIVE',
+  'SUBSCRIBED',
+  'CANCEL_SCHEDULED',
+  // add more internal statuses that still grant access here
+];
+
 export async function authorize(
   credentials: Creds | undefined,
 ): Promise<{ id: string; name: string; email: string; image?: string } | null> {
@@ -53,9 +60,9 @@ export async function authorize(
       throw new Error('PAYMENT_PENDING')
     }
     
-    if (profile.status !== 'ACTIVE' && profile.status !== 'ACTIVE_PENDING_PROFILE_SETUP' && profile.status !== 'ACTIVE_COMPLETE') {
-        console.log('[Auth Credentials] User login denied - invalid status for login:', email, profile.status)
-        throw new Error('INVALID_USER_STATUS_FOR_LOGIN')
+    if (!ALLOWED_STATUSES.includes(profile.status)) {
+      console.log('[Auth Credentials] User login denied - invalid status for login:', email, profile.status)
+      throw new Error('INVALID_USER_STATUS_FOR_LOGIN')
     }
 
     console.log('[Auth Credentials] Profile retrieved and authorized for login:', profile.id, 'Status:', profile.status)

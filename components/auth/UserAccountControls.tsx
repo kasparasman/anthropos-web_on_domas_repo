@@ -2,11 +2,13 @@ import { useState } from 'react';
 import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
 import { useAuthSync } from '@/lib/hooks/useFirebaseNextAuth';
+import { signOut as nextAuthSignOut } from 'next-auth/react';
+
 
 type Profile = {
     subscription?: {
       cancel_at_period_end: boolean;
-      current_period_end: number;
+      current_period_end: number | null;
     } | null;
   };
 
@@ -21,7 +23,11 @@ export default function UserAccountControls({ profile }: { profile: Profile }) {
   const { signOutFirebase } = useAuthSync();
 
   const handleSignOut = async () => {
+    // 1) Firebase
     await signOutFirebase();
+
+    // 2) Next-Auth – send the user to the home page afterwards
+    await nextAuthSignOut({ callbackUrl: '/' });
   };
 
   const handleAccountDeletion = async () => {
@@ -91,8 +97,8 @@ export default function UserAccountControls({ profile }: { profile: Profile }) {
 
   const isSubscriptionActive = profile.subscription && !profile.subscription.cancel_at_period_end;
   const isCancelling = profile.subscription && profile.subscription.cancel_at_period_end;
-  const periodEndDate = isCancelling
-    ? new Date(profile.subscription!.current_period_end * 1000).toLocaleDateString()
+  const periodEndDate = isCancelling && profile.subscription?.current_period_end
+    ? new Date(profile.subscription.current_period_end * 1000).toLocaleDateString()
     : '';
 
   return (

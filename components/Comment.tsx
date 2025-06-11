@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Comment as CommentType } from '../hooks/useComments'
+import { Comment as CommentType } from '@/lib/hooks/useComments'
 import CommentForm from './CommentForm'
 
 const getRelativeTime = (date: Date): string => {

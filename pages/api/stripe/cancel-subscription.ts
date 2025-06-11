@@ -42,12 +42,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       cancel_at_period_end: true,
     });
 
-    // Persist cancellation info in DB (optional but recommended for quick UI checks)
+    // Helper – Basil API moved period fields to items.data[0]
+    const periodEndUnix = updatedSubscription.items?.data?.[0]?.current_period_end ?? null;
+
     await prisma.profile.update({
       where: { id: userProfile.id },
       data: {
-        stripeCurrentPeriodEnd: new Date(updatedSubscription.current_period_end * 1000),
-        status: 'CANCEL_SCHEDULED', // make sure this status value aligns with your enum/string policy
+        stripeCurrentPeriodEnd: periodEndUnix ? new Date(periodEndUnix * 1000) : null,
+        status: 'CANCEL_SCHEDULED',
       },
     });
 

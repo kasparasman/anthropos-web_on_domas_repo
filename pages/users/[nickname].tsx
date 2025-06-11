@@ -48,7 +48,7 @@ type SerializableProfile = {
   deletedAt: string | null;
   subscription?: {
     cancel_at_period_end: boolean;
-    current_period_end: number;
+    current_period_end: number | null;
   } | null;
 };
 
@@ -138,8 +138,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       deletedAt: profile.deletedAt?.toISOString() || null,
       subscription: subscription
         ? {
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            current_period_end: subscription.current_period_end,
+            cancel_at_period_end: !!subscription.cancel_at_period_end,
+            current_period_end: subscription.items?.data?.[0]?.current_period_end ?? null,
           }
         : null,
     };
