@@ -30,6 +30,7 @@ export default function AuthButton({ onLoginClick }: AuthButtonProps) {
       <MainButton
         onClick={onLoginClick}
         className="rounded-md py-0.5"
+        variant="secondary"
       >
         Log in
       </MainButton>

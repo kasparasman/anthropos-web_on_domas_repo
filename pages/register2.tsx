@@ -25,6 +25,7 @@ import { checkFaceDuplicate } from '../lib/services/authApiService';
 import { uploadFileToStorage } from '../lib/services/fileUploadService';
 import { maleStyles, femaleStyles, StyleItem } from "@/lib/avatarStyles";
 import { blobToBase64, fileToBase64 } from "@/lib/base64";
+import Link from "next/link";
 
 // Dynamically generate displayAvatars from all maleStyles and femaleStyles
 const displayAvatars = [
@@ -179,18 +180,13 @@ const RegistrationFlow = ({
 
   return (
     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
-      <div className=" sm:h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
-        <img
-          src="/BurjKalifa.png"
-          alt="background"
-          className="hidden lg:block lg:ml-[-50px] opacity-100 pointer-events-none"
-        />
-        <img
-          src="/Building2.png"
-          alt="background"
-          className="hidden lg:block lg:mr-[-200px] opacity-100 pointer-events-none"
-        />
-      </div>
+      
+      <Link href="/" className="absolute top-4 left-4 w-auto flex items-center text-white gap-1  px-2 bg-foreground mr-auto border border-gray rounded-md hover:border-dim_smoke transition-all duration-300">
+        <Image src="/Close_round.png" alt="Close" width={18} height={18} className="opacity-70 " />
+        <span className="self-center text-base font-regular whitespace-nowrap opacity-70 ">
+          back
+        </span>
+      </Link>
 
       <div className="flex flex-col items-center mt-10 gap-6">
         <h1 className="text-center">Become Anthropos Citizen!</h1>
@@ -612,19 +608,26 @@ const Register2Page = () => {
 
   const stylesToShow = gender === "male" ? maleStyles : femaleStyles;
 
-  // 1) Zoom effect: apply 125% on mount, only if desktop (≥1024px)
+  // Replace the current zoom effect with this:
   useEffect(() => {
     if (
       typeof window !== "undefined" &&
       window.matchMedia("(min-width: 1024px)").matches
     ) {
-      document.body.style.zoom = "125%";
+      // Target the content container instead of body
+      const contentElement = document.getElementById('app-content');
+      if (contentElement) {
+        contentElement.style.zoom = "125%";
+      }
     }
 
     // Cleanup: reset zoom when unmounting
     return () => {
       if (typeof window !== "undefined") {
-        document.body.style.zoom = "100%";
+        const contentElement = document.getElementById('app-content');
+        if (contentElement) {
+          contentElement.style.zoom = "100%";
+        }
       }
     };
   }, []);
@@ -862,7 +865,6 @@ const Register2Page = () => {
   if (!isBrowser) {
     return (
       <main className="relative flex flex-col items-center justify-center min-h-screen text-white">
-        <GridWithRays />
         <p className="text-yellow-400 my-4 z-10">Loading...</p>
       </main>
     );
@@ -878,7 +880,6 @@ const Register2Page = () => {
   if (!clientSecret) {
     return (
       <main className="relative flex flex-col items-center justify-center min-h-screen text-white">
-        <GridWithRays />
         <p className="text-yellow-400 my-4 z-10">Initializing Secure Payment...</p>
       </main>
     );

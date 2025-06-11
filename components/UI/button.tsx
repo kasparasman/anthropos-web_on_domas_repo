@@ -5,9 +5,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * Choose between:
    *  - "solid"  (default): uses bg-main text-black
+   *  - "secondary": uses bg-foreground with border-main and text-main
    *  - "outline": transparent background + border (border-color & text-color come from `className`)
    */
-  variant?: "solid" | "outline";
+  variant?: "solid" | "secondary" | "outline";
 }
 
 const MainButton: React.FC<ButtonProps> = ({
@@ -24,7 +25,9 @@ const MainButton: React.FC<ButtonProps> = ({
   const variantClasses =
     variant === "solid"
       ? "bg-main text-black py-2"
-      : // outline: transparent bg, border, inherit text‐color from className
+      : variant === "secondary"
+        ? "!bg-foreground !border !border-main !text-main py-2"
+        : // outline: transparent bg, border, inherit text‐color from className
         "bg-transparent border border-current";
 
   return (

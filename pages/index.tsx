@@ -42,31 +42,7 @@ export default function Home({
 }: HomeProps) {
   return (
     <main className=" relative flex flex-col items-center">
-      {/* Background */}      
-      <div className="h-full flex fixed justify-between bottom-0 z-[-2] absolute overflow-hidden inset-0 pointer-events-none">
-        <img
-          src="/BurjKalifa.png"
-          alt="background"
-          className="hidden lg:block ml-[-50px] opacity-100 pointer-events-none"
-        />
-        <img
-          src="/Building2.png"
-          alt="background"
-          className="hidden lg:block lg:mr-[-250px] opacity-100 pointer-events-none"
-        />
-        <div
-          className="w-full absolute z-[1] bottom-[-40px] left-0 pointer-events-none"
-          style={{
-            backgroundImage: 'url(/people.png)',
-            backgroundRepeat: 'repeat-x',
-            backgroundPosition: 'bottom',
-            backgroundSize: 'auto 100%',
-            height: '200px', // adjust height as needed to fit your image
-          }}
-          aria-hidden="true"
-        />
 
-      </div>
       <div className="max-w-5xl w-full space-y-10 my-10">
         <Banner />
 
@@ -80,11 +56,11 @@ export default function Home({
           <AssetsCounter current={currentAssets} max={maxAssets} />
           <TotalAssetIncome value={totalAssetIncome} />
         </div>
-        
+
         {/* Assets Carousel */}
-        <AssetCarousel assets={assets} loop autoplay speed={2000} />
+        <AssetCarousel assets={assets} loop autoplay speed={1} />
       </div>
-      
+
     </main>
   )
 }
@@ -123,37 +99,37 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const session = await getServerSession(ctx.req, ctx.res, authOptions)
   const userId = session?.user?.id ?? null
 
-  const raw: RawTopic[] = await prisma.topic.findMany({ 
-    orderBy: { createdAt: 'desc' },        
+  const raw: RawTopic[] = await prisma.topic.findMany({
+    orderBy: { createdAt: 'desc' },
     select: {
       id: true,
       title: true,
-      body: true,          
-      createdAt: true,     
-      videoUrl: true,                      
-      topicLikes: { select: { userId: true } }, 
+      body: true,
+      createdAt: true,
+      videoUrl: true,
+      topicLikes: { select: { userId: true } },
     },
   })
-  
+
   const topics: Topic[] = raw.map((t: RawTopic) => ({
     id: t.id,
     title: t.title,
-    body: t.body,          
-    createdAt: t.createdAt.toISOString(), 
+    body: t.body,
+    createdAt: t.createdAt.toISOString(),
     videoUrl: t.videoUrl,
     likes: t.topicLikes.length,
     likedByUser: userId ? t.topicLikes.some((l: RawTopicLike) => l.userId === userId) : false,
   }))
 
   /* 3) Assets --------------------------------------------------------- */
-  
+
   let assets: Asset[] = []
   let currentAssets = 0
   const maxAssets = 10 // Corrected to const as it's not reassigned
   let totalAssetIncome = 0
 
   try {
-    
+
     const rawAssets = await prisma.$queryRaw<Asset[]>`
       SELECT id, name, description, "logoUrl", "websiteUrl", 
              "totalInvestment", "tokenCount", "order", "isActive"
@@ -161,11 +137,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       WHERE "isActive" = true
       ORDER BY "order" ASC
     `;
-    
+
     if (rawAssets && Array.isArray(rawAssets)) {
       assets = rawAssets;
       currentAssets = assets.length;
-      
+
       totalAssetIncome = assets.reduce((sum, asset) => {
         const investmentValue = asset.totalInvestment;
         let numericInvestment = 0;
@@ -178,13 +154,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
             numericInvestment = parsed;
           }
         } // If investmentValue is null, undefined, or a non-parseable string, numericInvestment remains 0.
-        
+
         return sum + numericInvestment;
       }, 0);
     }
   } catch (error) {
     console.error('Error fetching assets:', error);
-    
+
   }
 
   return {
