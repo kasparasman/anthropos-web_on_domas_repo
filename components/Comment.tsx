@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, RefObject, useEffect } from 'react'
 import { Comment as CommentType } from '@/lib/hooks/useComments'
 import CommentForm from './CommentForm'
+import Image from 'next/image'
 
 const getRelativeTime = (date: Date): string => {
   const now = new Date()
@@ -45,6 +46,7 @@ interface CommentProps {
   clearWarn: () => void
   replyingToCommentId: string | null
   setReplyingToCommentId: (id: string | null) => void
+  scrollableRef: RefObject<HTMLDivElement | null>
 }
 
 export default function Comment({
@@ -55,7 +57,8 @@ export default function Comment({
   warn,
   clearWarn,
   replyingToCommentId,
-  setReplyingToCommentId
+  setReplyingToCommentId,
+  scrollableRef
 }: CommentProps) {
   const [isReplying, setIsReplying] = useState(false)
   const [showReplies, setShowReplies] = useState(false)
@@ -102,12 +105,35 @@ export default function Comment({
   // Ref for the reply form textarea
   const replyFormRef = React.useRef<HTMLTextAreaElement | null>(null)
 
-  // Focus the textarea when the reply form opens
+  // Ref for the reply form container
+  const replyFormContainerRef = React.useRef<HTMLDivElement>(null)
+
+  // Focus the textarea when the reply form opens and scroll into view
   React.useEffect(() => {
     if (showReplyForm && replyFormRef.current) {
       replyFormRef.current.focus()
+
+      // Scroll the reply form into view after a short delay to allow animation
+      setTimeout(() => {
+        if (replyFormContainerRef.current && scrollableRef.current) {
+          const container = scrollableRef.current
+          const replyForm = replyFormContainerRef.current
+
+          // Get the position of the reply form relative to the scrollable container
+          const containerRect = container.getBoundingClientRect()
+          const replyFormRect = replyForm.getBoundingClientRect()
+
+          // Calculate the scroll position to show the reply form at the bottom
+          const targetScrollTop = container.scrollTop + (replyFormRect.bottom - containerRect.bottom) + 20
+
+          container.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+          })
+        }
+      }, 150) // Wait for animation to start
     }
-  }, [showReplyForm])
+  }, [showReplyForm, scrollableRef])
 
   return (
     <div className={`${indentationClass} ${depth > 0 ? 'border-l-2 border-gray pl-4' : ''}`}>
@@ -163,7 +189,7 @@ export default function Comment({
             >
               <span> {totalReplies} {totalReplies === 1 ? 'reply' : 'replies'}</span>
               <svg
-                className={`w-4 h-4 transition-transform ${showReplies ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 transition-transform duration-300 ${showReplies ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -172,37 +198,49 @@ export default function Comment({
               </svg>
             </button>
 
-            {showReplies && comment.replies.map(reply => (
-              <Comment
-                key={reply.id}
-                comment={reply}
-                depth={depth + 1}
-                topicId={topicId}
-                onAddComment={onAddComment}
-                warn={warn}
-                clearWarn={clearWarn}
-                replyingToCommentId={replyingToCommentId}
-                setReplyingToCommentId={setReplyingToCommentId}
-              />
-            ))}
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showReplies
+              ? 'opacity-100 max-h-screen'
+              : 'opacity-0 max-h-0'
+              }`}>
+              {showReplies && comment.replies.map(reply => (
+                <Comment
+                  key={reply.id}
+                  comment={reply}
+                  depth={depth + 1}
+                  topicId={topicId}
+                  onAddComment={onAddComment}
+                  warn={warn}
+                  clearWarn={clearWarn}
+                  replyingToCommentId={replyingToCommentId}
+                  setReplyingToCommentId={setReplyingToCommentId}
+                  scrollableRef={scrollableRef}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
 
       {/* Reply form */}
-      {showReplyForm && (
-        <div className="mb-4">
+      <div
+        ref={replyFormContainerRef}
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${showReplyForm
+          ? 'opacity-100 translate-y-0 max-h-96 mb-4'
+          : 'opacity-0 translate-y-2 max-h-0 mb-0'
+          }`}
+      >
+        {showReplyForm && (
           <CommentForm
             topicId={topicId}
             onAdd={handleReply}
             warn={warn}
             clearWarn={clearWarn}
             placeholder={`Reply to ${comment.author?.nickname || 'comment'}...`}
-            submitButtonText={<img src="/act.png" alt="Submit" className="w-8 aspect-square" />}
+            submitButtonText={<Image src="/arrow-black.png" alt="Submit" width={12} height={20} className="rotate-45" />}
             textareaRef={replyFormRef}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 } 

@@ -1,5 +1,6 @@
 import { Comment as CommentType, organizeCommentsIntoTree } from '@/lib/hooks/useComments'
 import Comment from './Comment'
+import { RefObject } from 'react'
 
 interface Props {
   comments: CommentType[]
@@ -10,6 +11,7 @@ interface Props {
   clearWarn: () => void
   replyingToCommentId: string | null
   setReplyingToCommentId: (id: string | null) => void
+  scrollableRef: RefObject<HTMLDivElement | null>
 }
 
 export default function CommentList({
@@ -20,7 +22,8 @@ export default function CommentList({
   warn,
   clearWarn,
   replyingToCommentId,
-  setReplyingToCommentId
+  setReplyingToCommentId,
+  scrollableRef
 }: Props) {
   if (loading) return <p>Loading comments…</p>
   if (!comments.length) return <p className="italic text-stone-400">No comments yet.</p>
@@ -41,6 +44,7 @@ export default function CommentList({
           clearWarn={clearWarn}
           replyingToCommentId={replyingToCommentId}
           setReplyingToCommentId={setReplyingToCommentId}
+          scrollableRef={scrollableRef}
         />
       ))}
     </div>
