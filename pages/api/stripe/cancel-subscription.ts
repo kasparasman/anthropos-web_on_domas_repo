@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
-import { createStripeClient } from '../../../lib/stripe/factory';
+import { createStripeClient } from '@/lib/stripe/factory';
 import { z } from 'zod';
 
 const cancelSubscriptionSchema = z.object({
@@ -42,9 +42,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       cancel_at_period_end: true,
     });
 
-    // Optionally, you can update your database here to reflect the cancellation status
-    // For example, setting a `cancelAtPeriodEnd` flag on the profile.
-    // For now, we rely on Stripe as the source of truth, which will be fetched on page load.
+    // Persist cancellation info in DB (optional but recommended for quick UI checks)
+    await prisma.profile.update({
+      where: { id: userProfile.id },
+      data: {
+        stripeCurrentPeriodEnd: new Date(updatedSubscription.current_period_end * 1000),
+        status: 'CANCEL_SCHEDULED', // make sure this status value aligns with your enum/string policy
+      },
+    });
 
     console.log(`Subscription ${updatedSubscription.id} for ${session.user.email} scheduled for cancellation.`);
 
