@@ -56,7 +56,7 @@ export default function AssetCarousel({
   }
 
   return (
-    <div className="w-full overflow-x-hidden" ref={emblaRef}>
+    <div className="w-full overflow-x-hidden border-l-2 border-r-2 border-secondary" ref={emblaRef}>
       <div className="flex">
         {/* duplicate for seamless loop */}
         {[...displayAssets, ...displayAssets].map((a, i) => (

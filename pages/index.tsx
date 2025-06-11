@@ -51,14 +51,17 @@ export default function Home({
           <RightPanel topics={topics} />
         </div>
 
-        {/* Container for AssetsCounter (left) and TotalAssetIncome (right) */}
-        <div className="w-full flex flex-col justify-between items-center pt-4 relative">
-          <AssetsCounter current={currentAssets} max={maxAssets} />
-          <TotalAssetIncome value={totalAssetIncome} />
-        </div>
+        <div className="flex flex-col justify-between items-center pt-4 gap-4 relative">
 
-        {/* Assets Carousel */}
-        <AssetCarousel assets={assets} loop autoplay speed={1} />
+          {/* Container for AssetsCounter (left) and TotalAssetIncome (right) */}
+          <div className="w-full flex flex-col justify-between items-center pt-4 relative ">
+            <AssetsCounter current={currentAssets} max={maxAssets} />
+            <TotalAssetIncome value={totalAssetIncome} />
+          </div>
+
+          {/* Assets Carousel */}
+          <AssetCarousel assets={assets} loop autoplay speed={1} />
+        </div>
       </div>
 
     </main>
