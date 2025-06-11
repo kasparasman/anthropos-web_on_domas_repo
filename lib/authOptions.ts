@@ -11,6 +11,8 @@ type AppToken = JWT & {
   picture?: string
   banned?: boolean
   citizenId?: number | null
+  billingStatus?: string | null     // Stripe/Prisma status (ACTIVE, CANCEL_SCHEDULED, etc.)
+  subscriptionExpires?: string | null // ISO string of stripeCurrentPeriodEnd
 }
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
@@ -55,14 +57,16 @@ export const authOptions: NextAuthOptions = {
       if (t.id) {
         const profile = await prisma.profile.findUnique({
           where : { id: t.id },
-          select: { banned: true, nickname: true, avatarUrl: true, citizenId: true },
+          select: { banned: true, nickname: true, avatarUrl: true, citizenId: true, status: true, stripeCurrentPeriodEnd: true },
         })
 
         if (profile) {
           t.nickname = profile.nickname ?? null
           t.picture  = profile.avatarUrl ?? t.picture
           t.banned   = !!profile.banned
-          t.citizenId = profile.citizenId ?? null
+          t.citizenId           = profile.citizenId ?? null
+          t.billingStatus       = profile.status
+          t.subscriptionExpires = profile.stripeCurrentPeriodEnd?.toISOString() ?? null
         }
       }
       return t
@@ -85,6 +89,11 @@ export const authOptions: NextAuthOptions = {
           email   : session.user.email!,     // already present
           image   : t.picture,
           citizenId: t.citizenId ?? null,
+          billingStatus      : t.billingStatus ?? null,
+          subscriptionExpires: t.subscriptionExpires ?? null,
+        } as typeof session.user & {
+          billingStatus: string | null
+          subscriptionExpires: string | null
         }
       }
       return session

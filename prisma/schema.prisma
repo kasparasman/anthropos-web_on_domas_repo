@@ -22,8 +22,8 @@ model Profile {
   avatarUrl      String?
   status         String    @default("PENDING") // Possible values: PENDING, FACE_SCANNED, SUBSCRIBED, GENERATING_ASSETS, AVATAR_GENERATED, ACTIVE, ACTIVATION_FAILED
   rekFaceId      String?   @unique
-  stripeCustomerId String?   @unique
-  stripeSubscriptionId String? @unique
+  stripeCustomerId String   @unique
+  stripeSubscriptionId String   @unique
   stripePriceId      String?
   stripeCurrentPeriodEnd DateTime?
   tmpFaceUrl     String?

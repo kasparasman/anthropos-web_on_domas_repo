@@ -3,7 +3,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
-import { useAuthSync } from '../hooks/useFirebaseNextAuth'
+import { useAuthSync } from '@/lib/hooks/useFirebaseNextAuth'
 import Passport from './Passport'
 import { useState } from 'react'
 import axios, { AxiosError } from 'axios'

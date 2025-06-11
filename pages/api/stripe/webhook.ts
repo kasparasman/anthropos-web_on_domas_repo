@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { Stripe } from 'stripe';
 import { Readable } from 'stream';
 import { createStripeClient } from '@/lib/stripe/factory';
-import { handleSubscriptionChange, handlePaymentIntentUpdate } from '@/lib/services/stripeWebhookService';
+import { handleSubscriptionChange, handlePaymentIntentUpdate, handleInvoicePaymentSucceeded } from '@/lib/services/stripeWebhookService';
 
 // Disable Next.js body parser for this route to handle raw body for Stripe signature
 export const config = {
@@ -80,6 +80,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             case 'payment_intent.succeeded':
             case 'payment_intent.payment_failed':
                  await handlePaymentIntentUpdate(event.data.object as Stripe.PaymentIntent);
+                break;
+            
+            case 'invoice.payment_succeeded':
+                 await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+                break;
+            
+            // Legacy/alternate event name sometimes emitted
+            case 'invoice_payment.paid':
+                 await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
                 break;
             
             // Add other event types you want to handle here

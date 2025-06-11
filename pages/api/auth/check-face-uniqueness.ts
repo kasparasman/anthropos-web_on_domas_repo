@@ -89,6 +89,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  // ---------------- MOCK MODE ----------------
+  // When running locally or in tests, we may want to bypass the potentially slow/
+  // paid AWS Rekognition calls. If the environment variable `MOCK_FACE_INDEXING`
+  // is set to 'true', short-circuit the handler and pretend the face is unique.
+  // This follows the same convention used in `faceIndexingService.ts`.
+  if (process.env.MOCK_FACE_INDEXING === 'true') {
+    console.log('[FaceCheck] --- MOCK MODE ENABLED: Skipping Rekognition call. ---');
+    // Optional: simulate a small network delay for realism
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    return res.status(200).json({ isDuplicate: false, message: 'MOCK: Face is unique.' });
+  }
+
   const { imageUrl } = req.body;
   if (!imageUrl) {
     return res.status(400).json({ error: 'Missing required parameter: imageUrl' });

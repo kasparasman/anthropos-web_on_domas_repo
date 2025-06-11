@@ -53,8 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[AuthSync] Registration in progress, deferring NextAuth signIn')
           }
         } else {
-          // 3) Firebase signed out → clear Next-Auth session too
-          await signOut({ redirect: false })
         }
 
         setReady(true)      // initial check complete
