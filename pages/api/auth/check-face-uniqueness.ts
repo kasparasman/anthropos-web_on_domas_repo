@@ -15,9 +15,17 @@ const rek = new RekognitionClient({
   },
 });
 
-const COLLECTION_ID = 'face_recognition_collection';
+// Select collection based on environment (defaults included for safety)
+const COLLECTION_ID =
+  process.env.NODE_ENV === 'production'
+    ? process.env.REKOGNITION_COLLECTION_ID_PROD || 'face_recognition_collection_prod'
+    : process.env.REKOGNITION_COLLECTION_ID_DEV || 'face_recognition_collection_dev';
 const SIMILARITY = 98; // %
+/* CLI
+aws rekognition create-collection --collection-id face_recognition_collection_dev
+aws rekognition create-collection --collection-id face_recognition_collection_prod
 
+*/
 /**
  * Ensures the Rekognition collection exists. Creates it if it doesn't.
  */

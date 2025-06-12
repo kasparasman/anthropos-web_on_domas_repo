@@ -74,6 +74,9 @@ interface RegistrationFlowProps {
   rotatingMessages: string[];
   currentMessageIndex: number;
   messageOpacity: number;
+  isPaymentDetailsComplete: boolean;
+  activePassportTab: number;
+  setActivePassportTab: (tab: number) => void;
   setEmail: (value: string) => void;
   setPassword: (value: string) => void;
   setFaceFile: (file: File | null) => void;
@@ -98,8 +101,6 @@ interface RegistrationFlowProps {
     duration?: number;
   }) => void;
   setIsPaymentDetailsComplete: (complete: boolean) => void;
-  activePassportTab: number;
-  setActivePassportTab: (tab: number) => void;
 }
 
 interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
@@ -124,6 +125,7 @@ const RegistrationFlow = ({
   email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
   isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
   isFaceChecking, isFaceUnique, faceCheckError, rotatingMessages, currentMessageIndex, messageOpacity,
+  isPaymentDetailsComplete,
 
   // Setters
   setEmail, setPassword, setFaceFile, setPlan, setGender, setSelectedStyleId, setCurrentStep,
@@ -256,16 +258,40 @@ const RegistrationFlow = ({
         </div>
       </div>
 
+      {/* Lock between Step 1 and Step 2 */}
       <Lock imgSrc={currentStep >= 2 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 2} />
 
-      {/* step2 */}
-      <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
+      {/* step2 – Avatar style selection now comes immediately after face scan */}
+      <div className={`flex mb-16 flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
         <div className="flex flex-col items-center">
-          <h2 className="">Step 2: Payment & Account</h2>
+          <h2 className="">Step 2: Avatar Style</h2>
           <Image src="/Step2.png" alt="Step 2 visual" width={120} height={32} className="mb-6" />
         </div>
+        <div className="flex gap-2">
+          <MainButton variant={gender === 'male' ? "solid" : "outline"} onClick={() => setGender("male")}>Male</MainButton>
+          <MainButton variant={gender === 'female' ? "solid" : "outline"} onClick={() => setGender("female")}>Female</MainButton>
+        </div>
+        <div className="w-80 grid grid-cols-3 gap-2">
+          {stylesToShow.map((item: StyleItem) => (
+            <div key={item.id} onClick={() => setSelectedStyleId(item.id)} className={`relative cursor-pointer rounded-lg overflow-hidden transition ${selectedStyleId === item.id ? "ring-2 ring-main" : "ring-2 ring-transparent hover:ring-gray-500"}`}>
+              <Image src={item.src} width={100} height={100} alt={item.archetype} className="object-cover" loading="eager" />
+              {selectedStyleId === item.id && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-main text-black flex items-center justify-center font-bold">✓</div></div>}
+            </div>
+          ))}
+        </div>
+      </div>
 
-        {/* Email and Password inputs - now in step 2 */}
+      {/* Lock */}
+      <Lock imgSrc={currentStep >= 3 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 3} />
+
+      {/* step3 – Payment comes *after* avatar style selection */}
+      <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
+        <div className="flex flex-col items-center">
+          <h2 className="">Step 3: Payment & Account</h2>
+          <Image src="/Step3.png" alt="Step 3 visual" width={120} height={32} className="mb-6" />
+        </div>
+
+        {/* Email and Password inputs */}
         <div className="flex flex-col gap-4 min-w-80">
           <Input
             placeholder="Email"
@@ -285,32 +311,26 @@ const RegistrationFlow = ({
 
         <PricingToggle plan={plan} onPlanChange={setPlan} disabled={isLoading || isFaceUnique === false} />
         <div className="min-w-80 w-80 ">
-          {clientSecret ? <PaymentElement onChange={(e) => setIsPaymentDetailsComplete(e.complete)} /> : <p className="text-center text-gray-400">Initializing payment...</p>}
+          {currentStep === 3 && clientSecret ? (
+            <PaymentElement onChange={(e) => setIsPaymentDetailsComplete(e.complete)} />
+          ) : (
+            <p className="text-center text-gray-400">Initializing payment...</p>
+          )}
         </div>
-      </div>
 
-      {/* Lock */}
-      <Lock imgSrc={currentStep >= 3 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 3} />
-
-      {/* step3 */}
-      <div className={`flex mb-16 flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
-        <div className="flex flex-col items-center">
-          <h2 className="">Step 3: Passport Generation</h2>
-          <Image src="/Step3.png" alt="Step 3 visual" width={120} height={32} className="mb-6" />
-        </div>
-        <div className="flex gap-2">
-          <MainButton variant={gender === 'male' ? "solid" : "outline"} onClick={() => setGender("male")}>Male</MainButton>
-          <MainButton variant={gender === 'female' ? "solid" : "outline"} onClick={() => setGender("female")}>Female</MainButton>
-        </div>
-        <div className="w-80 grid grid-cols-3 gap-2">
-          {stylesToShow.map((item: StyleItem) => (
-            <div key={item.id} onClick={() => setSelectedStyleId(item.id)} className={`relative cursor-pointer rounded-lg overflow-hidden transition ${selectedStyleId === item.id ? "ring-2 ring-main" : "ring-2 ring-transparent hover:ring-gray-500"}`}>
-              <Image src={item.src} width={100} height={100} alt={item.archetype} className="object-cover" loading="eager" />
-              {selectedStyleId === item.id && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-main text-black flex items-center justify-center font-bold">✓</div></div>}
-            </div>
-          ))}
-        </div>
-        <MainButton variant="solid" onClick={handleGeneratePassport} disabled={!selectedStyleId || isLoading || currentStep !== 3 || !email || !password}>
+        {/* Generate button because payment is now Step 3 */}
+        <MainButton
+          variant="solid"
+          onClick={handleGeneratePassport}
+          disabled={
+            isLoading ||
+            currentStep !== 3 ||
+            !email ||
+            !password ||
+            !selectedStyleId ||
+            !isPaymentDetailsComplete
+          }
+        >
           {isLoading ? "Processing..." : "Generate Passport"}
         </MainButton>
       </div>
@@ -649,7 +669,7 @@ const Register2Page = () => {
       const secret = new URLSearchParams(window.location.search).get('payment_intent_client_secret');
       if (secret) {
         setClientSecret(secret);
-        setCurrentStep(2); // Or 3, depending on where the user should land
+        setCurrentStep(3); // Redirect lands on the payment step now
       }
     }
   }, []);
@@ -757,22 +777,12 @@ const Register2Page = () => {
     }
   }, [isBrowser, isFaceUnique, currentStep, clientSecret, isLoading, createSetupIntent]);
 
-  // Effect to advance to step 3 once step 2 is complete
+  // Effect to advance from avatar style (Step 2) to payment (Step 3)
   useEffect(() => {
-    const isEmailValid = email.trim().length > 5 && email.includes('@');
-    const isPasswordValid = password.length >= 6;
-
-    if (
-      isBrowser &&
-      isFaceUnique === true &&
-      currentStep === 2 &&
-      isEmailValid &&
-      isPasswordValid &&
-      isPaymentDetailsComplete
-    ) {
+    if (isBrowser && currentStep === 2 && selectedStyleId) {
       setCurrentStep(3);
     }
-  }, [isBrowser, isFaceUnique, currentStep, email, password, isPaymentDetailsComplete]);
+  }, [isBrowser, currentStep, selectedStyleId]);
 
   useEffect(() => {
     if (!faceFile) {
@@ -806,6 +816,7 @@ const Register2Page = () => {
     email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
     isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
     isFaceChecking, isFaceUnique, faceCheckError, rotatingMessages, currentMessageIndex, messageOpacity,
+    isPaymentDetailsComplete,
     setEmail, setPassword, setFaceFile, setPlan, setGender, setSelectedStyleId, setCurrentStep,
     setClientSecret, setIsScanning, setIsLoading, setErrorMessage, setProgressMessage,
     setIsGenerated, setShowPopup, setFinalPassport,
@@ -868,14 +879,14 @@ const Register2Page = () => {
     );
   }
 
-  // Render Step 1 if we are not processing a payment yet
-  if (currentStep < 2) {
+  // Render Steps 1 & 2 without Stripe Elements
+  if (currentStep < 3) {
     return <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />;
   }
 
-  // If we are on step 2+, we need a client secret. If we don't have one, show a loading state.
+  // If we are on step 3+, we need a client secret. If we don't have one, show a loading state.
   // This also covers the time between clicking "Proceed to Payment" and the API returning the secret.
-  if (!clientSecret) {
+  if (currentStep >= 3 && !clientSecret) {
     return (
       <main className="relative flex flex-col items-center justify-center min-h-screen text-white">
         <GridWithRays />
