@@ -13,9 +13,9 @@ interface AssetCardProps {
 export default function AssetCard({ asset, isActive = false }: AssetCardProps) {
   return (
 
-      <div className="w-64 h-50 flex-shrink-0 rounded-xl border border-[#403522] bg-black flex relative mr-5 overflow-hidden" >
+      <div className="w-64 h-50 flex items-center justify-center rounded-xl border border-[#403522] bg-black flex relative mr-5 p-0.5 overflow-hidden" >
 
-        <div className="flex-shrink-0 px-5 py-4 rounded-xl bg-[linear-gradient(-45deg,#1D180F_-20%,#020202_50%,#1D180F_120%)] flex flex-col gap-3 z-2 w-full h-full my-0.25 ml-0.25 mr-0.5">
+        <div className="flex-shrink-0 px-5 py-4 rounded-xl bg-[linear-gradient(-45deg,#1D180F_-20%,#020202_50%,#1D180F_120%)] flex flex-col gap-3 z-2 w-63 h-49">
 
           {isActive ? (
             <>

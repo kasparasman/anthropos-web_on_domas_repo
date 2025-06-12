@@ -16,7 +16,7 @@ import Toaster from '../components/Toaster'
 import GridWithRays from '../components/GridWithRays'
 import CookieConsent from 'react-cookie-consent'
 import Footer from '../components/Footer'
-
+import OptimizedBackground from '../components/OptimizedBackground'
 
 // Load Google fonts and assign to CSS variables
 const geistSans = Geist({
@@ -56,7 +56,7 @@ function AppContent({ Component, pageProps, router }: AppProps) {
           `,
         }}
       />
-      <GridWithRays />
+
 
       {!hideNavbarOn.includes(router.pathname) && (
         <Navbar
@@ -166,7 +166,11 @@ export default function MyApp(props: AppProps) {
               <meta name="description" content="Anthropos City: A vibrant and innovative hub, designed for progress and community." />
             </Head>
             <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-              <AppContent Component={Component} pageProps={restPageProps} router={router} />
+              <GridWithRays />
+              <OptimizedBackground />
+              <div id="app-content">
+                <AppContent Component={Component} pageProps={restPageProps} router={router} />
+              </div>
             </div>
           </AuthModalManagerProvider>
         </SessionProvider>

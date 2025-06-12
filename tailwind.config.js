@@ -22,7 +22,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'Montserrat', ...defaultTheme.fontFamily.sans],
-        monu: ['var(--font-geist-mono)', 'Monument Extended', ...defaultTheme.fontFamily.mono],
+        monu: ['Monument Extended', ...defaultTheme.fontFamily.mono],
         inter: ['Inter', ...defaultTheme.fontFamily.sans],
       },
       spacing: {

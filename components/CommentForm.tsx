@@ -4,6 +4,7 @@
 import { useState, RefObject, useEffect, ReactNode } from 'react'
 import BanWarnDialog from '@/components/BanWarnDialog'
 import { useSession } from 'next-auth/react'
+import Image from 'next/image'
 
 interface Props {
   topicId: string
@@ -21,7 +22,7 @@ export default function CommentForm({
   warn,
   clearWarn,
   placeholder = "Write your comment…",
-  submitButtonText = <img src="/act.png" alt="Submit" className="w-8  aspect-square" />,
+  submitButtonText = <Image src="/arrow-black.png" alt="Submit" width={12} height={20} className="rotate-45" />,
   textareaRef
 }: Props) {
   const { data: session } = useSession()
@@ -61,7 +62,7 @@ export default function CommentForm({
       <form onSubmit={submit} className="flex flex-col gap-2">
         <div className="relative">
           <textarea
-            className="w-full h-24 rounded-xl bg-gray px-3 py-2 pr-12 resize-none outline-none"
+            className="w-full h-24 rounded-xl bg-gray px-3 py-2 pr-12 resize-none outline-none text-smoke"
             placeholder={placeholder}
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -70,7 +71,7 @@ export default function CommentForm({
           />
           <button
             type="submit"
-            className="absolute bottom-3 right-2 rounded-full bg-main text-background disabled:opacity-60 text-sm"
+            className="absolute w-8 h-8 bottom-3 right-2 p-2 rounded-full bg-main text-background disabled:opacity-60 text-sm flex items-center justify-center hover:bg-main/80 transition-all duration-300"
             disabled={loading}
           >
             {submitButtonText}
