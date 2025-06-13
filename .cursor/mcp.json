@@ -5,9 +5,8 @@
       "args": ["-y", "mcp-remote", "https://mcp.neon.tech/sse"]
     },
 
-    "Framelink Figma MCP": {
-      "command": "npx",
-      "args": ["-y", "figma-developer-mcp", "--figma-api-key=FIGMA_API_KEY", "--stdio"]
+    "Figma": {
+      "url": "http://127.0.0.1:3845/sse"
     }
   }
-} 
+}

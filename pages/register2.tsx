@@ -191,7 +191,7 @@ const RegistrationFlow = ({
       </Link>
 
       <div className="flex flex-col items-center mt-10 gap-6">
-        <h1 className="text-center">Become Anthropos Citizen!</h1>
+        <h1 className="text-center mb-6">Become Anthropos Citizen!</h1>
         <div className="relative flex items-center justify-center">
           <div className="absolute w-60 h-80 rounded-full bg-main filter blur-[80px]"></div>
           <Benefits className="absolute z-2 top-[-16px] right-[-50px]" text="Participation in Chat" delay="0s" />
@@ -258,7 +258,7 @@ const RegistrationFlow = ({
       <Lock imgSrc={currentStep >= 2 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 2} />
 
       {/* step2 – Avatar style selection now comes immediately after face scan */}
-      <div className={`flex mb-16 flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
+      <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 2 ? "opacity-100" : "opacity-40"}`}>
         <div className="flex flex-col items-center">
           <h2 className="">Step 2: Avatar Style</h2>
           <Image src="/Step2.png" alt="Step 2 visual" width={120} height={32} className="mb-6" />
@@ -281,7 +281,7 @@ const RegistrationFlow = ({
       <Lock imgSrc={currentStep >= 3 ? '/Unlock.png' : '/Lock.png'} hideLines={currentStep >= 3} />
 
       {/* step3 – Payment comes *after* avatar style selection */}
-      <div className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
+      <div className={`flex mb-16 flex-col items-center gap-4 transition-opacity duration-500 ${currentStep >= 3 ? "opacity-100" : "opacity-40"}`}>
         <div className="flex flex-col items-center">
           <h2 className="">Step 3: Payment & Account</h2>
           <Image src="/Step3.png" alt="Step 3 visual" width={120} height={32} className="mb-6" />
