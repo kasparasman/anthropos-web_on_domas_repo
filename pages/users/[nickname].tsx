@@ -89,7 +89,7 @@ const UserProfilePage: NextPage<UserProfilePageProps> = ({ profile }) => {
          <img src="/Building2.png" alt="background" className="hidden lg:block mr-[-300px] lg:mr-[-200px] object-cover opacity-100 pointer-events-none" />
        </div>
       <div className="z-10 flex flex-col items-center gap-6">
-        <h1 className="text-3xl font-bold">Anthropos Citizen Passport</h1>
+        <h1 className="text-3xl font-bold text-center">Anthropos Citizen Passport</h1>
         <Passport
           citizenId={profile.citizenId}
           nickname={profile.nickname || ''}
