@@ -36,7 +36,6 @@ const nextConfig = {
         hostname: 'storage.anthroposcity.com',
       },
     ],
-    unoptimized: true,
   },
 
   eslint: {

@@ -32,6 +32,7 @@ export default function Passport({ id, citizenId, nickname, gender, avatarUrl, c
           width={600}
           height={600}
           className="w-60 h-60 object-cover"
+          unoptimized={true}
         />
         <div className="absolute bottom-2 right-2 bg-white p-1 rounded-md">
           <QRCode
