@@ -6,7 +6,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://neondb_owner:npg_DCthbQz3n7sr@ep-bitter-hall-a28oww4q-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+  //"postgresql://neondb_owner:npg_DCthbQz3n7sr@ep-yellow-sun-a2icvjzj-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 }
 
 /// ─────────────────────────────────────────────────────────────────────────────
@@ -16,7 +17,7 @@ model Profile {
   id             String    @id @unique
   email          String    @unique
   nickname       String?   @unique
-  citizenId      Int       @default(autoincrement()) @unique // Sequential citizenship number
+  citizenId      Int?      @unique // Sequential citizenship number – assigned at activation
   warnings       Int         @default(0)
   banned         Boolean     @default(false)
   avatarUrl      String?
@@ -141,4 +142,14 @@ model ModLog {
 
   @@index([userId])
   @@map("mod_logs")
+}
+
+/// ─────────────────────────────────────────────────────────────────────────────
+///   GLOBAL COUNTERS (single-row per counter name)
+/// ─────────────────────────────────────────────────────────────────────────────
+model Counter {
+  name  String @id
+  value Int
+
+  @@map("counters")
 }
