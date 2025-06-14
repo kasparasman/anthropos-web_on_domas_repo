@@ -74,6 +74,7 @@ export default function Home({
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../lib/authOptions'
 import { prisma } from '../lib/prisma'
+import { withPrismaRetry } from '@/lib/prisma/util'
 import type { GetServerSidePropsContext } from 'next'
 import Button from '@/components/UI/button'
 
@@ -102,7 +103,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const session = await getServerSession(ctx.req, ctx.res, authOptions)
   const userId = session?.user?.id ?? null
 
-  const raw: RawTopic[] = await prisma.topic.findMany({
+  const raw = (await withPrismaRetry(() => prisma.topic.findMany({
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -112,7 +113,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       videoUrl: true,
       topicLikes: { select: { userId: true } },
     },
-  })
+  })) ?? []) as RawTopic[]
 
   const topics: Topic[] = raw.map((t: RawTopic) => ({
     id: t.id,
@@ -133,13 +134,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   try {
 
-    const rawAssets = await prisma.$queryRaw<Asset[]>`
+    const rawAssets = (await withPrismaRetry(() => prisma.$queryRaw<Asset[]>`
       SELECT id, name, description, "logoUrl", "websiteUrl", 
              "totalInvestment", "tokenCount", "order", "isActive"
       FROM assets
       WHERE "isActive" = true
       ORDER BY "order" ASC
-    `;
+    `)) ?? []
 
     if (rawAssets && Array.isArray(rawAssets)) {
       assets = rawAssets;

@@ -721,7 +721,7 @@ const Register2Page = () => {
 
       try {
         // Step 1: Upload the file to get a persistent URL.
-        const faceUrl = await uploadFileToStorage(faceFile);
+        const faceUrl = await uploadFileToStorage(faceFile, 'userfaceimage');
         setUploadedFaceUrl(faceUrl);
 
         // Step 2: Call our API endpoint to check for uniqueness
@@ -881,25 +881,21 @@ const Register2Page = () => {
     );
   }
 
-  // Render Steps 1 & 2 without Stripe Elements
-  if (currentStep < 3) {
+  // Decide what to render based on clientSecret availability
+
+  // 1️⃣ Still waiting for backend to create SetupIntent
+  if (!clientSecret) {
     return <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />;
   }
 
-  // If we are on step 3+, we need a client secret. If we don't have one, show a loading state.
-  // This also covers the time between clicking "Proceed to Payment" and the API returning the secret.
-  if (currentStep >= 3 && !clientSecret) {
-    return (
-      <main className="relative flex flex-col items-center justify-center min-h-screen text-white">
-        <p className="text-yellow-400 my-4 z-10">Initializing Secure Payment...</p>
-      </main>
-    );
-  }
-
-  // Once we have a clientSecret, wrap the rest of the flow in the Elements provider
+  // 2️⃣ We have a clientSecret – mount Stripe Elements early so PaymentElement can preload.
   return (
-    <Elements stripe={getStripe()} options={{ clientSecret, appearance, paymentMethodCreation: 'manual', }} key={clientSecret}>
-      <CheckoutAndFinalize {...props} uploadedFaceUrl={uploadedFaceUrl} setRegistrationInProgress={setRegistrationInProgress} />
+    <Elements stripe={getStripe()} options={{ clientSecret, appearance, paymentMethodCreation: 'manual' }} key={clientSecret}>
+      {currentStep < 3 ? (
+        <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />
+      ) : (
+        <CheckoutAndFinalize {...props} uploadedFaceUrl={uploadedFaceUrl} setRegistrationInProgress={setRegistrationInProgress} />
+      )}
     </Elements>
   );
 }

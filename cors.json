@@ -1,0 +1,13 @@
+{
+    "rules": [
+    {
+      "AllowedOrigins": [
+        "http://localhost:3000",
+        "https://anthroposcity.com"
+      ],
+      "AllowedMethods": ["PUT", "HEAD", "OPTIONS"],
+      "AllowedHeaders": ["content-type", "x-amz-sdk-checksum-algorithm", "*"],
+      "MaxAgeSeconds": 86400
+    }
+  ]
+}

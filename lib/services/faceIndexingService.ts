@@ -13,11 +13,12 @@ const rek = new RekognitionClient({
   },
 });
 
-// Select collection based on environment (defaults included for safety)
-const COLLECTION_ID =
-  process.env.NODE_ENV === 'production'
-    ? process.env.REKOGNITION_COLLECTION_ID_PROD || 'face_recognition_collection_prod'
-    : process.env.REKOGNITION_COLLECTION_ID_DEV || 'face_recognition_collection_dev';
+// Resolve the Rekognition collection ID from a single environment variable. Each environment (.env.development.local, .env.production.local, etc.) should set REKOGNITION_COLLECTION_ID appropriately.
+const COLLECTION_ID = process.env.REKOGNITION_COLLECTION_ID;
+
+if (!COLLECTION_ID) {
+  throw new Error('Missing environment variable: REKOGNITION_COLLECTION_ID');
+}
 
 /**
  * Fetches an image from a URL and prepares it for AWS Rekognition.

@@ -33,3 +33,16 @@ Cloudfare:
     R2 Buckets: Prod/Dev
     Name server: Cloudfare
     Tasks: switch DNS records to Cloudfare
+    Cleaning workers:
+
+
+    Is AWs rekognition production? -No
+    Is Cloudfare produciton? -No but I made prod,dev setup, migration left. 
+    Ok, so the new dilemma is this:
+
+    anything R2 under custom domain is public so it means it's not fit for user face images, so for that we will create a new bucket prod/dev, then for public as well.:
+
+    storage:
+    anthropos-assets-private-dev
+    anthropos-assets-private-prod
+    

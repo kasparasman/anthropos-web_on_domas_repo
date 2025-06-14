@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+THIs is very important rule for distinction between client and server side code. For every client side code write: 'use client';           // Top of the file
+; for every server side code write: /** @server-only */   // or  /** @server */
+
+//top of file.

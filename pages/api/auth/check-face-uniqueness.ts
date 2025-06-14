@@ -6,6 +6,8 @@ import {
   Image as RekognitionImage, // Renaming to avoid conflict with Next/Image
 } from '@aws-sdk/client-rekognition';
 import sharp from 'sharp';
+import { r2, R2_BUCKET_PRIVATE, R2_BUCKET } from '@/lib/r2';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 
 const rek = new RekognitionClient({
   region: process.env.AWS_REGION,
@@ -15,11 +17,13 @@ const rek = new RekognitionClient({
   },
 });
 
-// Select collection based on environment (defaults included for safety)
-const COLLECTION_ID =
-  process.env.NODE_ENV === 'production'
-    ? process.env.REKOGNITION_COLLECTION_ID_PROD || 'face_recognition_collection_prod'
-    : process.env.REKOGNITION_COLLECTION_ID_DEV || 'face_recognition_collection_dev';
+// Use a single environment variable for collection ID; set it separately per environment.
+const COLLECTION_ID = process.env.REKOGNITION_COLLECTION_ID;
+
+if (!COLLECTION_ID) {
+  throw new Error('Missing environment variable: REKOGNITION_COLLECTION_ID');
+}
+
 const SIMILARITY = 98; // %
 /* CLI
 aws rekognition create-collection --collection-id face_recognition_collection_dev
@@ -51,19 +55,39 @@ async function ensureCollection() {
  * @returns A promise resolving to an Image object for the Rekognition API.
  */
 async function urlToImage(url: string): Promise<RekognitionImage> {
-  console.log('[FaceCheck] Fetching image from URL:', url);
+  console.log('[FaceCheck] Fetching image from URL or key:', url);
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+    let arrayBuffer: ArrayBuffer;
+
+    if (/^https?:\/\//.test(url)) {
+      // Normal public URL
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.startsWith('image/')) {
+        throw new Error(`Invalid content type: ${contentType}. Expected an image format.`);
+      }
+
+      arrayBuffer = await response.arrayBuffer();
+    } else {
+      // Treat as R2 object key (private bucket)
+      const key = url;
+      const bucket = R2_BUCKET_PRIVATE ?? R2_BUCKET; // fallback just in case
+      const obj = await r2.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+      const nodeStream = obj.Body as NodeJS.ReadableStream | null;
+      if (!nodeStream) throw new Error('Unable to read object body from R2');
+
+      arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        nodeStream.on('data', (chunk) => chunks.push(chunk));
+        nodeStream.on('end', () => resolve(Buffer.concat(chunks).buffer));
+        nodeStream.on('error', reject);
+      });
     }
 
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.startsWith('image/')) {
-      throw new Error(`Invalid content type: ${contentType}. Expected an image format.`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
     if (arrayBuffer.byteLength < 1024) { // 1KB minimum
       throw new Error(`Image too small: ${arrayBuffer.byteLength} bytes`);
     }

@@ -1,6 +1,7 @@
 /* lib/auth/credentials.ts --------------------------------------- */
 import { verifyIdToken } from '../firebase-admin'
 import { prisma } from '@/lib/prisma'
+import { withPrismaRetry } from '@/lib/prisma/util'
 
 // Type for credentials now only expects idToken, as other details are handled by provisional registration.
 type Creds = {
@@ -31,7 +32,7 @@ export async function authorize(
     console.log('[Auth Credentials] Firebase user verified:', { uid, email })
 
     /* 2 ◀ Fetch existing profile by ID (uid) */
-    const profile = await prisma.profile.findUnique({
+    const profile = await withPrismaRetry(() => prisma.profile.findUnique({
       where: { id: uid },
       select: {
         id: true,
@@ -41,7 +42,7 @@ export async function authorize(
         banned: true,
         status: true, // Crucial for checking registration/payment completion
       },
-    })
+    }))
 
     if (!profile) {
       console.log('[Auth Credentials] No profile found for UID:', uid)

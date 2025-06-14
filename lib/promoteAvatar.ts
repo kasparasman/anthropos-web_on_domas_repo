@@ -1,22 +1,25 @@
-/* lib/promoteAvatar.ts ------------------------------------------ */
+/** @server-only */
 import { CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
-import { r2 } from './r2'
 
-export async function promoteAvatar(tmpUrl: string, uid: string) {
-  // tmpUrl = "https://…/anthropos-assets/tmp/abc.png"
-  const tmpKey = new URL(tmpUrl).pathname.slice(1)          // tmp/abc.png
-  const finalKey = `avatars/${uid}.png`
+import { r2, R2_BUCKET, r2ObjectUrl } from './r2'
 
+/**
+ * Move an uploaded avatar from its temporary location (tmp/<uuid>.*) to its
+ * final key.  Returns the public URL of the promoted object.
+ */
+export async function promoteAvatar(tmpKey: string, finalKey: string): Promise<string> {
+  // Copy from tmp to final location
   await r2.send(new CopyObjectCommand({
-    Bucket: process.env.R2_BUCKET,
-    CopySource: `${process.env.R2_BUCKET}/${tmpKey}`,
+    Bucket: R2_BUCKET,
+    CopySource: `${R2_BUCKET}/${tmpKey}`,
     Key: finalKey,
   }))
 
+  // Delete the tmp file
   await r2.send(new DeleteObjectCommand({
-    Bucket: process.env.R2_BUCKET,
+    Bucket: R2_BUCKET,
     Key: tmpKey,
   }))
 
-  return `${process.env.R2_PUBLIC_HOST}/${finalKey}`
+  return r2ObjectUrl(finalKey)
 }

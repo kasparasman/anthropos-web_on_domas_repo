@@ -9,10 +9,18 @@ import { Prisma } from '@prisma/client';
  * @param delay The delay between retries in milliseconds.
  * @returns The result of the Prisma operation.
  */
+
+interface RetryOpts {
+  retries?: number;
+  delay?: number;
+  /** When false, the helper resolves to null after the final failed attempt instead of throwing. */
+  throwAfterRetries?: boolean;
+}
+
 export async function withPrismaRetry<T>(
     operation: () => Promise<T>,
-    { retries = 3, delay = 1500 } = {}
-): Promise<T> {
+    { retries = 3, delay = 1500, throwAfterRetries = true }: RetryOpts = {}
+): Promise<T | null> {
     let lastError: Error | undefined;
 
     for (let i = 0; i < retries; i++) {
@@ -31,7 +39,12 @@ export async function withPrismaRetry<T>(
         }
     }
     
-    // If all retries fail, log a critical error and throw the last error caught
+    // All retries failed
     console.error(`💀 Prisma operation failed after ${retries} retries.`);
-    throw lastError;
+
+    if (throwAfterRetries) {
+        throw lastError;
+    }
+
+    return null;
 }

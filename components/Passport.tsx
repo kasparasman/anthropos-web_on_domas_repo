@@ -12,13 +12,13 @@ interface PassportProps {
 }
 
 export default function Passport({ id, citizenId, nickname, gender, avatarUrl, className }: PassportProps) {
-  // Format citizenId to 9 digits with leading zeros
-  const formattedCitizenId = citizenId ?
-    String(citizenId).padStart(10, '0') :
-    '0000000000';
+  // Ensure a fixed-width 9-digit display (up to 999,999,999).
+  const formattedCitizenId = citizenId !== undefined ?
+    String(citizenId).padStart(9, '0') :
+    '000000000';
 
-  // Format the ID with spaces for readability: 000 000 000
-  const displayId = `${formattedCitizenId.substring(0, 1)} ${formattedCitizenId.substring(1, 4)} ${formattedCitizenId.substring(4, 7)} ${formattedCitizenId.substring(6, 9)}`;
+  // Group as 000 000 000 for readability
+  const displayId = `${formattedCitizenId.slice(0, 3)} ${formattedCitizenId.slice(3, 6)} ${formattedCitizenId.slice(6, 9)}`;
 
   const profileUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/users/${nickname}`;
 

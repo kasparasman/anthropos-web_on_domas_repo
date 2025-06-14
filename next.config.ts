@@ -31,7 +31,12 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'storage.googleapis.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'storage.anthroposcity.com',
+      },
     ],
+    unoptimized: true,
   },
 
   eslint: {
@@ -42,6 +47,7 @@ const nextConfig = {
     // Skip type-checking errors in CI / Vercel
     ignoreBuildErrors: true,
   },
+
 }
 
 module.exports = nextConfig

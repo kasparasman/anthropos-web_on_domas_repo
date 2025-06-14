@@ -3,6 +3,7 @@ import { Stripe } from 'stripe';
 import { createStripeClient } from '@/lib/stripe/factory';
 import { verifyIdToken } from '@/lib/firebase-admin';
 import { prisma } from '@/lib/prisma';
+import { withPrismaRetry } from '@/lib/prisma/util';
 
 // Map plan names to Stripe Price IDs
 const PRICE_IDS: Record<string, string> = {
@@ -93,7 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
         const periodEndUnix = (subscription as any).current_period_end as number | undefined;
 
-        await prisma.profile.upsert({
+        await withPrismaRetry(() => prisma.profile.upsert({
             where: { id: uid },
             create: {
                 id: uid,
@@ -116,7 +117,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 stripePriceId: priceId,
                 ...(typeof periodEndUnix === 'number' ? { stripeCurrentPeriodEnd: new Date(periodEndUnix * 1000) } : {}),
             },
-        });
+        }));
 
         // ──────────────── Step 4 — grab a usable PaymentIntent (no loop) ────────────────
         type InvoiceWithPI =
