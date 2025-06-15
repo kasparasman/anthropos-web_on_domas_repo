@@ -45,4 +45,9 @@ Cloudfare:
     storage:
     anthropos-assets-private-dev
     anthropos-assets-private-prod
-    
+    Done
+
+
+Next steps:
+-Transition Database to info@anthroposcity.com email.
+-Optimize speed of the app.
