@@ -6,13 +6,13 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { useToast } from "@/lib/hooks/use-toast";
 import { signIn } from "next-auth/react";
 import { useRegistrationStatus } from '@/lib/hooks/useRegistrationStatus';
+import dynamic from 'next/dynamic';
 
 // --- UI Components ---
 import Input from '@/components/UI/input';
 import MainButton from '@/components/UI/button';
 import PricingToggle from '@/components/UI/PricingToggle';
 import Passport from '@/components/Passport';
-import FaceScanComponent from "@/components/faceScan/FaceScanComponent";
 import Benefits from "@/components/UI/benefits";
 import GridWithRays from "@/components/GridWithRays";
 import benefitsStyles from "@/components/UI/benefits.module.css";
@@ -118,7 +118,7 @@ interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
   }) => void;
 }
 
-
+const FaceScanComponent = dynamic(() => import('@/components/faceScan/FaceScanComponent'), { ssr: false });
 
 // --- The Main Registration Component (Now Dumb) ---
 const RegistrationFlow = ({
