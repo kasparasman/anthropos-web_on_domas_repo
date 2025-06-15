@@ -906,7 +906,12 @@ const Register2Page = () => {
 
   // 2️⃣ We have a clientSecret – mount Stripe Elements early so PaymentElement can preload.
   return (
-    <Elements stripe={getStripe()} options={{ clientSecret, appearance, paymentMethodCreation: 'manual' }} key={clientSecret}>
+    <Elements
+      stripe={getStripe()}
+      // paymentMethodCreation is currently missing in Stripe TS types; assert to any.
+      options={{ clientSecret, appearance, paymentMethodCreation: 'manual' } as any}
+      key={clientSecret}
+    >
       {currentStep < 3 ? (
         <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />
       ) : (
