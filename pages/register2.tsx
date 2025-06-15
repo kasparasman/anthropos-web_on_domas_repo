@@ -497,10 +497,9 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       // 2. CREATE PAYMENT METHOD
       setProgressMessage('Securing payment method...');
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: elements.getElement(PaymentElement) as any, // PaymentElement used in manual creation
-        billing_details: { email },
-      } as any);
+        elements,
+        params: { billing_details: { email } },
+      });
 
       if (pmError) {
         throw new Error(pmError.message || 'Could not create payment method.');
@@ -543,8 +542,8 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       // 4. CONFIRM THE INVOICE PAYMENTINTENT
       setProgressMessage('Awaiting payment confirmation...');
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-        elements,
         clientSecret: setupData.clientSecret,
+        payment_method: paymentMethod.id,      // manual mode
         confirmParams: {
           return_url: `${window.location.origin}/`,
         },
@@ -906,12 +905,7 @@ const Register2Page = () => {
 
   // 2️⃣ We have a clientSecret – mount Stripe Elements early so PaymentElement can preload.
   return (
-    <Elements
-      stripe={getStripe()}
-      // paymentMethodCreation is currently missing in Stripe TS types; assert to any.
-      options={{ clientSecret, appearance, paymentMethodCreation: 'manual' } as any}
-      key={clientSecret}
-    >
+    <Elements stripe={getStripe()} options={{ clientSecret, appearance, paymentMethodCreation: 'manual' }} key={clientSecret}>
       {currentStep < 3 ? (
         <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />
       ) : (
