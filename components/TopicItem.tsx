@@ -1,9 +1,7 @@
 // components/TopicItem.tsx
 import React from 'react'
-import { Eye, Heart } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { Topic } from '../types/topic'
-import useLikes from '@/lib/hooks/useLikes'
-import { TopicWithBody } from '../types/topic-popup'
 import { useToast } from '@/lib/hooks/use-toast'
 
 interface TopicItemProps {
@@ -22,10 +20,48 @@ export default function TopicItem({
   hasPlayedVideo,
 }: TopicItemProps) {
   /* -------------------------------------------------------------- */
-  /*  Likes hook – start with SSR data for instant paint            */
+  /*  Local likes state – seeded from API payload                   */
   /* -------------------------------------------------------------- */
-  const { count, likedByMe, loading, toggleLike } = useLikes(topic.id)
+  const [likesCount, setLikesCount] = React.useState<number>(topic.likes)
+  const [likedByMe, setLikedByMe]   = React.useState<boolean>(topic.likedByUser)
+  const [loading, setLoading]       = React.useState<boolean>(false)
+
   const { toast } = useToast()
+
+  const toggleLike = React.useCallback(async () => {
+    if (loading) return
+    setLoading(true)
+    // optimistic update
+    const optimisticLiked = !likedByMe
+    setLikedByMe(optimisticLiked)
+    setLikesCount(prev => prev + (optimisticLiked ? 1 : -1))
+
+    try {
+      const res = await fetch(`/api/topics/${topic.id}/likes`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        throw new Error('Network error')
+      }
+      const json = await res.json() as { count: number; likedByMe: boolean }
+      setLikesCount(json.count)
+      setLikedByMe(json.likedByMe)
+    } catch (err: any) {
+      console.error('Like toggle failed', err)
+      // revert optimistic
+      setLikedByMe(prev => !prev)
+      setLikesCount(prev => prev + (likedByMe ? 1 : -1))
+
+      if (err instanceof Error && err.message === 'Not authenticated') {
+        toast({ title: 'Login required', description: 'You must be logged in to like topics.' })
+      } else {
+        toast({ title: 'Error', description: 'Something went wrong. Please try again.' })
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [loading, likedByMe, toast, topic.id])
 
   /* -------------------------------------------------------------- */
   /*  Render                                                        */
@@ -84,20 +120,10 @@ export default function TopicItem({
               try {
                 await toggleLike()
               } catch (err) {
-                if (err instanceof Error && err.message === 'Not authenticated') {
-                  toast({
-                    title: 'Login required',
-                    description: 'You must be logged in to like topics.',
-                  })
-                } else {
-                  toast({
-                    title: 'Error',
-                    description: 'Something went wrong. Please try again.',
-                  })
-                }
+                // errors handled in toggleLike
               }
             }}
-            disabled={loading} // Allow unliking by removing `likedByMe` from disabled condition
+            disabled={loading}
             className="flex items-center gap-1 text-sm disabled:cursor-not-allowed hover:scale-105 transition-transform"
             >
             <Heart
@@ -108,7 +134,7 @@ export default function TopicItem({
                   : 'fill-none stroke-smoke hover:stroke-smoke hover:stroke-3' // Outline when not liked, with hover effect
               }
             />
-            {count}
+            {likesCount}
             </button>
             
             <button

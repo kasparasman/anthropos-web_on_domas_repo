@@ -6,13 +6,13 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { useToast } from "@/lib/hooks/use-toast";
 import { signIn } from "next-auth/react";
 import { useRegistrationStatus } from '@/lib/hooks/useRegistrationStatus';
+import dynamic from 'next/dynamic';
 
 // --- UI Components ---
 import Input from '@/components/UI/input';
 import MainButton from '@/components/UI/button';
 import PricingToggle from '@/components/UI/PricingToggle';
 import Passport from '@/components/Passport';
-import FaceScanComponent from "@/components/faceScan/FaceScanComponent";
 import Benefits from "@/components/UI/benefits";
 import GridWithRays from "@/components/GridWithRays";
 import benefitsStyles from "@/components/UI/benefits.module.css";
@@ -118,7 +118,7 @@ interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
   }) => void;
 }
 
-
+const FaceScanComponent = dynamic(() => import('@/components/faceScan/FaceScanComponent'), { ssr: false });
 
 // --- The Main Registration Component (Now Dumb) ---
 const RegistrationFlow = ({
@@ -413,9 +413,12 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const submissionGuard = React.useRef(false);
+  // Ref to store polling interval ID so we can clear it on unmount
+  const pollingRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // --- New Polling Logic ---
   const startPollingForStatus = (userId: string, idToken: string) => {
+    // Store interval so it can be cleared later
     const pollInterval = setInterval(async () => {
       try {
         const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
@@ -455,9 +458,12 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         }
       } catch (pollError) {
         clearInterval(pollInterval);
+        pollingRef.current = null;
         throw new Error('Failed to check registration status. Please try logging in later.');
       }
     }, 3000);
+
+    pollingRef.current = pollInterval;
   };
 
   const handleGeneratePassport = async () => {
@@ -491,9 +497,10 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       // 2. CREATE PAYMENT METHOD
       setProgressMessage('Securing payment method...');
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-        elements,
-        params: { billing_details: { email } },
-      });
+        type: 'card',
+        card: elements.getElement(PaymentElement) as any, // PaymentElement used in manual creation
+        billing_details: { email },
+      } as any);
 
       if (pmError) {
         throw new Error(pmError.message || 'Could not create payment method.');
@@ -536,8 +543,8 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       // 4. CONFIRM THE INVOICE PAYMENTINTENT
       setProgressMessage('Awaiting payment confirmation...');
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
         clientSecret: setupData.clientSecret,
-        payment_method: paymentMethod.id,      // manual mode
         confirmParams: {
           return_url: `${window.location.origin}/`,
         },
@@ -574,6 +581,15 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       props.setRegistrationInProgress(false);
     }
   };
+
+  // Cleanup polling interval when component unmounts
+  React.useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
 
   return <RegistrationFlow {...props} handleGeneratePassport={handleGeneratePassport} />;
 }
@@ -890,7 +906,12 @@ const Register2Page = () => {
 
   // 2️⃣ We have a clientSecret – mount Stripe Elements early so PaymentElement can preload.
   return (
-    <Elements stripe={getStripe()} options={{ clientSecret, appearance, paymentMethodCreation: 'manual' }} key={clientSecret}>
+    <Elements
+      stripe={getStripe()}
+      // paymentMethodCreation is currently missing in Stripe TS types; assert to any.
+      options={{ clientSecret, appearance, paymentMethodCreation: 'manual' } as any}
+      key={clientSecret}
+    >
       {currentStep < 3 ? (
         <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />
       ) : (
