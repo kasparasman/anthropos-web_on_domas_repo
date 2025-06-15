@@ -413,9 +413,12 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const submissionGuard = React.useRef(false);
+  // Ref to store polling interval ID so we can clear it on unmount
+  const pollingRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // --- New Polling Logic ---
   const startPollingForStatus = (userId: string, idToken: string) => {
+    // Store interval so it can be cleared later
     const pollInterval = setInterval(async () => {
       try {
         const statusResponse = await fetch(`/api/auth/check-status?userId=${userId}`);
@@ -455,9 +458,12 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         }
       } catch (pollError) {
         clearInterval(pollInterval);
+        pollingRef.current = null;
         throw new Error('Failed to check registration status. Please try logging in later.');
       }
     }, 3000);
+
+    pollingRef.current = pollInterval;
   };
 
   const handleGeneratePassport = async () => {
@@ -574,6 +580,15 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       props.setRegistrationInProgress(false);
     }
   };
+
+  // Cleanup polling interval when component unmounts
+  React.useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
 
   return <RegistrationFlow {...props} handleGeneratePassport={handleGeneratePassport} />;
 }
