@@ -497,9 +497,10 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       // 2. CREATE PAYMENT METHOD
       setProgressMessage('Securing payment method...');
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-        elements,
-        params: { billing_details: { email } },
-      });
+        type: 'card',
+        card: elements.getElement(PaymentElement) as any, // PaymentElement used in manual creation
+        billing_details: { email },
+      } as any);
 
       if (pmError) {
         throw new Error(pmError.message || 'Could not create payment method.');
@@ -542,8 +543,8 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       // 4. CONFIRM THE INVOICE PAYMENTINTENT
       setProgressMessage('Awaiting payment confirmation...');
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
         clientSecret: setupData.clientSecret,
-        payment_method: paymentMethod.id,      // manual mode
         confirmParams: {
           return_url: `${window.location.origin}/`,
         },
