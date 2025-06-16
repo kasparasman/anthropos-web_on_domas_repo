@@ -7,6 +7,8 @@ import { useToast } from "@/lib/hooks/use-toast";
 import { signIn } from "next-auth/react";
 import { useRegistrationStatus } from '@/lib/hooks/useRegistrationStatus';
 import dynamic from 'next/dynamic';
+import { kickOffEmailVerification, waitForVerification } from '@/lib/auth/emailVerification';
+import { getAuth } from 'firebase/auth';
 
 // --- UI Components ---
 import Input from '@/components/UI/input';
@@ -102,6 +104,8 @@ interface RegistrationFlowProps {
     duration?: number;
   }) => void;
   setIsPaymentDetailsComplete: (complete: boolean) => void;
+  showEmailOverlay: boolean;
+  setShowEmailOverlay: (show: boolean) => void;
 }
 
 interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
@@ -116,6 +120,7 @@ interface CheckoutAndFinalizeProps extends RegistrationFlowProps {
     description?: React.ReactNode;
     duration?: number;
   }) => void;
+  setShowEmailOverlay: (show: boolean) => void;
 }
 
 const FaceScanComponent = dynamic(() => import('@/components/faceScan/FaceScanComponent'), { ssr: false });
@@ -150,6 +155,8 @@ const RegistrationFlow = ({
   setIsPaymentDetailsComplete,
   activePassportTab,
   setActivePassportTab,
+  showEmailOverlay,
+  setShowEmailOverlay,
 }: RegistrationFlowProps) => {
   // Combine male and female styles for preview cycling
   const previewAvatars: Array<{ style: StyleItem; gender: 'male' | 'female' }> = [
@@ -180,9 +187,19 @@ const RegistrationFlow = ({
     setIsScanning(true);
   };
 
+  /* ───────── Overlay when waiting for e-mail verification ───────── */
+  const EmailOverlay = () => (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 text-center p-6">
+      <div className="space-y-4 max-w-xs">
+        <h2 className="text-2xl font-semibold text-main">Check your e-mail</h2>
+        <p className="text-sm text-white">We've sent a verification link to {email}.<br/>Please confirm it to continue.</p>
+      </div>
+    </div>
+  );
+
   return (
     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
-
+      {showEmailOverlay && <EmailOverlay />}
       <Link href="/" className="fixed top-4 left-4 w-auto flex items-center text-white gap-2  px-2 py-1 bg-foreground mr-auto border border-gray rounded-md hover:border-dim_smoke transition-all duration-300">
         <Image src="/arrow-white.png" alt="Back" height={18} width={8} className="opacity-70 -rotate-90" />
         <span className="self-center text-sm font-regular whitespace-nowrap opacity-70 leading-none">
@@ -407,7 +424,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
   const {
     email, password, faceFile, selectedStyleId, stylesToShow, clientSecret, uploadedFaceUrl,
     setIsLoading, setProgressMessage, setFinalPassport,
-    setIsGenerated, setRegistrationInProgress, toast
+    setIsGenerated, setRegistrationInProgress, toast, setShowEmailOverlay
   } = props;
 
   const stripe = useStripe();
@@ -455,6 +472,9 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
           setFinalPassport({ nickname: statusData.nickname, avatarUrl: statusData.avatarUrl, citizenId: statusData.citizenId });
           setProgressMessage(null);
           setIsLoading(false);
+
+          // Drop short-lived Firebase session – we use NextAuth going forward
+          await getAuth().signOut();
         }
       } catch (pollError) {
         clearInterval(pollInterval);
@@ -510,8 +530,24 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
       // After this point, other async actions are safe
       setProgressMessage('Creating your citizen account...');
+
+      // 2.1. Create Firebase account (still signed-in locally)
       const cred = await registerClient(email, password);
-      idToken = await cred.user.getIdToken();
+
+      // 2.2. Kick off e-mail verification flow (no sign-out now)
+      setProgressMessage('Please verify the e-mail we just sent you…');
+      props.setShowEmailOverlay(true);
+      await kickOffEmailVerification(cred.user);
+
+      // 2.3. Wait (listener on Firestore) until user clicks the link
+      await waitForVerification(cred.user.uid);
+
+      // Hide the overlay once verified
+      props.setShowEmailOverlay(false);
+
+      // 2.4. Force-refresh the current user to pull in the new custom claim
+      await cred.user.reload();
+      idToken = await cred.user.getIdToken(true); // true ⇒ force refresh
 
       // 3. BACKEND ROUND-TRIP
       setProgressMessage('Submitting registration...');
@@ -830,6 +866,8 @@ const Register2Page = () => {
     return () => clearInterval(messageInterval);
   }, [rotatingMessages.length]);
 
+  const [showEmailOverlay, setShowEmailOverlay] = useState(false);
+
   const props = {
     email, password, faceFile, plan, gender, selectedStyleId, currentStep, clientSecret, isScanning,
     isLoading, progressMessage, errorMessage, isGenerated, showPopup, finalPassport, stylesToShow,
@@ -850,6 +888,8 @@ const Register2Page = () => {
     setIsPaymentDetailsComplete,
     activePassportTab: 1,
     setActivePassportTab: () => { },
+    showEmailOverlay,
+    setShowEmailOverlay,
   };
 
   const appearance = {
@@ -909,7 +949,7 @@ const Register2Page = () => {
       {currentStep < 3 ? (
         <RegistrationFlow {...props} setIsPaymentDetailsComplete={setIsPaymentDetailsComplete} />
       ) : (
-        <CheckoutAndFinalize {...props} uploadedFaceUrl={uploadedFaceUrl} setRegistrationInProgress={setRegistrationInProgress} />
+        <CheckoutAndFinalize {...props} uploadedFaceUrl={uploadedFaceUrl} setRegistrationInProgress={setRegistrationInProgress} setShowEmailOverlay={setShowEmailOverlay} />
       )}
     </Elements>
   );

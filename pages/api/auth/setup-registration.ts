@@ -53,6 +53,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const decodedToken = await verifyIdToken(idToken);
         const uid = decodedToken.uid;
         
+        // Require that the e-mail has been verified (custom claim set by cloud function)
+        if (!decodedToken.isVerified) {
+            return res.status(403).json({
+                message: 'EMAIL_NOT_VERIFIED',
+            });
+        }
+        
         // --- Final, Correct Subscription Flow ---
 
         // Step 1: Create a Stripe Customer.

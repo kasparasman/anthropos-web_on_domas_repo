@@ -35,7 +35,7 @@ export default function AuthButton({ onLoginClick }: AuthButtonProps) {
         Log in
       </MainButton>
       <MainButton
-        onClick={() => router.push('/register2')}
+        onClick={() => router.push('/register')}
         className="rounded-md py-0.5"
       >
         Sign up

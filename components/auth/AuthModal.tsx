@@ -78,7 +78,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           <button
             type="button"
             disabled={isLoading}
-            onClick={() => { window.location.href = '/register2'; }}
+            onClick={() => { window.location.href = '/register'; }}
             className="w-full mt-2 text-sm text-main disabled:opacity-60 hover:underline"
           >
             Need an account? Sign up
