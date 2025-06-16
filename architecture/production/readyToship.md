@@ -49,5 +49,21 @@ Cloudfare:
 
 
 Next steps:
--Transition Database to info@anthroposcity.com email.
--Optimize speed of the app.
+-Transition Database to info@anthroposcity.com email. - Done
+-Optimize speed of the app. - First step done
+-DElete unneeded code - Partially done
+
+What do I do next?
+
+Ensuring small tweaks:  
+Email adress verification: firebase
+password reset: firebase
+email adress change: firebase
+import firebasetemplates.md
+
+
+
+
+
+
+
