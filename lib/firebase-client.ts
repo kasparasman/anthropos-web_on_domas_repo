@@ -73,7 +73,7 @@ if (typeof window !== 'undefined' && !window.__APP_CHECK_INIT__) {
     });
   }
 }
-
+console.log(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY);
 // ─── Emulator Suite (opt-in via env) ────────────────────────────────
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
   try {
