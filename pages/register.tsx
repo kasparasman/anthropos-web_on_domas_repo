@@ -606,6 +606,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
       // On error, hide the popup and show a toast
       props.setShowPopup(false);
+      props.setShowEmailOverlay(false);
       setTimeout(() => {
         props.setIsGenerated(false);
       }, 500); // Animation duration
@@ -614,6 +615,9 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       setIsLoading(false);
       setProgressMessage(null);
       props.setRegistrationInProgress(false);
+    } finally {
+      // ensure overlay is cleared in any case
+      props.setShowEmailOverlay(false);
     }
   };
 
