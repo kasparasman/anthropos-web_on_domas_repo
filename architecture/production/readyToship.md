@@ -62,8 +62,20 @@ email adress change: firebase
 import firebasetemplates.md
 
 
+Added email verification flow - not fully tested yet:
+
+Next thing implement fast firebase development env with emulators.
+
+Learn what is local emulator:
 
 
 
 
-
+| What it emulates             | Real-world counterpart  | Typical TCP port | What you can do locally                                                 |
+| ---------------------------- | ----------------------- | ---------------- | ----------------------------------------------------------------------- |
+| **Auth emulator**            | Firebase Authentication | 9099             | Create users, send verification links, set custom claims.               |
+| **Firestore emulator**       | Cloud Firestore         | 8080             | Read/write data, enforce security rules, inspect documents in a web UI. |
+| **Functions emulator**       | Cloud Functions (1-gen) | 5001             | Hot-reload your TypeScript functions without redeploying.               |
+| **Storage emulator**         | Cloud Storage           | 9199             | Upload files, test security rules.                                      |
+| **Hosting emulator**         | Firebase Hosting        | 5000             | Serve static assets or proxy to Next.js dev server.                     |
+| **Pub/Sub, Analytics, etc.** | Optional add-ons        | various          | Simulate topic pushes, Analytics events, etc.                           |
