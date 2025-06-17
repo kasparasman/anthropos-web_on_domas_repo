@@ -19,7 +19,7 @@ import {
   getFunctions,
   connectFunctionsEmulator          // ← import
 } from 'firebase/functions';
-import { ReCaptchaV3Provider, initializeAppCheck } from 'firebase/app-check';
+import { ReCaptchaV3Provider, initializeAppCheck, getToken as getAppCheckToken } from 'firebase/app-check';
 
 // Firebase client configuration is built from NEXT_PUBLIC_* environment variables
 const firebaseConfig = {
@@ -66,9 +66,7 @@ if (typeof window !== 'undefined' && !window.__APP_CHECK_INIT__) {
     console.info('[Firebase] App Check debug token enabled.');
   } else {
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(
-        process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!
-      ),
+      provider: new ReCaptchaV3Provider('Limitless18.captcha'),
       isTokenAutoRefreshEnabled: true,
     });
   }
