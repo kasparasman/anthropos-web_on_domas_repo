@@ -19,6 +19,7 @@ import {
   getFunctions,
   connectFunctionsEmulator          // ← import
 } from 'firebase/functions';
+import { ReCaptchaV3Provider, initializeAppCheck } from 'firebase/app-check';
 
 // Firebase client configuration is built from NEXT_PUBLIC_* environment variables
 const firebaseConfig = {
@@ -47,6 +48,32 @@ export const firebaseAuth = getAuth(app);
 
 // Firestore instance (optional export – used mainly in dev tools)
 export const firebaseDb: Firestore = getFirestore(app);
+declare global {
+  interface Window { __APP_CHECK_INIT__?: boolean }
+}
+
+if (typeof window !== 'undefined' && !window.__APP_CHECK_INIT__) {
+  window.__APP_CHECK_INIT__ = true;
+  if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
+    /* Dev / emulator → use debug token (no captchas). */
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('noop'),
+      isTokenAutoRefreshEnabled: true,
+    });
+    console.info('[Firebase] App Check debug token enabled.');
+  } else {
+    /* Production / preview → real reCAPTCHA v3 */
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(
+        process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!
+      ),
+      isTokenAutoRefreshEnabled: true,
+    });
+  }
+}
 
 // ─── Emulator Suite (opt-in via env) ────────────────────────────────
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
