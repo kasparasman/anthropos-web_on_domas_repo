@@ -66,7 +66,9 @@ if (typeof window !== 'undefined' && !window.__APP_CHECK_INIT__) {
     console.info('[Firebase] App Check debug token enabled.');
   } else {
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider('Limitless18.captcha'),
+      provider: new ReCaptchaV3Provider(
+        process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!
+      ),
       isTokenAutoRefreshEnabled: true,
     });
   }
