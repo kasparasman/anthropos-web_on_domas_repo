@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { applyActionCode, onAuthStateChanged } from 'firebase/auth';
@@ -18,10 +18,12 @@ export default function VerifyEmailPage() {
     await httpsCallable(functions, 'markVerified')();
     await firebaseAuth.currentUser!.getIdToken(true); // refresh custom claims
   };
+  const ran = useRef(false);
 
   useEffect(() => {
-    if (!router.isReady) return;
-
+    if (!router.isReady || ran.current) return;
+    ran.current = true;
+  
     const { oobCode } = router.query;
 
     console.log('[VerifyEmail] Effect triggered, router ready:', router.isReady, 'query:', router.query);
@@ -54,6 +56,8 @@ export default function VerifyEmailPage() {
           console.warn('[VerifyEmail] User not email verified after reload.');
           throw new Error('email-not-verified');
         }
+        await user.getIdToken(true);
+
 
         // Call Cloud Function for both prod & emulator flows
         console.log('[VerifyEmail] Calling markVerified cloud function.');

@@ -19,7 +19,7 @@ import {
   getFunctions,
   connectFunctionsEmulator          // ← import
 } from 'firebase/functions';
-//import { ReCaptchaV3Provider, initializeAppCheck } from 'firebase/app-check';
+import { ReCaptchaV3Provider, initializeAppCheck } from 'firebase/app-check';
 
 // Firebase client configuration is built from NEXT_PUBLIC_* environment variables
 const firebaseConfig = {
@@ -48,14 +48,16 @@ export const firebaseAuth = getAuth(app);
 
 // Firestore instance (optional export – used mainly in dev tools)
 export const firebaseDb: Firestore = getFirestore(app);
-/*
+
 declare global {
   interface Window { __APP_CHECK_INIT__?: boolean }
 }
-  /*
+  
 if (typeof window !== 'undefined' && !window.__APP_CHECK_INIT__) {
   window.__APP_CHECK_INIT__ = true;
   if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
     initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider('noop'),
@@ -71,17 +73,17 @@ if (typeof window !== 'undefined' && !window.__APP_CHECK_INIT__) {
     });
   }
 }
-*/
+
 // ─── Emulator Suite (opt-in via env) ────────────────────────────────
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
   try {
     // Auth → http://localhost:9099
-    connectAuthEmulator(firebaseAuth, 'http://localhost:9099', { disableWarnings: true });
+    connectAuthEmulator(firebaseAuth, 'http://127.0.0.1:9099', { disableWarnings: true });
     connectFunctionsEmulator(getFunctions(app, 'europe-west1'), '127.0.0.1', 5001);
     console.info('[Firebase] Connected to local emulators.');
   
     // Firestore → localhost:8080
-    connectFirestoreEmulator(firebaseDb, 'localhost', 8080);
+    connectFirestoreEmulator(firebaseDb, '127.0.0.1', 8080);
     console.info('[Firebase] Connected to local emulators.');
   } catch (err) {
     console.warn('[Firebase] Failed to connect to emulators:', err);

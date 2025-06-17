@@ -19,9 +19,6 @@ console.log('[markVerified] got firestore');
 
 export const markVerified = functions
   .region('europe-west1')
-  .runWith({
-    enforceAppCheck: true, // Reject requests with missing or invalid App Check tokens.
-})
   .https.onCall(async (_data, context) => {
     console.log('[markVerified] handler entered', { uid: context.auth?.uid });
 
