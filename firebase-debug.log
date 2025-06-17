@@ -361,3 +361,240 @@ INFO: Websocket client disconnected
 [debug] [2025-06-17T08:59:08.188Z] [worker-europe-west1-markVerified-3eb397c6-9662-4994-aee0-63475ddd2460]: FINISHING {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[worker-europe-west1-markVerified-3eb397c6-9662-4994-aee0-63475ddd2460]: FINISHING"}}
 [debug] [2025-06-17T08:59:08.201Z] [worker-europe-west1-markVerified-3eb397c6-9662-4994-aee0-63475ddd2460]: exited {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[worker-europe-west1-markVerified-3eb397c6-9662-4994-aee0-63475ddd2460]: exited"}}
 [debug] [2025-06-17T08:59:08.201Z] [worker-europe-west1-markVerified-3eb397c6-9662-4994-aee0-63475ddd2460]: FINISHED {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[worker-europe-west1-markVerified-3eb397c6-9662-4994-aee0-63475ddd2460]: FINISHED"}}
+[debug] [2025-06-17T10:26:10.987Z] File C:\Users\Kasparas\basic-ac-home - Copy\functions\src\index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\src\\index.ts changed, reloading triggers"}}
+[debug] [2025-06-17T10:26:12.053Z] Validating nodejs source
+[debug] [2025-06-17T10:26:13.699Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.0"
+  },
+  "private": true
+}
+[debug] [2025-06-17T10:26:13.701Z] Building nodejs source
+[debug] [2025-06-17T10:26:13.701Z] Failed to find version of module node: reached end of search path C:\Users\Kasparas\basic-ac-home - Copy\functions\node_modules
+[info] +  functions: Using node@18 from host. 
+[debug] [2025-06-17T10:26:13.714Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-06-17T10:26:13.736Z] Found firebase-functions binary at 'C:\Users\Kasparas\basic-ac-home - Copy\functions\node_modules\.bin\firebase-functions'
+[info] Serving at port 8255
+
+[info] [markVerified] file start
+
+[debug] [2025-06-17T10:26:17.241Z] File C:\Users\Kasparas\basic-ac-home - Copy\functions\src\index.ts changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\src\\index.ts changed, reloading triggers"}}
+[debug] [2025-06-17T10:26:18.257Z] Validating nodejs source
+[debug] [2025-06-17T10:26:19.842Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.0"
+  },
+  "private": true
+}
+[debug] [2025-06-17T10:26:19.842Z] Building nodejs source
+[debug] [2025-06-17T10:26:19.842Z] Failed to find version of module node: reached end of search path C:\Users\Kasparas\basic-ac-home - Copy\functions\node_modules
+[info] +  functions: Using node@18 from host. 
+[debug] [2025-06-17T10:26:19.843Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-06-17T10:26:19.854Z] Found firebase-functions binary at 'C:\Users\Kasparas\basic-ac-home - Copy\functions\node_modules\.bin\firebase-functions'
+[info] [markVerified] imported functions
+[markVerified] imported admin
+[markVerified] admin initialised
+[markVerified] got firestore
+
+[debug] [2025-06-17T10:26:19.863Z] Got response from /__/functions.yaml {"endpoints":{"markVerified":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"region":["europe-west1"],"callableTrigger":{},"entryPoint":"markVerified"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2025-06-17T10:26:19.912Z] defaultcredentials: writing to file C:\Users\Kasparas\AppData\Roaming\firebase\info_anthroposcity_com_application_default_credentials.json
+[debug] [2025-06-17T10:26:19.919Z] Setting GAC to C:\Users\Kasparas\AppData\Roaming\firebase\info_anthroposcity_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to C:\\Users\\Kasparas\\AppData\\Roaming\\firebase\\info_anthroposcity_com_application_default_credentials.json"}}
+[info] +  functions: Loaded functions definitions from source: markVerified. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: markVerified."}}
+[info] Serving at port 8572
+
+[info] [markVerified] file start
+
+[info] [markVerified] imported functions
+
+[info] [markVerified] imported admin
+
+[info] [markVerified] admin initialised
+
+[info] [markVerified] got firestore
+
+[debug] [2025-06-17T10:26:20.800Z] Got response from /__/functions.yaml {"endpoints":{"markVerified":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"region":["europe-west1"],"callableTrigger":{},"entryPoint":"markVerified"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2025-06-17T10:26:20.826Z] defaultcredentials: writing to file C:\Users\Kasparas\AppData\Roaming\firebase\info_anthroposcity_com_application_default_credentials.json
+[debug] [2025-06-17T10:26:20.826Z] Setting GAC to C:\Users\Kasparas\AppData\Roaming\firebase\info_anthroposcity_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to C:\\Users\\Kasparas\\AppData\\Roaming\\firebase\\info_anthroposcity_com_application_default_credentials.json"}}
+[info] +  functions: Loaded functions definitions from source: markVerified. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: markVerified."}}
+[debug] [2025-06-17T10:26:57.059Z] File C:\Users\Kasparas\basic-ac-home - Copy\functions\lib\index.js.map changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\lib\\index.js.map changed, reloading triggers"}}
+[debug] [2025-06-17T10:26:57.060Z] File C:\Users\Kasparas\basic-ac-home - Copy\functions\lib\index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\lib\\index.js changed, reloading triggers"}}
+[debug] [2025-06-17T10:26:58.062Z] Validating nodejs source
+[debug] [2025-06-17T10:26:59.331Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.0"
+  },
+  "private": true
+}
+[debug] [2025-06-17T10:26:59.331Z] Building nodejs source
+[debug] [2025-06-17T10:26:59.332Z] Failed to find version of module node: reached end of search path C:\Users\Kasparas\basic-ac-home - Copy\functions\node_modules
+[info] +  functions: Using node@18 from host. 
+[debug] [2025-06-17T10:26:59.334Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-06-17T10:26:59.346Z] Found firebase-functions binary at 'C:\Users\Kasparas\basic-ac-home - Copy\functions\node_modules\.bin\firebase-functions'
+[info] Serving at port 8381
+
+[info] [markVerified] file start
+
+[info] [markVerified] imported functions
+
+[info] [markVerified] imported admin
+
+[info] [markVerified] admin initialised
+
+[info] [markVerified] got firestore
+
+[debug] [2025-06-17T10:27:00.287Z] Got response from /__/functions.yaml {"endpoints":{"markVerified":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"region":["europe-west1"],"callableTrigger":{},"entryPoint":"markVerified"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2025-06-17T10:27:00.316Z] defaultcredentials: writing to file C:\Users\Kasparas\AppData\Roaming\firebase\info_anthroposcity_com_application_default_credentials.json
+[debug] [2025-06-17T10:27:00.317Z] Setting GAC to C:\Users\Kasparas\AppData\Roaming\firebase\info_anthroposcity_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to C:\\Users\\Kasparas\\AppData\\Roaming\\firebase\\info_anthroposcity_com_application_default_credentials.json"}}
+[info] +  functions: Loaded functions definitions from source: markVerified. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: markVerified."}}
+[debug] [2025-06-17T10:43:34.868Z] >>> [apiv2][query] POST http://127.0.0.1:5001/functions/projects/anthroposcity-d37fb/trigger_multicast [none]
+[debug] [2025-06-17T10:43:34.872Z] >>> [apiv2][body] POST http://127.0.0.1:5001/functions/projects/anthroposcity-d37fb/trigger_multicast {"eventId":"35b76ffd-eb15-4e69-81bb-6ead88f78039","eventType":"providers/firebase.auth/eventTypes/user.create","resource":{"name":"projects/anthroposcity-d37fb","service":"firebaseauth.googleapis.com"},"params":{},"timestamp":"2025-06-17T10:43:34.848Z","data":{"uid":"AOHEXxdJHvluchm7CaqhKjrq00OT","email":"testass1@gmail.com","emailVerified":false,"metadata":{"creationTime":"2025-06-17T10:43:34.801Z","lastSignInTime":"2025-06-17T10:43:34.801Z"},"customClaims":{},"providerData":[{"providerId":"password","email":"testass1@gmail.com","federatedId":"testass1@gmail.com","rawId":"testass1@gmail.com"}]}}
+[debug] [2025-06-17T10:43:34.946Z] <<< [apiv2][status] POST http://127.0.0.1:5001/functions/projects/anthroposcity-d37fb/trigger_multicast 200
+[debug] [2025-06-17T10:43:34.946Z] <<< [apiv2][body] POST http://127.0.0.1:5001/functions/projects/anthroposcity-d37fb/trigger_multicast {"status":"multicast_acknowledged"}
+[debug] [2025-06-17T10:43:35.804Z] Jun 17, 2025 1:43:35 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:43:35 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected non-HTTP/2 connection.\r\n"}}
+[debug] [2025-06-17T10:43:36.248Z] Jun 17, 2025 1:43:36 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:43:36 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected non-HTTP/2 connection.\r\n"}}
+[debug] [2025-06-17T10:43:36.597Z] Jun 17, 2025 1:43:36 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:43:36 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected non-HTTP/2 connection.\r\n"}}
+[warn] !  canHandleCodeInApp is unsupported in Auth Emulator. All OOB operations will complete via web. {"metadata":{"emulator":{"name":"auth"},"message":"canHandleCodeInApp is unsupported in Auth Emulator. All OOB operations will complete via web."}}
+[info] i  To verify the email address testass1@gmail.com, follow this link: http://127.0.0.1:9099/emulator/action?mode=verifyEmail&lang=en&oobCode=Io5YD56Tu91PdHg8rFzdhyck_z9vggZ0buP4GWGjLRb_hFPbVW3R6Y&apiKey=fake-api-key&continueUrl=http%3A%2F%2Flocalhost%3A3000%2FverifyEmail%3Fmode%3DverifyEmail {"metadata":{"emulator":{"name":"auth"},"message":"To verify the email address testass1@gmail.com, follow this link: http://127.0.0.1:9099/emulator/action?mode=verifyEmail&lang=en&oobCode=Io5YD56Tu91PdHg8rFzdhyck_z9vggZ0buP4GWGjLRb_hFPbVW3R6Y&apiKey=fake-api-key&continueUrl=http%3A%2F%2Flocalhost%3A3000%2FverifyEmail%3Fmode%3DverifyEmail"}}
+[debug] [2025-06-17T10:43:37.060Z] Jun 17, 2025 1:43:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:43:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected non-HTTP/2 connection.\r\n"}}
+[debug] [2025-06-17T10:43:37.461Z] Jun 17, 2025 1:43:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:43:37 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected non-HTTP/2 connection.\r\n"}}
+[debug] [2025-06-17T10:43:52.739Z] [work-queue] {"queuedWork":["/anthroposcity-d37fb/europe-west1/markVerified-2025-06-17T10:43:52.737Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-06-17T10:43:52.740Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/anthroposcity-d37fb/europe-west1/markVerified-2025-06-17T10:43:52.737Z"],"workRunningCount":1}
+[debug] [2025-06-17T10:43:52.741Z] Accepted request OPTIONS /anthroposcity-d37fb/europe-west1/markVerified --> europe-west1-markVerified
+[debug] [2025-06-17T10:43:52.775Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-06-17T10:43:52.778Z] [functions] Got req.url=/anthroposcity-d37fb/europe-west1/markVerified, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/anthroposcity-d37fb/europe-west1/markVerified, mapping to path=/"}}
+[debug] [2025-06-17T10:43:52.781Z] [worker-pool] Cleaned up workers for europe-west1-markVerified: 1 --> 0 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Cleaned up workers for europe-west1-markVerified: 1 --> 0"}}
+[debug] [2025-06-17T10:43:52.825Z] [worker-pool] addWorker(europe-west1-markVerified) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(europe-west1-markVerified)"}}
+[debug] [2025-06-17T10:43:52.826Z] [worker-pool] Adding worker with key europe-west1-markVerified, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key europe-west1-markVerified, total=1"}}
+[debug] [2025-06-17T10:43:57.052Z] [runtime-status] [25752] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\node_modules\\firebase-admin\\lib\\index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\\\\node_modules\\\\firebase-admin\\\\lib\\\\index.js\"}"}}
+[debug] [2025-06-17T10:43:57.054Z] [runtime-status] [25752] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.3.2","resolution":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\node_modules\\firebase-functions\\lib\\v2\\index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.3.2\",\"resolution\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\\\\node_modules\\\\firebase-functions\\\\lib\\\\v2\\\\index.js\"}"}}
+[debug] [2025-06-17T10:43:57.055Z] [runtime-status] [25752] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}] {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Outgoing network have been stubbed. [{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"net\",\"status\":\"mocked\"}]"}}
+[debug] [2025-06-17T10:43:57.057Z] [runtime-status] [25752] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.3.2","resolution":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\node_modules\\firebase-functions\\lib\\v2\\index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.3.2\",\"resolution\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\\\\node_modules\\\\firebase-functions\\\\lib\\\\v2\\\\index.js\"}"}}
+[debug] [2025-06-17T10:43:58.333Z] [runtime-status] [25752] Checked functions.config() {"config":{}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Checked functions.config() {\"config\":{}}"}}
+[debug] [2025-06-17T10:43:58.334Z] [runtime-status] [25752] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"6.3.2","resolution":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\node_modules\\firebase-functions\\lib\\v2\\index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] firebase-functions has been stubbed. {\"functionsResolution\":{\"declared\":true,\"installed\":true,\"version\":\"6.3.2\",\"resolution\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\\\\node_modules\\\\firebase-functions\\\\lib\\\\v2\\\\index.js\"}}"}}
+[debug] [2025-06-17T10:43:58.335Z] [runtime-status] [25752] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.3.2","resolution":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\node_modules\\firebase-functions\\lib\\v2\\index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.3.2\",\"resolution\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\\\\node_modules\\\\firebase-functions\\\\lib\\\\v2\\\\index.js\"}"}}
+[debug] [2025-06-17T10:43:58.345Z] [runtime-status] [25752] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\node_modules\\firebase-admin\\lib\\index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\\\\node_modules\\\\firebase-admin\\\\lib\\\\index.js\"}"}}
+[debug] [2025-06-17T10:43:58.352Z] [runtime-status] [25752] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.3.2","resolution":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\node_modules\\firebase-functions\\lib\\v2\\index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.3.2\",\"resolution\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\\\\node_modules\\\\firebase-functions\\\\lib\\\\v2\\\\index.js\"}"}}
+[debug] [2025-06-17T10:43:58.354Z] [runtime-status] [25752] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions\\node_modules\\firebase-admin\\lib\\index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] firebase-admin has been stubbed. {\"adminResolution\":{\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\\\\node_modules\\\\firebase-admin\\\\lib\\\\index.js\"}}"}}
+[info] >  [markVerified] file start {"user":"[markVerified] file start","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] file start"}}
+[info] >  [markVerified] imported functions {"user":"[markVerified] imported functions","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] imported functions"}}
+[info] >  [markVerified] imported admin {"user":"[markVerified] imported admin","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] imported admin"}}
+[info] >  [markVerified] admin initialised {"user":"[markVerified] admin initialised","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] admin initialised"}}
+[debug] [2025-06-17T10:43:58.391Z] [runtime-status] [25752] initializeApp(DEFAULT) {"storageBucket":"anthroposcity-d37fb.firebasestorage.app","projectId":"anthroposcity-d37fb"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] initializeApp(DEFAULT) {\"storageBucket\":\"anthroposcity-d37fb.firebasestorage.app\",\"projectId\":\"anthroposcity-d37fb\"}"}}
+[info] >  [markVerified] got firestore {"user":"[markVerified] got firestore","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] got firestore"}}
+[debug] [2025-06-17T10:43:58.402Z] [runtime-status] [25752] Functions runtime initialized. {"cwd":"C:\\Users\\Kasparas\\basic-ac-home - Copy\\functions","node_version":"18.20.5"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Functions runtime initialized. {\"cwd\":\"C:\\\\Users\\\\Kasparas\\\\basic-ac-home - Copy\\\\functions\",\"node_version\":\"18.20.5\"}"}}
+[debug] [2025-06-17T10:43:58.404Z] [runtime-status] [25752] Listening to port: \\?\pipe\fire_emu_70eba35adfde76f8 {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] Listening to port: \\\\?\\pipe\\fire_emu_70eba35adfde76f8"}}
+[debug] [2025-06-17T10:43:58.507Z] [worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: IDLE"}}
+[debug] [2025-06-17T10:43:58.507Z] [worker-pool] submitRequest(triggerId=europe-west1-markVerified) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-markVerified)"}}
+[info] i  functions: Beginning execution of "europe-west1-markVerified" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Beginning execution of \"europe-west1-markVerified\""}}
+[debug] [2025-06-17T10:43:58.511Z] [worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: BUSY"}}
+[debug] [2025-06-17T10:43:58.518Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-markVerified" in 7.966ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Finished \"europe-west1-markVerified\" in 7.966ms"}}
+[debug] [2025-06-17T10:43:58.521Z] [worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: IDLE"}}
+[debug] [2025-06-17T10:43:58.521Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-06-17T10:43:58.522Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-06-17T10:43:58.522Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-06-17T10:43:58.523Z] [work-queue] {"queuedWork":["/anthroposcity-d37fb/europe-west1/markVerified-2025-06-17T10:43:58.523Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-06-17T10:43:58.523Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/anthroposcity-d37fb/europe-west1/markVerified-2025-06-17T10:43:58.523Z"],"workRunningCount":1}
+[debug] [2025-06-17T10:43:58.523Z] Accepted request POST /anthroposcity-d37fb/europe-west1/markVerified --> europe-west1-markVerified
+[debug] [2025-06-17T10:43:58.524Z] ID Token: eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJlbWFpbCI6InRlc3Rhc3MxQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYXV0aF90aW1lIjoxNzUwMTU3MDE0LCJ1c2VyX2lkIjoiQU9IRVh4ZEpIdmx1Y2htN0NhcWhLanJxMDBPVCIsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidGVzdGFzczFAZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifSwiaWF0IjoxNzUwMTU3MDE0LCJleHAiOjE3NTAxNjA2MTQsImF1ZCI6ImFudGhyb3Bvc2NpdHktZDM3ZmIiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vYW50aHJvcG9zY2l0eS1kMzdmYiIsInN1YiI6IkFPSEVYeGRKSHZsdWNobTdDYXFoS2pycTAwT1QifQ.
+[debug] [2025-06-17T10:43:58.536Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-06-17T10:43:58.537Z] [functions] Got req.url=/anthroposcity-d37fb/europe-west1/markVerified, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/anthroposcity-d37fb/europe-west1/markVerified, mapping to path=/"}}
+[debug] [2025-06-17T10:43:58.537Z] [worker-pool] submitRequest(triggerId=europe-west1-markVerified) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-markVerified)"}}
+[info] i  functions: Beginning execution of "europe-west1-markVerified" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Beginning execution of \"europe-west1-markVerified\""}}
+[debug] [2025-06-17T10:43:58.538Z] [worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: BUSY"}}
+[info] >  {"key":"x-callable-context-auth","value":"%7B%22uid%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22token%22%3A%7B%22email%22%3A%22testass1%40gmail.com%22%2C%22email_verified%22%3Afalse%2C%22auth_time%22%3A1750157014%2C%22user_id%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22firebase%22%3A%7B%22identities%22%3A%7B%22email%22%3A%5B%22testass1%40gmail.com%22%5D%7D%2C%22sign_in_provider%22%3A%22password%22%7D%2C%22iat%22%3A1750157014%2C%22exp%22%3A1750160614%2C%22aud%22%3A%22anthroposcity-d37fb%22%2C%22iss%22%3A%22https%3A%2F%2Fsecuretoken.google.com%2Fanthroposcity-d37fb%22%2C%22sub%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22uid%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%7D%7D","severity":"DEBUG","message":"Callable functions auth override"} {"user":{"key":"x-callable-context-auth","value":"%7B%22uid%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22token%22%3A%7B%22email%22%3A%22testass1%40gmail.com%22%2C%22email_verified%22%3Afalse%2C%22auth_time%22%3A1750157014%2C%22user_id%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22firebase%22%3A%7B%22identities%22%3A%7B%22email%22%3A%5B%22testass1%40gmail.com%22%5D%7D%2C%22sign_in_provider%22%3A%22password%22%7D%2C%22iat%22%3A1750157014%2C%22exp%22%3A1750160614%2C%22aud%22%3A%22anthroposcity-d37fb%22%2C%22iss%22%3A%22https%3A%2F%2Fsecuretoken.google.com%2Fanthroposcity-d37fb%22%2C%22sub%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22uid%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%7D%7D","severity":"DEBUG","message":"Callable functions auth override"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"key\":\"x-callable-context-auth\",\"value\":\"%7B%22uid%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22token%22%3A%7B%22email%22%3A%22testass1%40gmail.com%22%2C%22email_verified%22%3Afalse%2C%22auth_time%22%3A1750157014%2C%22user_id%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22firebase%22%3A%7B%22identities%22%3A%7B%22email%22%3A%5B%22testass1%40gmail.com%22%5D%7D%2C%22sign_in_provider%22%3A%22password%22%7D%2C%22iat%22%3A1750157014%2C%22exp%22%3A1750160614%2C%22aud%22%3A%22anthroposcity-d37fb%22%2C%22iss%22%3A%22https%3A%2F%2Fsecuretoken.google.com%2Fanthroposcity-d37fb%22%2C%22sub%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%2C%22uid%22%3A%22AOHEXxdJHvluchm7CaqhKjrq00OT%22%7D%7D\",\"severity\":\"DEBUG\",\"message\":\"Callable functions auth override\"}"}}
+[info] >  {"verifications":{"app":"VALID","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"VALID","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"VALID\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[debug] [2025-06-17T10:43:58.787Z] [runtime-status] [25752] No callable functions auth found {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[runtime-status] [25752] No callable functions auth found"}}
+[info] >  [markVerified] handler entered { uid: 'AOHEXxdJHvluchm7CaqhKjrq00OT' } {"user":"[markVerified] handler entered { uid: 'AOHEXxdJHvluchm7CaqhKjrq00OT' }","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] handler entered { uid: 'AOHEXxdJHvluchm7CaqhKjrq00OT' }"}}
+[info] >  [markVerified] fetching user {"user":"[markVerified] fetching user","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] fetching user"}}
+[info] >  [markVerified] writing firestore {"user":"[markVerified] writing firestore","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] writing firestore"}}
+[debug] [2025-06-17T10:44:05.062Z] Jun 17, 2025 1:44:05 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:44:05 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected HTTP/2 connection.\r\n"}}
+[info] >  [markVerified] setting custom claim {"user":"[markVerified] setting custom claim","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] setting custom claim"}}
+[info] >  [markVerified] success {"user":"[markVerified] success","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"\u001b[90m> \u001b[39m [markVerified] success"}}
+[debug] [2025-06-17T10:44:05.237Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-markVerified" in 6699.567ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Finished \"europe-west1-markVerified\" in 6699.567ms"}}
+[debug] [2025-06-17T10:44:05.238Z] [worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"[worker-europe-west1-markVerified-0c875b4e-30b6-4c51-a44e-03e0ebe49d78]: IDLE"}}
+[debug] [2025-06-17T10:44:05.239Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-06-17T10:44:05.239Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-markVerified"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-06-17T10:44:05.240Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-06-17T10:44:05.587Z] Jun 17, 2025 1:44:05 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:44:05 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected non-HTTP/2 connection.\r\n"}}
+[debug] [2025-06-17T10:44:05.918Z] Jun 17, 2025 1:44:05 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:44:05 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected non-HTTP/2 connection.\r\n"}}
+[debug] [2025-06-17T10:44:05.931Z] Jun 17, 2025 1:44:05 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:44:05 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\r\nINFO: Detected non-HTTP/2 connection.\r\n"}}
+[debug] [2025-06-17T10:44:05.938Z] Jun 17, 2025 1:44:05 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose
+INFO: channel closed
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:44:05 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose\r\nINFO: channel closed\r\n"}}
+[debug] [2025-06-17T10:44:05.942Z] Jun 17, 2025 1:44:05 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose
+INFO: channel closed
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Jun 17, 2025 1:44:05 PM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreListenHandler onClose\r\nINFO: channel closed\r\n"}}
