@@ -1,59 +1,86 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { applyActionCode, getAuth } from 'firebase/auth';
-import { firebaseAuth } from '@/lib/firebase-client';
+import { useRouter } from 'next/router';
+import { applyActionCode, onAuthStateChanged } from 'firebase/auth';
+import { firebaseAuth, app } from '@/lib/firebase-client';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-/**
- * Email verification landing page.
- * Users are redirected here by the Firebase email-verification link (action code URL).
- * The page applies the verification code, shows feedback, and sends users back home.
- */
 export default function VerifyEmailPage() {
   const router = useRouter();
-
   const [status, setStatus] = useState<'pending' | 'success' | 'error'>('pending');
-  const [message, setMessage] = useState<string>('Verifying your email…');
+  const [message, setMessage] = useState('Verifying your email…');
+
+  /** helper — only runs when a user object exists */
+  const callMarkVerified = async () => {
+    const functions = getFunctions(app, 'europe-west1');  // same instance already bound
+    await httpsCallable(functions, 'markVerified')();
+    await firebaseAuth.currentUser!.getIdToken(true); // refresh custom claims
+  };
 
   useEffect(() => {
     if (!router.isReady) return;
 
-    const { oobCode, mode } = router.query;
+    const { oobCode } = router.query;
 
-    // Sanity checks
-    if (typeof oobCode !== 'string' || mode !== 'verifyEmail') {
-      setStatus('error');
-      setMessage('Invalid or missing verification link.');
-      return;
-    }
-
-    (async () => {
+    console.log('[VerifyEmail] Effect triggered, router ready:', router.isReady, 'query:', router.query);
+    const unsub = onAuthStateChanged(firebaseAuth, async (user) => {
+      console.log('[VerifyEmail] onAuthStateChanged fired. user:', user);
+      unsub(); // run once
       try {
-        await applyActionCode(firebaseAuth, oobCode);
-        // call cloud function
-        const functions = getFunctions(undefined, 'europe-west1');
-        const markVerified = httpsCallable(functions, 'markVerified');
-        await markVerified();
+        console.log('[VerifyEmail] Handler start');
 
-        // Force-refresh ID-token so next page load has the isVerified claim
-        await firebaseAuth.currentUser?.getIdToken(true);
+        // Production path: apply the code if present
+        if (typeof oobCode === 'string' && oobCode) {
+          console.log('[VerifyEmail] oobCode present, applying action code:', oobCode);
+          await applyActionCode(firebaseAuth, oobCode).catch((err) => {
+            if ((err as { code?: string }).code !== 'auth/invalid-action-code') throw err;
+            console.log('[VerifyEmail] Action code already used, continuing.');
+          });
+        } else {
+          console.log('[VerifyEmail] No oobCode present, emulator/auto path.');
+        }
 
+        // Ensure we have a signed-in user and the flag is set
+        if (!user) {
+          console.warn('[VerifyEmail] No current user after auth hydration.');
+          throw new Error('no-current-user');
+        }
+
+        console.log('[VerifyEmail] Reloading user to check emailVerified.');
+        await user.reload();
+        if (!user.emailVerified) {
+          console.warn('[VerifyEmail] User not email verified after reload.');
+          throw new Error('email-not-verified');
+        }
+
+        // Call Cloud Function for both prod & emulator flows
+        console.log('[VerifyEmail] Calling markVerified cloud function.');
+        await callMarkVerified();
+
+        console.log('[VerifyEmail] Verification successful, updating UI and scheduling redirect.');
         setStatus('success');
-        setMessage('Email verified! Redirecting you…');
-        // Give users a moment to read the message, then send them home.
+        setMessage('Email verified! Redirecting…');
         setTimeout(() => {
+          console.log('[VerifyEmail] Redirecting to home.');
           router.replace('/');
         }, 2500);
-      } catch (err) {
-        console.error('[VerifyEmail] applyActionCode error:', err);
+      } catch (err: unknown) {
+        console.error('[VerifyEmail] verification failed', err);
+        const e = err as { code?: string };
         setStatus('error');
-        setMessage('This verification link is invalid or has expired.');
+        setMessage(
+          e?.code === 'auth/invalid-action-code'
+            ? 'This link was already used, but your e-mail is verified.'
+            : 'This verification link is invalid or has expired.'
+        );
       }
-    })();
-  }, [router]);
+    });
+
+    return () => unsub();
+  }, [router.isReady, router.query]);
+
 
   return (
     <>

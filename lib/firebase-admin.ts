@@ -24,6 +24,12 @@ if (!admin.apps.length) {
   });
 }
 
+// ─── Emulator Support (server-side) ────────────────────────────────
+if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true' && !process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+  process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+  console.info('[Firebase Admin] Using Auth emulator at localhost:9099');
+}
+
 export { admin }
 
 export const verifyIdToken = (token: string) =>

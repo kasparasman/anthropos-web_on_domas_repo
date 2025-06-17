@@ -1,5 +1,9 @@
 {
   "projects": {
-    "default": "anthroposcity-d37fb"
-  }
+    "default": "anthroposcity-d37fb",
+    "staging": "anthroposcity-d37fb",
+    "prod": "anthroposcity-d37fb"
+  },
+  "targets": {},
+  "etags": {}
 }

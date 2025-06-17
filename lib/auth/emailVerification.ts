@@ -32,9 +32,11 @@ export async function kickOffEmailVerification(user: User) {
 
   // 2️⃣ Send link
   await sendEmailVerification(user, {
-    url: `${window.location.origin}/verifyEmail`, // your custom landing page
-  });
+    url: `${window.location.origin}/verifyEmail?mode=verifyEmail`,  // ← add mode
+    handleCodeInApp: true   // <- false while emulating
 
+  });
+  
   // Note: we no longer sign out here to keep the session alive.
 }
 
