@@ -79,3 +79,13 @@ Learn what is local emulator:
 | **Storage emulator**         | Cloud Storage           | 9199             | Upload files, test security rules.                                      |
 | **Hosting emulator**         | Firebase Hosting        | 5000             | Serve static assets or proxy to Next.js dev server.                     |
 | **Pub/Sub, Analytics, etc.** | Optional add-ons        | various          | Simulate topic pushes, Analytics events, etc.                           |
+
+
+get the qstach pay as you go it's the best way to go.
+
+
+
+
+
+
+

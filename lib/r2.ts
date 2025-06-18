@@ -1,5 +1,6 @@
 /** @server-only */
-import { S3Client } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import crypto from 'crypto'
 
 // ---------------------------------------------------------------------------
 // R2 singleton & helpers
@@ -66,4 +67,65 @@ export function debugR2(message: string, payload?: unknown): void {
     // eslint-disable-next-line no-console
     console.log(`[R2] ${message}`, payload ?? '')
   }
+}
+
+// ---------------------------------------------------------------------------
+// Upload helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Low-level helper to upload an arbitrary Buffer to the given bucket/key.
+ * Returns the public URL when the destination bucket is the public one; for any
+ * other bucket it returns the S3 URI so callers can decide what to do with it.
+ */
+export async function uploadBufferToR2(buffer: Buffer, {
+  bucket,
+  key,
+  contentType,
+}: {
+  bucket: string
+  key: string
+  contentType: string
+}): Promise<string> {
+  await r2.send(new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+  }))
+
+  // If the caller used the public bucket we can build a CDN URL immediately.
+  if (bucket === R2_BUCKET) {
+    return r2ObjectUrl(key)
+  }
+  // Otherwise fall back to the s3:// URI so we at least return something.
+  return `s3://${bucket}/${key}`
+}
+
+/**
+ * Convenience wrapper specifically for final user avatars.  Stores the PNG in
+ * the public bucket under avatars/{userId}/avatar.png and returns its CDN URL.
+ */
+export async function uploadPublicAvatar(buffer: Buffer, userId: string): Promise<string> {
+  assertEnv('R2_BUCKET', R2_BUCKET)
+  const key = `avatars/${userId}/avatar.png`
+  return uploadBufferToR2(buffer, {
+    bucket: R2_BUCKET,
+    key,
+    contentType: 'image/png',
+  })
+}
+
+/**
+ * Convenience wrapper for temporary objects; keeps them inside the private
+ * bucket under tmp/{randomUuid}.{ext}.  Returns the s3:// path for reference.
+ */
+export async function uploadTempObject(buffer: Buffer, ext: string): Promise<string> {
+  assertEnv('R2_BUCKET_PRIVATE', R2_BUCKET_PRIVATE)
+  const key = `tmp/${crypto.randomUUID()}.${ext}`
+  return uploadBufferToR2(buffer, {
+    bucket: R2_BUCKET_PRIVATE,
+    key,
+    contentType: `image/${ext}`,
+  })
 }

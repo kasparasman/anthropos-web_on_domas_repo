@@ -1,21 +1,11 @@
 import { OpenAI } from 'openai';
 import { getPromptForStyle } from './promptService';
-import { blobToBase64 } from '@/lib/base64';
-import { uploadFromUrlToTmp } from '@/lib/uploadFromUrlToTmp';
 import { maleStyles, femaleStyles } from '@/lib/avatarStyles';
+import { uploadPublicAvatar } from '@/lib/r2'
+import crypto from 'crypto'
 
 const ai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const LIMITLESS_CREST_URL = "https://pub-0539ca942f4a457a83573a5585904cba.r2.dev/styleref_limitless.png";
-
-async function imageToDataUrl(url: string): Promise<string> {
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch image from URL: ${url}`);
-    }
-    const blob = await response.blob();
-    // Return the full data URL, which includes the correct MIME type.
-    return await blobToBase64(blob) as string;
-}
 
 /**
  * Generates an avatar using the multi-modal 'responses' API.
@@ -23,9 +13,10 @@ async function imageToDataUrl(url: string): Promise<string> {
  *
  * @param faceUrl - The public URL of the user's face image.
  * @param styleId - The ID of the chosen style (e.g., "m1", "f4").
+ * @param userId - The ID of the user (optional).
  * @returns A promise that resolves to the URL of the generated and uploaded avatar.
  */
-export async function generateAvatar(faceUrl: string, styleId: string): Promise<string> {
+export async function generateAvatar(faceUrl: string, styleId: string, userId?: string): Promise<string> {
     const MOCK_AVATAR_GEN = process.env.MOCK_AVATAR_GEN === 'true';
     if (MOCK_AVATAR_GEN) {
         console.log('--- MOCKING AVATAR GENERATION ---');
@@ -99,11 +90,12 @@ export async function generateAvatar(faceUrl: string, styleId: string): Promise<
         // Since we expect only one image, take the first one.
         const imageB64 = imagesB64[0];
 
-        // Upload the single image and return its URL
-        const avatarUrl = await uploadFromUrlToTmp(`data:image/png;base64,${imageB64}`, 'png');
-        console.log(`✅ Avatar uploaded to: ${avatarUrl}`);
+        // Convert to Buffer and upload directly to the public R2 bucket.
+        const buffer = Buffer.from(imageB64, 'base64');
+        const finalUrl = await uploadPublicAvatar(buffer, userId ?? crypto.randomUUID());
+        console.log(`✅ Avatar uploaded to: ${finalUrl}`);
 
-        return avatarUrl;
+        return finalUrl;
 
     } catch (error) {
         console.error("❌ Error in generateAvatar service:", error);

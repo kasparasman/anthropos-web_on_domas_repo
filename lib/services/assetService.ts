@@ -31,7 +31,7 @@ export async function generateAndActivateUser(userId: string): Promise<void> {
 
         // 1. Generate Avatar
         console.log('[assetService BREADCRUMB] 4. About to generate avatar.');
-        const avatarUrl = await generateAvatar(profile.tmpFaceUrl, profile.styleId);
+        const avatarUrl = await generateAvatar(profile.tmpFaceUrl, profile.styleId, userId);
         console.log('[assetService BREADCRUMB] 5. Avatar generated successfully.');
 
         // 2. Index Face in Rekognition
