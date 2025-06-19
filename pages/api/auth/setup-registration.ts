@@ -124,7 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Require that the e-mail has been verified (custom claim set by cloud function)
-        if (!decodedToken.isVerified) {
+        if (!decodedToken.email_verified) {
             return res.status(403).json({
                 message: 'EMAIL_NOT_VERIFIED',
             });
