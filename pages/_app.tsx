@@ -155,11 +155,11 @@ export default function MyApp(props: AppProps) {
             <Head>
               <meta charSet="utf-8" />
               <meta name="viewport" content="width=device-width, initial-scale=1" />
-              <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io (2)/apple-touch-icon.png" />
-              <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io (2)/favicon-32x32.png" />
-              <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io (2)/favicon-16x16.png" />
-              <link rel="manifest" href="/favicon_io (2)/site.webmanifest" />
-              <link rel="icon" href="/favicon_io (2)/favicon.ico" />
+              <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io_2/apple-touch-icon.png" />
+              <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io_2/favicon-32x32.png" />
+              <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io_2/favicon-16x16.png" />
+              <link rel="manifest" href="/favicon_io_2/site.webmanifest" />
+              <link rel="icon" href="/favicon_io_2/favicon.ico" />
               <title>Anthropos City</title>
               <meta name="description" content="Anthropos City: A vibrant and innovative hub, designed for progress and community." />
             </Head>
