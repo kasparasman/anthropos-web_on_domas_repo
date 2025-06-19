@@ -20,16 +20,16 @@ import {
  * 3. Sign the user out so their ID-token cannot be mis-used
  */
 export async function kickOffEmailVerification(user: User) {
-  const db   = getFirestore();
+  //const db   = getFirestore();
   const auth = getAuth();
 
-  // 1️⃣ Pre-create status doc so the first tab can listen
+ /* // 1️⃣ Pre-create status doc so the first tab can listen
   await setDoc(
     doc(db, 'userVerificationStatus', user.uid),
     { emailVerified: false, createdAt: serverTimestamp() },
     { merge: true },
   );
-
+*/
   // 2️⃣ Send link
   await sendEmailVerification(user, {
     url: `${window.location.origin}/verifyEmail?mode=verifyEmail`,  // ← add mode
@@ -64,3 +64,25 @@ export function waitForVerification(uid: string, timeoutMs = 30 * 60 * 1000): Pr
     });
   });
 } 
+
+
+/** Poll Auth until emailVerified=true or timeout. */
+export async function pollForVerification(
+  user: User,
+  intervalMs = 3_000,
+  timeoutMs  = 30 * 60 * 1000
+): Promise<void> {
+
+  const deadline = Date.now() + timeoutMs;
+
+  for (;;) {
+    // Force a fresh fetch of the user's record
+    await user.reload();
+    if (user.emailVerified) return;
+
+    if (Date.now() > deadline)
+      throw new Error('EMAIL_VERIFICATION_TIMED_OUT');
+
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+}

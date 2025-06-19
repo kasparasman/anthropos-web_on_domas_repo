@@ -7,7 +7,7 @@ import { useToast } from "@/lib/hooks/use-toast";
 import { signIn } from "next-auth/react";
 import { useRegistrationStatus } from '@/lib/hooks/useRegistrationStatus';
 import dynamic from 'next/dynamic';
-import { kickOffEmailVerification, waitForVerification } from '@/lib/auth/emailVerification';
+import { kickOffEmailVerification, pollForVerification } from '@/lib/auth/emailVerification';
 import { getAuth } from 'firebase/auth';
 import { useSession } from 'next-auth/react';
 import type { RegistrationStatus } from '@prisma/client';
@@ -543,7 +543,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       await kickOffEmailVerification(cred.user);
 
       // 2.3. Wait (listener on Firestore) until user clicks the link
-      await waitForVerification(cred.user.uid);
+      await pollForVerification(cred.user);
 
       // Hide the overlay once verified
       props.setShowEmailOverlay(false);
