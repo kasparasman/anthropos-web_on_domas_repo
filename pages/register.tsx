@@ -569,16 +569,20 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       // 2.1. Create Firebase account (still signed-in locally)
       const cred = await registerClient(email, password);
 
-      // 2.2. Kick off e-mail verification flow (no sign-out now)
-      setProgressMessage('Please verify the e-mail we just sent you…');
-      props.setShowEmailOverlay(true);
-      await kickOffEmailVerification(cred.user);
+      if (!cred.user.emailVerified) {
+        // 2.2. Kick off e-mail verification flow (only if not already verified)
+        setProgressMessage('Please verify the e-mail we just sent you…');
+        props.setShowEmailOverlay(true);
+        await kickOffEmailVerification(cred.user);
 
-      // 2.3. Wait (listener on Firestore) until user clicks the link
-      await pollForVerification(cred.user);
+        // 2.3. Wait (listener on Firestore) until user clicks the link
+        await pollForVerification(cred.user);
 
-      // Hide the overlay once verified
-      props.setShowEmailOverlay(false);
+        // Hide the overlay once verified
+        props.setShowEmailOverlay(false);
+      } else {
+        console.log('[Register] User already verified, skipping e-mail verification step.');
+      }
 
       // 2.4. Force-refresh the current user to pull in the new custom claim
       await cred.user.reload();
