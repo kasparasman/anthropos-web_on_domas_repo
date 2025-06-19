@@ -167,6 +167,28 @@ const RegistrationFlow = ({
   ];
   const [currentDisplayAvatarIndex, setCurrentDisplayAvatarIndex] = useState(0);
 
+  // ───────── Resend-verification state ─────────
+  const [resendAttemptsLeft, setResendAttemptsLeft] = useState(3);
+  const [isCooldown, setIsCooldown] = useState(false);
+
+  const canResend = resendAttemptsLeft > 0 && !isCooldown && !isLoading;
+
+  const handleResendVerificationEmail = async () => {
+    if (!canResend) return;
+    const currentUser = getAuth().currentUser;
+    if (!currentUser) return;
+    try {
+      await kickOffEmailVerification(currentUser);
+      toast({ title: 'Email Sent', description: 'We have sent another verification email.', duration: 4000 });
+      setResendAttemptsLeft((prev) => prev - 1);
+      setIsCooldown(true);
+      setTimeout(() => setIsCooldown(false), 5000);
+    } catch (err) {
+      console.error('[EmailOverlay] Resend email failed', err);
+      toast({ title: 'Error', description: 'Could not resend email. Please try again later.', duration: 5000 });
+    }
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentDisplayAvatarIndex(
@@ -195,6 +217,16 @@ const RegistrationFlow = ({
       <div className="space-y-4 max-w-xs">
         <h2 className="text-2xl font-semibold text-main">Check your e-mail</h2>
         <p className="text-sm text-white">We&apos;ve sent a verification link to {email}.<br/>Please confirm it to continue.</p>
+        {resendAttemptsLeft > 0 && (
+          <MainButton
+            variant="outline"
+            onClick={handleResendVerificationEmail}
+            disabled={!canResend}
+            className="w-full"
+          >
+            {canResend ? `Resend E-mail (${resendAttemptsLeft} left)` : 'Please wait…'}
+          </MainButton>
+        )}
       </div>
     </div>
   );
