@@ -19,7 +19,8 @@ async function getCandidates({ avatarUrl, gender, archetype, exclude = [] }: Nic
         2.  Their city archetype is "${archetype}". The nickname must reflect this archetype's theme (e.g., "Creator", "Sage", "Innovator").
         3.  Analyze the person's face, expression, and the overall theme of the image.
         4.  Names should sound dignified, aspirational, and fit for a "citizen of the future."
-        5.  Avoid common or generic names. Focus on invented or semi-invented names inspired by ancient languages or high-concept terms.
+        5.  The main goal of the nickname is to allow the person to lead a new life, into the world of the future where you can make your own identity with a deep meaning and a purpose.
+        5.  Avoid common or generic names. Focus on invented or semi-invented names inspired by ancient languages or high-concept terms, preferably something futuristic, wise, maybe a mix of ancient latin/greek. Do not make them sound ancient, make them unique and with a meaning as well.
         ${exclude.length > 0 ? `6. Do not use any of these nicknames: ${exclude.join(', ')}.` : ''}
 
         Respond with a JSON array of 10 nickname strings only.
