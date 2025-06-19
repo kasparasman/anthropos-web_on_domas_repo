@@ -17,7 +17,7 @@ const ALLOWED_STATUSES = [
 
 export async function authorize(
   credentials: Creds | undefined,
-): Promise<{ id: string; name: string; email: string; image?: string } | null> {
+): Promise<{ id: string; name: string; email: string; image?: string; registrationStatus: string | null } | null> {
   if (!credentials?.idToken) {
     console.log('[Auth Credentials] No idToken provided.')
     return null
@@ -40,9 +40,18 @@ export async function authorize(
         nickname: true,
         avatarUrl: true,
         banned: true,
-        status: true, // Crucial for checking registration/payment completion
+        status: true,
+        registrationStatus: true,
       },
-    }))
+    })) as {
+      id: string;
+      email: string;
+      nickname: string | null;
+      avatarUrl: string | null;
+      banned: boolean;
+      status: string;
+      registrationStatus: string;
+    } | null;
 
     if (!profile) {
       console.log('[Auth Credentials] No profile found for UID:', uid)
@@ -55,16 +64,7 @@ export async function authorize(
       throw new Error('ACCOUNT_BANNED')
     }
 
-    /* 4 ◀ Status Check: Ensure user has completed payment */
-    if (profile.status === 'PENDING_PAYMENT') {
-      console.log('[Auth Credentials] User login denied - payment pending:', email, profile.status)
-      throw new Error('PAYMENT_PENDING')
-    }
-    
-    if (!ALLOWED_STATUSES.includes(profile.status)) {
-      console.log('[Auth Credentials] User login denied - invalid status for login:', email, profile.status)
-      throw new Error('INVALID_USER_STATUS_FOR_LOGIN')
-    }
+    // We no longer block login based on registration status; frontend/middleware will redirect.
 
     console.log('[Auth Credentials] Profile retrieved and authorized for login:', profile.id, 'Status:', profile.status)
 
@@ -74,6 +74,7 @@ export async function authorize(
       name: profile.nickname ?? 'User', // Fallback for safety, though nickname should exist
       email: profile.email,
       image: profile.avatarUrl ?? undefined,
+      registrationStatus: profile.registrationStatus ?? null,
     }
 
   } catch (err: unknown) {
@@ -83,8 +84,6 @@ export async function authorize(
         const knownErrors = [
           'PROFILE_NOT_FOUND',
           'ACCOUNT_BANNED',
-          'PAYMENT_PENDING',
-          'INVALID_USER_STATUS_FOR_LOGIN'
         ]
 
         if (knownErrors.includes(err.message)) {

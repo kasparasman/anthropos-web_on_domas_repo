@@ -58,7 +58,7 @@ if (typeof window !== 'undefined' && !window.__APP_CHECK_INIT__) {
   if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
-    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true
     initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider('noop'),
       isTokenAutoRefreshEnabled: true,

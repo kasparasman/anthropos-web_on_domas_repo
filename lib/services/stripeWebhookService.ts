@@ -6,6 +6,8 @@ import { createStripeClient } from '@/lib/stripe/factory';
 import { Profile } from '@prisma/client';
 import { Client as QStash } from "@upstash/qstash";
 import { generateAndActivateUser } from '@/lib/services/assetService';
+import { advanceRegState } from '@/lib/prisma/stateMachine';
+import type { RegistrationStatus } from '@prisma/client';
 
 const stripe = createStripeClient();
 const qstash = new QStash({
@@ -54,6 +56,22 @@ export async function handleSubscriptionChange(subscription: Stripe.Subscription
         }
 
         console.log(`[Webhook] 🔄 Fallback activation via subscription.updated(active) for user ${pendingProfile.id}`);
+
+        // Guard: ensure prerequisite profile fields exist before asset generation
+        if (!pendingProfile.tmpFaceUrl || !pendingProfile.styleId || !pendingProfile.gender) {
+            console.warn(`[Webhook] Skipping asset generation for ${pendingProfile.id} – missing tmpFaceUrl/styleId/gender.`);
+            // Still update status to SUBSCRIBED so polling continues; asset generation will be attempted later.
+            const currentPeriodEnd = getPeriodEnd(subscription);
+            await withPrismaRetry(() => prisma.profile.update({
+                where: { id: pendingProfile.id },
+                data: {
+                    status: 'SUBSCRIBED',
+                    stripeSubscriptionId: subscription.id,
+                    stripeCurrentPeriodEnd: currentPeriodEnd,
+                },
+            }));
+            return; // do not call startAssetGeneration now
+        }
 
         const currentPeriodEnd = getPeriodEnd(subscription);
 
@@ -163,6 +181,7 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
 
         let subscriptionId: string | null = null;
         let currentPeriodEnd: Date | null = null;
+        let resolvedInvoiceId: string | null = null;
 
         /* 1a. Preferred: use invoice.subscription via expand */
         try {
@@ -179,6 +198,7 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
                 if (invSub) {
                     subscriptionId = typeof invSub === 'string' ? invSub : invSub.id;
                 }
+                resolvedInvoiceId = invoiceObj.id;
             }
         } catch (expErr) {
             console.error('[Webhook] Expand retrieve of PaymentIntent failed', expErr);
@@ -199,6 +219,7 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
                 if (invRef) {
                     const invoiceId = typeof invRef === 'string' ? invRef : invRef.id;
                     console.log('[Webhook-DBG] invoiceId resolved →', invoiceId);
+                    resolvedInvoiceId = invoiceId;
                     const invoice = await stripe.invoices.retrieve(invoiceId);
                     console.log('[Webhook-DBG] Full Invoice:', JSON.stringify(invoice, null, 2));
 
@@ -230,7 +251,10 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
             return; // don't touch the DB yet
         }
 
-        /* 2️⃣  store it together with SUBSCRIBED status */
+        /* 2️⃣  advance saga to PAYMENT_SUCCEEDED and store subscription meta */
+        await advanceRegState(profile.id, 'PAYMENT_SUCCEEDED' as RegistrationStatus, { subscriptionId, piId: paymentIntent.id, invoiceId: resolvedInvoiceId });
+
+        /* 2️⃣b store legacy fields (to be removed later) */
         await withPrismaRetry(() =>
           prisma.profile.update({
             where: { id: profile.id },
@@ -238,6 +262,8 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
               status: 'SUBSCRIBED',
               stripeSubscriptionId: subscriptionId,
               stripeCurrentPeriodEnd: currentPeriodEnd,      // ← now set
+              stripePaymentIntentId: paymentIntent.id,
+              ...(resolvedInvoiceId ? { stripeInvoiceId: resolvedInvoiceId } : {}),
             },
           })
         );
@@ -318,6 +344,9 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Pr
         return;
     }
 
+    // Advance saga state
+    await advanceRegState(profile.id, 'PAYMENT_SUCCEEDED' as RegistrationStatus, { subscriptionId, invoiceId: invoice.id });
+
     // Retrieve subscription to get current_period_end
     let currentPeriodEnd: Date | null = null;
     try {
@@ -334,6 +363,8 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Pr
             status: 'SUBSCRIBED',
             stripeSubscriptionId: subscriptionId,
             stripeCurrentPeriodEnd: currentPeriodEnd,
+            stripeInvoiceId: invoice.id,
+            ...(invoice.payment_intent && typeof invoice.payment_intent === 'string' ? { stripePaymentIntentId: invoice.payment_intent } : {}),
         },
     }));
 
@@ -347,16 +378,9 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Pr
 // -----------------------------------------------------------------------------
 async function startAssetGeneration(profileId: string): Promise<void> {
     try {
-        // Attempt atomic status swap SUBSCRIBED -> GENERATING_ASSETS.
-        await prisma.profile.update({
-            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-            where: { id: profileId, status: 'SUBSCRIBED' } as any,
-            data: { status: 'GENERATING_ASSETS' },
-        });
+        await advanceRegState(profileId, 'AVATAR_JOB_ENQUEUED' as RegistrationStatus);
     } catch (err) {
-        // If the profile is NOT FOUND it means status was already changed by
-        // another concurrent handler – generation already in progress.
-        if ((err as any).code === 'P2025') {
+        if ((err as any).code === 'P2025' || (err as Error).message?.includes('noop')) {
             console.log(`[Webhook] Asset generation already started for ${profileId}. Skipping duplicate.`);
             return;
         }

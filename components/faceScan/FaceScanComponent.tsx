@@ -78,6 +78,16 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
   // --- Video dimensions state ---
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
 
+  // --- Aspect ratio derived from videoDimensions ---
+  const aspectRatio = videoDimensions ? videoDimensions.width / videoDimensions.height : 1;
+
+  // --- Loading phase: 'model' until model loads, then 'camera' until videoDimensions ready ---
+  const loadingPhase: 'model' | 'camera' | null = !isModelLoaded
+    ? 'model'
+    : videoDimensions
+    ? null
+    : 'camera';
+
   useEffect(() => {
     if (capturedImage) {
       const url = URL.createObjectURL(capturedImage);
@@ -402,7 +412,11 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
 
   // --- Render Logic ---
   return (
-    <div ref={containerRef} className="w-full h-full relative bg-black rounded-2xl overflow-hidden">
+    <div
+      ref={containerRef}
+      className="w-full h-full relative bg-black rounded-2xl overflow-hidden flex items-center justify-center"
+      style={{ aspectRatio: aspectRatio }}
+    >
       {imageUrl && capturedImage ? (
         // --- CAPTURED VIEW ---
         <>
@@ -418,29 +432,38 @@ const FaceScanComponent: React.FC<FaceScanComponentProps> = ({
         // --- SCANNING VIEW ---
         <>
           {error && <div className="absolute inset-0 flex items-center justify-center bg-black p-4 text-center text-red-400 z-30 rounded-2xl">{error}</div>}
-          
-          {!error && !isModelLoaded && (
-            <div className="flex flex-col items-center justify-center text-white h-full">
+
+          {/* Model loading spinner */}
+          {!error && loadingPhase === 'model' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 bg-black/80">
               <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
               <p className="mt-4">Loading face model...</p>
             </div>
           )}
-          
+
+          {/* Always render Webcam and canvas */}
           <Webcam
             ref={webcamRef}
             audio={false}
             mirrored={true}
             onUserMedia={handleUserMedia}
             onUserMediaError={handleWebcamError}
-            className={`w-full h-full object-cover rounded-2xl transition-opacity duration-500 ${isModelLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-full object-cover rounded-2xl transition-opacity duration-500 ${videoDimensions ? 'opacity-100' : 'opacity-0'}`}
             videoConstraints={{
               width: { ideal: 1280 },
               height: { ideal: 720 },
               facingMode: "user"
             }}
           />
-          
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full rounded-2xl pointer-events-none transform -scale-x-100" />
+
+          {/* Camera loading spinner */}
+          {loadingPhase === 'camera' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/60">
+              <div className="w-10 h-10 border-4 border-main border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-3 text-main">Loading camera…</p>
+            </div>
+          )}
 
           {isModelLoaded && !error && (
             <>

@@ -11,7 +11,8 @@ type AppToken = JWT & {
   picture?: string
   banned?: boolean
   citizenId?: number | null
-  billingStatus?: string | null     // Stripe/Prisma status (ACTIVE, CANCEL_SCHEDULED, etc.)
+  billingStatus?: string | null     // legacy column
+  registrationStatus?: string | null
   subscriptionExpires?: string | null // ISO string of stripeCurrentPeriodEnd
 }
 export const authOptions: NextAuthOptions = {
@@ -51,13 +52,16 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         t.id      = (user as User).id
         t.picture = (user as User).image ?? undefined
+        if ((user as any).registrationStatus !== undefined) {
+          t.registrationStatus = (user as any).registrationStatus;
+        }
       }
 
       /* 2️⃣  Look up profile by token.id (present after first login) */
       if (t.id) {
         const profile = await prisma.profile.findUnique({
           where : { id: t.id },
-          select: { banned: true, nickname: true, avatarUrl: true, citizenId: true, status: true, stripeCurrentPeriodEnd: true },
+          select: { banned: true, nickname: true, avatarUrl: true, citizenId: true, status: true, stripeCurrentPeriodEnd: true, registrationStatus: true },
         })
 
         if (profile) {
@@ -67,6 +71,7 @@ export const authOptions: NextAuthOptions = {
           t.citizenId           = profile.citizenId ?? null
           t.billingStatus       = profile.status
           t.subscriptionExpires = profile.stripeCurrentPeriodEnd?.toISOString() ?? null
+          t.registrationStatus  = profile.registrationStatus ?? null
         }
       }
       return t
@@ -90,9 +95,11 @@ export const authOptions: NextAuthOptions = {
           image   : t.picture,
           citizenId: t.citizenId ?? null,
           billingStatus      : t.billingStatus ?? null,
+          registrationStatus : t.registrationStatus ?? null,
           subscriptionExpires: t.subscriptionExpires ?? null,
         } as typeof session.user & {
           billingStatus: string | null
+          registrationStatus: string | null
           subscriptionExpires: string | null
         }
       }

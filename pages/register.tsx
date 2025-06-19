@@ -9,6 +9,8 @@ import { useRegistrationStatus } from '@/lib/hooks/useRegistrationStatus';
 import dynamic from 'next/dynamic';
 import { kickOffEmailVerification, waitForVerification } from '@/lib/auth/emailVerification';
 import { getAuth } from 'firebase/auth';
+import { useSession } from 'next-auth/react';
+import type { RegistrationStatus } from '@prisma/client';
 
 // --- UI Components ---
 import Input from '@/components/UI/input';
@@ -189,17 +191,16 @@ const RegistrationFlow = ({
 
   /* ───────── Overlay when waiting for e-mail verification ───────── */
   const EmailOverlay = () => (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 text-center p-6">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 text-center p-6">
       <div className="space-y-4 max-w-xs">
         <h2 className="text-2xl font-semibold text-main">Check your e-mail</h2>
-        <p className="text-sm text-white">We've sent a verification link to {email}.<br/>Please confirm it to continue.</p>
+        <p className="text-sm text-white">We&apos;ve sent a verification link to {email}.<br/>Please confirm it to continue.</p>
       </div>
     </div>
   );
 
   return (
     <main className="relative flex flex-col items-center gap-16 bg-[linear-gradient(to_right,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.1)_100%)] text-white">
-      {showEmailOverlay && <EmailOverlay />}
       <Link href="/" className="fixed top-4 left-4 w-auto flex items-center text-white gap-2  px-2 py-1 bg-foreground mr-auto border border-gray rounded-md hover:border-dim_smoke transition-all duration-300">
         <Image src="/arrow-white.png" alt="Back" height={18} width={8} className="opacity-70 -rotate-90" />
         <span className="self-center text-sm font-regular whitespace-nowrap opacity-70 leading-none">
@@ -415,6 +416,8 @@ const RegistrationFlow = ({
           </div>
         </div>
       )}
+      {/* EmailOverlay should be rendered last, above all overlays except when finalPassport is shown */}
+      {showEmailOverlay && isGenerated && !finalPassport && <EmailOverlay />}
     </main>
   );
 }
@@ -460,7 +463,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
         const statusData = await statusResponse.json();
 
-        if (statusData.status === 'ACTIVE') {
+        if (statusData.registrationStatus === 'ACTIVE' || statusData.registrationStatus === 'PROFILE_COMPLETED' || statusData.registrationStatus === 'AVATAR_READY' || statusData.registrationStatus === 'SUBSCRIPTION_CREATED') {
           clearInterval(pollInterval);
           setProgressMessage('Logging you in...');
           const signInResult = await signIn('credentials', { idToken, redirect: false });
@@ -638,6 +641,11 @@ const Register2Page = () => {
   const router = useRouter();
   const { toast } = useToast();
   const { setRegistrationInProgress } = useRegistrationStatus();
+  const { data: session } = useSession();
+  const resumedRef = React.useRef(false);
+
+  // NEW ─── Polling utilities for resume flows ────────────────────────────
+  // (polling utilities defined later)
 
   // --- Core Data State ---
   const [email, setEmail] = useState('');
@@ -671,6 +679,54 @@ const Register2Page = () => {
   const [isGenerated, setIsGenerated] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [finalPassport, setFinalPassport] = useState<{ nickname: string, avatarUrl: string, citizenId: number } | null>(null);
+
+  // ─── Polling utilities for resume flows ───────────────────────────────
+  const pollingRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const startPollingForStatus = React.useCallback((userId: string, idToken: string) => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/auth/check-status?userId=${userId}`);
+        if (res.status === 404) {
+          clearInterval(intervalId);
+          pollingRef.current = null;
+          toast({ title: 'Registration Failed', description: 'Your payment could not be completed. No money was taken. Please try again.', duration: 8000 });
+          setIsGenerated(false);
+          setShowPopup(false);
+          setClientSecret(null);
+          setCurrentStep(1);
+          console.log('[Register] Polling: status 404, registration failed for userId:', userId);
+          return;
+        }
+
+        const data = await res.json();
+        console.log('[Register] Polling: received registrationStatus:', data.registrationStatus, 'for userId:', userId);
+        if ([ 'ACTIVE', 'PROFILE_COMPLETED', 'AVATAR_READY', 'SUBSCRIPTION_CREATED' ].includes(data.registrationStatus)) {
+          clearInterval(intervalId);
+          pollingRef.current = null;
+          try {
+            await signIn('credentials', { idToken, redirect: false });
+          } catch (e) {
+            console.error('[Register] auto-login after polling failed', e);
+          }
+          console.log('[Register] Polling: registration complete, setting finalPassport:', data);
+          setFinalPassport({ nickname: data.nickname, avatarUrl: data.avatarUrl, citizenId: data.citizenId });
+        }
+      } catch (err) {
+        console.error('[Register] polling error', err);
+        clearInterval(intervalId);
+        pollingRef.current = null;
+      }
+    }, 3000);
+
+    pollingRef.current = intervalId;
+  }, [toast]);
+
+  React.useEffect(() => {
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+  }, []);
 
   // --- Rotating messages state ---
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -930,6 +986,110 @@ const Register2Page = () => {
       },
     },
   } as const;
+
+  const mapStatusToStep = React.useCallback((s: RegistrationStatus | null | undefined) => {
+    switch (s) {
+      case 'REGISTER_START':
+      case 'EMAIL_SENT':
+      case 'EMAIL_VERIFIED':
+        return 1;
+      case 'STRIPE_CUSTOMER_CREATED':
+      case 'PAYMENT_METHOD_ATTACHED':
+      case 'SUBSCRIPTION_CREATED':
+        return 3;
+      default:
+        return 99;
+    }
+  }, []);
+
+  // Resume effect
+  React.useEffect(() => {
+    if (!session?.user || resumedRef.current) return;
+    resumedRef.current = true;
+
+    const regStatus = (session.user as any).registrationStatus as RegistrationStatus | undefined;
+    console.log('[Register] Session registrationStatus on mount:', regStatus);
+    if (!regStatus || regStatus === 'ACTIVE') return;
+
+    if (
+      regStatus === 'PAYMENT_SUCCEEDED' ||
+      regStatus === 'AVATAR_JOB_ENQUEUED' ||
+      regStatus === 'AVATAR_READY' ||
+      regStatus === 'PROFILE_COMPLETED'
+    ) {
+      console.log('[Register] Detected in-progress or completed registration status:', regStatus);
+      setIsGenerated(true);
+      setTimeout(() => setShowPopup(true), 10);
+      const cu = getAuth().currentUser;
+      if (cu) {
+        cu.getIdToken(true).then((tok) => {
+          console.log('[Register] Starting polling for status with userId:', cu.uid);
+          startPollingForStatus(cu.uid, tok);
+        });
+      }
+      return;
+    }
+
+    if (regStatus === 'SUBSCRIPTION_CREATED') {
+      (async () => {
+        try {
+          setIsLoading(true);
+          const cu = getAuth().currentUser;
+          if (!cu) return;
+          const idToken = await cu.getIdToken(true);
+          const res = await fetch('/api/auth/setup-registration', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setClientSecret(data.clientSecret);
+            console.log('[Register] SUBSCRIPTION_CREATED: received clientSecret:', data.clientSecret);
+            setIsGenerated(true);
+            setTimeout(() => setShowPopup(true), 10);
+            console.log('[Register] SUBSCRIPTION_CREATED: showing modal and starting polling');
+            startPollingForStatus(cu.uid, idToken);
+          } else {
+            console.error('[Register] SUBSCRIPTION_CREATED: failed to get clientSecret');
+          }
+        } catch (e) {
+          console.error('[Register] SUBSCRIPTION_CREATED: error during resume', e);
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+      return;
+    }
+
+    const step = mapStatusToStep(regStatus);
+    console.log('[Register] Mapped registrationStatus to step:', regStatus, '->', step);
+    if (step !== 99) setCurrentStep(step);
+
+    if (step === 3 && !clientSecret) {
+      (async () => {
+        try {
+          setIsLoading(true);
+          const idToken = await getAuth().currentUser?.getIdToken(true);
+          if (!idToken) return;
+          const res = await fetch('/api/auth/setup-registration', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setClientSecret(data.clientSecret);
+            console.log('[Register] Resumed registration, received clientSecret:', data.clientSecret);
+          }
+        } catch (e) {
+          console.error('[Register] resume fetch failed', e);
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+    }
+  }, [session, mapStatusToStep, clientSecret, startPollingForStatus]);
 
   // Server-side rendering safe version - avoids hydration errors
   if (!isBrowser) {

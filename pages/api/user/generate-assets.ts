@@ -5,6 +5,8 @@
 import { verifySignature } from "@upstash/qstash/dist/nextjs";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { generateAndActivateUser } from "@/lib/services/assetService";
+import { advanceRegState } from '@/lib/prisma/stateMachine';
+import type { RegistrationStatus } from '@prisma/client';
 
 export const config = { api: { bodyParser: false } };
 
@@ -17,10 +19,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
+    await advanceRegState(userId, 'AVATAR_JOB_ENQUEUED' as RegistrationStatus);
     await generateAndActivateUser(userId);
+    await advanceRegState(userId, 'AVATAR_READY' as RegistrationStatus);
     res.status(200).json({ ok: true });
   } catch (error) {
     console.error(`[QStash Subscriber] Error processing job for userId ${userId}:`, error);
+    await advanceRegState(userId, 'ROLLBACK_PENDING' as RegistrationStatus, { error: error instanceof Error ? error.message : 'unknown' });
     res.status(500).json({ message: "Failed to process job." });
   }
 }

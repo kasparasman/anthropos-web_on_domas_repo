@@ -26,5 +26,14 @@ export async function middleware(req: NextRequest) {
     response.cookies.set('next-auth.callback-url', '', { maxAge: 0 });
     return response;
   }
+
+  // If user is authenticated but registration not finished, redirect to /register
+  if (token && (token as any).registrationStatus && (token as any).registrationStatus !== 'ACTIVE') {
+    const url = req.nextUrl.clone();
+    if (!url.pathname.startsWith('/register')) {
+      url.pathname = '/register';
+      return NextResponse.redirect(url);
+    }
+  }
   return NextResponse.next();
 }

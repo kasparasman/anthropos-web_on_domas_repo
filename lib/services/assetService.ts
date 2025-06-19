@@ -60,6 +60,7 @@ export async function generateAndActivateUser(userId: string): Promise<void> {
               data: {
                 citizenId: nextId,
                 status: 'ACTIVE',
+                registrationStatus: 'ACTIVE',
                 avatarUrl: avatarUrl,
                 nickname: nickname,
                 rekFaceId: rekFaceId,

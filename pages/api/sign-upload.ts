@@ -54,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // For private uploads we still need a temporary downloadable URL so the
       // server can fetch the object for face uniqueness checks.
       const getCmd = new GetObjectCommand({ Bucket: bucket, Key: key })
-      publicUrl = await getSignedUrl(r2, getCmd, { expiresIn: 60 * 10 }) // 10-min GET URL
+      publicUrl = await getSignedUrl(r2, getCmd, { expiresIn: 60 * 60 * 6 }) // 6-hour GET URL
     } else {
       publicUrl = r2ObjectUrl(key)
     }

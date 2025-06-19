@@ -50,6 +50,8 @@ const initialState: AuthModalManagerState = {
   pendingPaymentConfirmationUserId: null, // New state initial value
 };
 
+const ENABLE_LEGACY_REG_FLOW = false;
+
 export function useAuthModalManager() {
   const [state, setState] = useState<AuthModalManagerState>(initialState);
   const { setRegistrationInProgress } = useRegistrationStatus();
@@ -373,62 +375,10 @@ export function useAuthModalManager() {
     setState(s => ({ ...s, currentStep: step }));
   }, []);
 
-  const checkAndResumeIncompleteRegistration = useCallback(async (currentAuthUserId?: string | null) => {
-    const effectiveUserId = currentAuthUserId || state.provisionalUserId;
-    if (!effectiveUserId) {
-      console.log('[AuthModalManager] checkAndResume: No user ID to check.');
-      return;
-    }
-    console.log(`[AuthModalManager] checkAndResume: Checking profile status for ${effectiveUserId}...`);
-    const profileData = await authApiService.getCurrentUserProfileStatus();
-
-    if (profileData && profileData.id === effectiveUserId && profileData.status === 'ACTIVE_PENDING_PROFILE_SETUP') {
-      console.log('[AuthModalManager] checkAndResume: Found ACTIVE_PENDING_PROFILE_SETUP for user:', profileData.id);
-      
-      if (state.currentStep !== AuthStep.AvatarNicknameSetup || !state.isModalOpen || state.mode !== 'register') {
-        console.log('[AuthModalManager] checkAndResume: Modal state needs update for AvatarNicknameSetup. Current state:', 
-          { step: state.currentStep, isOpen: state.isModalOpen, mode: state.mode });
-        setState(s => ({
-          ...s, 
-          mode: 'register', 
-          currentStep: AuthStep.AvatarNicknameSetup,
-          email: profileData.email || s.email, 
-          provisionalUserId: profileData.id, 
-          tmpFaceUrl: profileData.tmpFaceUrl || s.tmpFaceUrl, 
-          isPaymentComplete: true, 
-          isModalOpen: true,
-          isLoading: false,
-          error: null,
-        }));
-        setRegistrationInProgress(true);
-      } else {
-        console.log('[AuthModalManager] checkAndResume: Modal already in correct state for AvatarNicknameSetup. Ensuring registration is marked as in progress.');
-        setRegistrationInProgress(true); // Ensure the flag is set if we are in this state.
-      }
-    } else if (profileData && profileData.id === effectiveUserId && profileData.status === 'ACTIVE_COMPLETE') {
-      console.log('[AuthModalManager] checkAndResume: User status is ACTIVE_COMPLETE.');
-      if (state.isModalOpen && state.currentStep === AuthStep.AvatarNicknameSetup && state.mode === 'register') {
-        console.log('[AuthModalManager] checkAndResume: Profile is complete. Closing modal if it was for setup.');
-        setState(s => ({...s, isModalOpen: false}));
-        setRegistrationInProgress(false);
-      } else if (state.mode === 'register') {
-        console.log('[AuthModalManager] checkAndResume: Profile complete but modal in register mode. Resetting/closing.');
-        resetToInitial();
-      }
-    } else if (profileData) {
-      console.log(`[AuthModalManager] checkAndResume: User status is ${profileData.status}. Current modal state: step=${state.currentStep}, mode=${state.mode}, open=${state.isModalOpen}. No specific action taken.`);
-      if (state.mode === 'register' && state.isModalOpen && 
-          (profileData.status !== 'ACTIVE_PENDING_PROFILE_SETUP' && profileData.status !== 'PENDING_PAYMENT') ) {
-        console.log(`[AuthModalManager] checkAndResume: Modal in register mode but user status (${profileData.status}) is unexpected for continuation. Resetting.`);
-        resetToInitial(); 
-      }
-    } else if (!profileData && effectiveUserId) {
-      console.warn(`[AuthModalManager] checkAndResume: Could not fetch profile data for ${effectiveUserId}.`);
-    }
-  }, [state.provisionalUserId, state.currentStep, state.isModalOpen, state.mode, state.email, state.tmpFaceUrl, setRegistrationInProgress, resetToInitial]);
-
   // useEffect for localStorage check (sets pending ID)
   useEffect(() => {
+    if (!ENABLE_LEGACY_REG_FLOW) return;
+
     if (typeof window !== 'undefined') {
       const paymentCompletedForUserId = localStorage.getItem('paymentCompletedForUser');
       if (paymentCompletedForUserId && paymentCompletedForUserId !== 'unknown') {
@@ -504,6 +454,5 @@ export function useAuthModalManager() {
     handleLogin,
     resetToInitial,
     setCurrentStep,
-    checkAndResumeIncompleteRegistration,
   };
 } 

@@ -8,7 +8,6 @@ import { SessionProvider } from 'next-auth/react'
 import Navbar from '../components/Navbar'
 import { AuthProvider } from '@/lib/hooks/useFirebaseNextAuth'
 import { RegistrationStatusProvider } from '@/lib/hooks/useRegistrationStatus'
-import MandatoryProfileCompletion from '../components/global/MandatoryProfileCompletion'
 import AuthModal from '../components/auth/AuthModal'
 import { AuthModalManagerProvider, useAuthModalManager } from '../contexts/AuthModalManagerContext'
 import { useEffect } from 'react'
@@ -65,7 +64,6 @@ function AppContent({ Component, pageProps, router }: AppProps) {
           }}
         />
       )}
-      <MandatoryProfileCompletion />
       <AuthModal
         open={authModalState.isModalOpen}
         onClose={closeAuthModal}

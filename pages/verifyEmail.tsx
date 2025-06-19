@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { applyActionCode, onAuthStateChanged } from 'firebase/auth';
+import { applyActionCode } from 'firebase/auth';
 import { firebaseAuth, app } from '@/lib/firebase-client';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
@@ -20,71 +20,94 @@ export default function VerifyEmailPage() {
   };
   const ran = useRef(false);
 
+  /**
+   * Verify the email OOB code via Firebase Auth REST API.
+   * This works even when the user isn't signed-in (e.g. cross-device verification).
+   */
+  const verifyOobCodeViaRest = async (oobCode: string, apiKey: string) => {
+    console.log('[VerifyEmail] Calling REST API to verify oobCode');
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oobCode, requestType: 'VERIFY_EMAIL' }),
+      }
+    );
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.error) {
+      console.error('[VerifyEmail] REST verify failed', json.error ?? res.statusText);
+      const message = json.error?.message ?? res.statusText;
+      throw new Error(message);
+    }
+
+    console.log('[VerifyEmail] REST verify success for user', json.email);
+    return json as { email: string; localId: string };
+  };
+
   useEffect(() => {
     if (!router.isReady || ran.current) return;
     ran.current = true;
-  
-    const { oobCode } = router.query;
 
-    console.log('[VerifyEmail] Effect triggered, router ready:', router.isReady, 'query:', router.query);
-    const unsub = onAuthStateChanged(firebaseAuth, async (user) => {
-      console.log('[VerifyEmail] onAuthStateChanged fired. user:', user);
-      unsub(); // run once
+    const { oobCode, apiKey: apiKeyFromQuery } = router.query;
+
+    (async () => {
+      console.log('[VerifyEmail] Effect triggered (cross-device compatible)', { oobCode, apiKeyFromQuery });
+
+      if (typeof oobCode !== 'string' || !oobCode) {
+        console.error('[VerifyEmail] Missing oobCode');
+        setStatus('error');
+        setMessage('Missing verification code.');
+        return;
+      }
+
+      const apiKey = typeof apiKeyFromQuery === 'string' && apiKeyFromQuery
+        ? apiKeyFromQuery
+        : process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
       try {
-        console.log('[VerifyEmail] Handler start');
+        // 1️⃣ Verify via REST (works without being signed-in)
+        await verifyOobCodeViaRest(oobCode, apiKey as string);
 
-        // Production path: apply the code if present
-        if (typeof oobCode === 'string' && oobCode) {
-          console.log('[VerifyEmail] oobCode present, applying action code:', oobCode);
-          await applyActionCode(firebaseAuth, oobCode).catch((err) => {
-            if ((err as { code?: string }).code !== 'auth/invalid-action-code') throw err;
-            console.log('[VerifyEmail] Action code already used, continuing.');
-          });
-        } else {
-          console.log('[VerifyEmail] No oobCode present, emulator/auto path.');
+        // 2️⃣ If a user is signed-in on this device, refresh and call markVerified so custom claims sync.
+        const currentUser = firebaseAuth.currentUser;
+        if (currentUser) {
+          console.log('[VerifyEmail] Signed-in user detected, applying action code locally and calling markVerified.');
+          try {
+            await applyActionCode(firebaseAuth, oobCode).catch(() => {/* ignore if already used */});
+          } catch (_) {/* noop */}
+
+          await currentUser.reload();
+          if (currentUser.emailVerified) {
+            await currentUser.getIdToken(true);
+            try {
+              await callMarkVerified();
+            } catch (e) {
+              console.warn('[VerifyEmail] markVerified failed (probably emulator/prod mismatch)', e);
+            }
+          }
         }
 
-        // Ensure we have a signed-in user and the flag is set
-        if (!user) {
-          console.warn('[VerifyEmail] No current user after auth hydration.');
-          throw new Error('no-current-user');
-        }
-
-        console.log('[VerifyEmail] Reloading user to check emailVerified.');
-        await user.reload();
-        if (!user.emailVerified) {
-          console.warn('[VerifyEmail] User not email verified after reload.');
-          throw new Error('email-not-verified');
-        }
-        await user.getIdToken(true);
-
-
-        // Call Cloud Function for both prod & emulator flows
-        console.log('[VerifyEmail] Calling markVerified cloud function.');
-        await callMarkVerified();
-
+        // 3️⃣ Success UI / redirect
         console.log('[VerifyEmail] Verification successful, updating UI and scheduling redirect.');
         setStatus('success');
         setMessage('Email verified! Redirecting…');
         setTimeout(() => {
-          console.log('[VerifyEmail] Redirecting to home.');
           router.replace('/');
         }, 2500);
       } catch (err: unknown) {
         console.error('[VerifyEmail] verification failed', err);
-        const e = err as { code?: string };
+        const e = err as { message?: string };
         setStatus('error');
         setMessage(
-          e?.code === 'auth/invalid-action-code'
+          e?.message === 'INVALID_OOB_CODE'
             ? 'This link was already used, but your e-mail is verified.'
             : 'This verification link is invalid or has expired.'
         );
       }
-    });
-
-    return () => unsub();
+    })();
   }, [router.isReady, router.query]);
-
 
   return (
     <>

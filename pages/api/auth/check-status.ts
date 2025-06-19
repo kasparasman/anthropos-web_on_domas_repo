@@ -16,11 +16,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const profile : Partial<Profile> | null = await withPrismaRetry(() => 
+        const profile  = await withPrismaRetry(() => 
             prisma.profile.findUnique({
                 where: { id: userId },
                 select: {
-                    status: true,
+                    registrationStatus: true,
                     avatarUrl: true,
                     nickname: true,
                     citizenId: true,
@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         res.status(200).json({
-            status: profile.status,
+            registrationStatus: profile.registrationStatus,
             avatarUrl: profile.avatarUrl,
             nickname: profile.nickname,
             citizenId: profile.citizenId,
