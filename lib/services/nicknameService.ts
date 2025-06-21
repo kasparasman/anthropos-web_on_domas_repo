@@ -35,7 +35,8 @@ async function getCandidates({ avatarUrl, gender, archetype, exclude = [] }: Nic
                     { type: "input_text", text: prompt },
                     {
                         type: "input_image",
-                        image_url: avatarUrl
+                        image_url: avatarUrl,
+                        detail: 'auto', // required by OpenAI SDK
                     },
                 ],
             },
@@ -49,22 +50,31 @@ async function getCandidates({ avatarUrl, gender, archetype, exclude = [] }: Nic
 
     try {
         const result = JSON.parse(response.output_text);
-        // The model might return {"nicknames": [...]}, so we check for that structure.
-        const candidates = result.nicknames || result.candidates || (Array.isArray(result) ? result : []);
-        
+        // Accept both array and object responses
+        let candidates: string[] = [];
+        if (Array.isArray(result)) {
+            candidates = result;
+        } else if (typeof result === 'object' && result !== null) {
+            // If keys are numbers (1,2,3...), treat as array
+            const keys = Object.keys(result);
+            if (keys.every(k => /^\d+$/.test(k))) {
+                candidates = keys.map(k => result[k]);
+            } else if (Array.isArray(result.nicknames)) {
+                candidates = result.nicknames;
+            } else if (Array.isArray(result.candidates)) {
+                candidates = result.candidates;
+            }
+        }
         if (!Array.isArray(candidates)) {
             console.warn("OpenAI did not return a valid array for nicknames.", result);
             return [];
         }
-
         // Clean up nicknames
         const cleanedCandidates = candidates
             .map(n => String(n).trim().replace(/[^a-z0-9_-]/gi, ''))
             .filter(Boolean);
-            
         const RESERVED = new Set(['json', 'array', 'object', 'undefined', 'null', 'nickname', 'name', 'string', 'response']);
         return cleanedCandidates.filter(n => n && !RESERVED.has(n.toLowerCase()));
-
     } catch (e) {
         console.error("Failed to parse nicknames from OpenAI response:", e);
         return [];
@@ -74,37 +84,30 @@ async function getCandidates({ avatarUrl, gender, archetype, exclude = [] }: Nic
 /**
  * Generates a unique nickname for a user profile.
  * It tries to generate candidates and checks for uniqueness in the database.
- * If a unique name isn't found in the first batch, it retries once.
+ * If a unique name isn't found in the first batch, it retries up to 3 times, excluding previous candidates.
  */
 export async function generateUniqueNickname(params: Omit<NicknameGenerationParams, 'exclude'>): Promise<string> {
-    // 1. Get first batch of candidates
-    const candidates = await getCandidates(params);
-
-    // 2. Check which are unique
-    const taken = await prisma.profile.findMany({
-        where: { nickname: { in: candidates } },
-        select: { nickname: true },
-    });
-    const takenSet = new Set(taken.map((p: { nickname: string | null }) => p.nickname!));
-    let available = candidates.find(n => !takenSet.has(n));
-
-    // 3. If none are unique, retry once, excluding the first batch
-    if (!available && candidates.length > 0) {
-        console.log('No unique nickname in first batch, retrying...');
-        const newCandidates = await getCandidates({ ...params, exclude: candidates });
-        const newTaken = await prisma.profile.findMany({
-            where: { nickname: { in: newCandidates } },
+    let exclude: string[] = [];
+    let available: string | undefined;
+    let attempts = 0;
+    while (attempts < 3 && !available) {
+        const candidates = await getCandidates({ ...params, exclude });
+        if (candidates.length === 0) {
+            attempts++;
+            continue;
+        }
+        const taken = await prisma.profile.findMany({
+            where: { nickname: { in: candidates } },
             select: { nickname: true },
         });
-        const newTakenSet = new Set(newTaken.map((p: { nickname: string | null }) => p.nickname!));
-        available = newCandidates.find(n => !newTakenSet.has(n));
+        const takenSet = new Set(taken.map((p: { nickname: string | null }) => p.nickname!));
+        available = candidates.find(n => !takenSet.has(n));
+        exclude = [...exclude, ...candidates];
+        attempts++;
     }
-
-    // 4. If still no nickname, fallback to a default
     if (!available) {
-        console.warn(`Could not generate a unique nickname for archetype ${params.archetype}. Using fallback.`);
+        console.warn(`Could not generate a unique nickname for archetype ${params.archetype} after 3 attempts. Using fallback.`);
         return `${params.archetype.toLowerCase()}_${Date.now().toString().slice(-6)}`;
     }
-
     return available;
 } 
