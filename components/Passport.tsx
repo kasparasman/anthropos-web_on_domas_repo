@@ -20,7 +20,9 @@ export default function Passport({ id, citizenId, nickname, gender, avatarUrl, c
   // Group as 000 000 000 for readability
   const displayId = `${formattedCitizenId.slice(0, 3)} ${formattedCitizenId.slice(3, 6)} ${formattedCitizenId.slice(6, 9)}`;
 
-  const profileUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/users/${nickname}`;
+  // Use the canonical base URL for QR code (always include protocol)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.anthroposcity.com';
+  const profileUrl = `${baseUrl.replace(/\/$/, '')}/users/${nickname}`;
 
   return (
     <div className={`flex  flex-col justify-center gap-3 bg-[linear-gradient(-45deg,#252014_0%,#000000_50%,#252014_100%)] border border-main rounded-[16px] p-4 ${className}`}>
