@@ -51,18 +51,18 @@ export async function generateAvatar(faceUrl: string, styleId: string, userId?: 
         // Per user direction, using the confirmed-working structure from avatar-gen.ts
         // with the correct response extraction method.
         const response = await ai.responses.create({
-            model: 'gpt-4.1',
+            model: 'o3',
             input: [
                 {
                     role: 'user',
                     content: [
                         { type: 'input_text', text: instructions },
                         { type: 'input_text', text: 'USER_SELFIE' },
-                        { type: 'input_image', image_url: faceUrl, detail: 'low' },
+                        { type: 'input_image', image_url: faceUrl, detail: 'high' },
                         { type: 'input_text', text: 'STYLE_REFERENCE' },
-                        { type: 'input_image', image_url: style.src, detail: 'low' },
+                        { type: 'input_image', image_url: style.src, detail: 'high' },
                         { type: 'input_text', text: 'LIMITLESS_CREST' },
-                        { type: 'input_image', image_url: LIMITLESS_CREST_URL, detail: 'low' }
+                        { type: 'input_image', image_url: LIMITLESS_CREST_URL, detail: 'high' }
                     ],
                 },
             ],
@@ -71,6 +71,8 @@ export async function generateAvatar(faceUrl: string, styleId: string, userId?: 
                 type: "image_generation",
                 moderation: "low",
                 size: "1024x1024",
+                quality: "high",
+
             }],
         });
         
