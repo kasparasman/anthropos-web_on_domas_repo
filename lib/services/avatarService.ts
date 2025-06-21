@@ -66,7 +66,7 @@ export async function generateAvatar(faceUrl: string, styleId: string, userId?: 
                     ],
                 },
             ],
-            tool_choice: 'required',
+            tool_choice: 'auto',
             tools: [{ 
                 type: "image_generation",
                 moderation: "low",
