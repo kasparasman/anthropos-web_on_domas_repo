@@ -17,31 +17,39 @@ export async function generateAndActivateUser(userId: string): Promise<void> {
     // High-level try-catch to ensure any unexpected error is logged.
     try {
         console.log(`[assetService] Starting asset generation for user ${userId}`);
+        await logProgress(userId, 'GEN_START', 'Starting asset generation');
 
         console.log('[assetService BREADCRUMB] 1. About to fetch profile.');
         const profile = await withPrismaRetry(() => prisma.profile.findUnique({
             where: { id: userId },
         })) as (Profile & { tmpFaceUrl?: string | null; styleId?: string | null; gender?: string | null; });
         console.log('[assetService BREADCRUMB] 2. Profile fetched successfully.');
+        await logProgress(userId, 'PROFILE_FETCHED', 'Profile fetched from DB');
 
         if (!profile || !profile.tmpFaceUrl || !profile.styleId || !profile.gender) {
             console.error(`[assetService] Profile data is missing or incomplete for user ${userId}.`);
             throw new Error(`Profile ${userId} is missing data required for generation.`);
         }
         console.log('[assetService BREADCRUMB] 3. Profile data validated.');
+        await logProgress(userId, 'PROFILE_VALIDATED', 'Profile data validated');
 
         // 1. Generate Avatar
         console.log('[assetService BREADCRUMB] 4. About to generate avatar.');
+        await logProgress(userId, 'AVATAR_GEN_START', 'Starting avatar generation');
         const avatarUrl = await generateAvatar(profile.tmpFaceUrl, profile.styleId, userId);
         console.log('[assetService BREADCRUMB] 5. Avatar generated successfully.');
+        await logProgress(userId, 'AVATAR_GENERATED', 'Avatar generated');
 
         // 2. Index Face in Rekognition
         console.log('[assetService BREADCRUMB] 6. About to index face.');
+        await logProgress(userId, 'FACE_INDEX_START', 'Starting face indexing');
         const rekFaceId = await indexFace(profile.tmpFaceUrl, userId);
         console.log('[assetService BREADCRUMB] 7. Face indexed successfully.');
+        await logProgress(userId, 'FACE_INDEXED', 'Face indexed');
 
         // 3. Generate Nickname
         console.log('[assetService BREADCRUMB] 8. About to generate nickname.');
+        await logProgress(userId, 'NICKNAME_GEN_START', 'Starting nickname generation');
         const { archetype } = getPromptForStyle(profile.styleId);
         const nickname = await generateUniqueNickname({
             avatarUrl,
@@ -49,9 +57,11 @@ export async function generateAndActivateUser(userId: string): Promise<void> {
             archetype,
         });
         console.log('[assetService BREADCRUMB] 9. Nickname generated successfully.');
+        await logProgress(userId, 'NICKNAME_GENERATED', 'Nickname generated');
 
         // 4. Update Profile to ACTIVE
         console.log('[assetService BREADCRUMB] 10. About to update profile to ACTIVE.');
+        await logProgress(userId, 'PROFILE_UPDATE', 'Updating profile to ACTIVE');
         await withPrismaRetry(() =>
           prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const nextId = await getNextCitizenId(tx);
@@ -72,7 +82,6 @@ export async function generateAndActivateUser(userId: string): Promise<void> {
           })
         );
         console.log('[assetService BREADCRUMB] 11. Profile updated successfully.');
-        await logProgress(userId, 'AVATAR_READY', 'Your avatar is ready!');
 
         console.log(`[assetService] ✅ Assets generated and profile activated for user ${userId}`);
 
