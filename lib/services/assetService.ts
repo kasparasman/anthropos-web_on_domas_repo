@@ -1,11 +1,12 @@
 import { prisma } from '@/lib/prisma';
-import { Profile } from '@prisma/client';
+import { Profile, Prisma } from '@prisma/client';
 import { generateAvatar } from '@/lib/services/avatarService';
 import { generateUniqueNickname } from '@/lib/services/nicknameService';
 import { getPromptForStyle } from '@/lib/services/promptService';
 import { withPrismaRetry } from '@/lib/prisma/util';
 import { indexFace } from '@/lib/services/faceIndexingService';
 import { getNextCitizenId } from '@/lib/prisma/counter';
+import { logProgress } from '@/lib/progressServer';
 
 /**
  * The core logic for generating user assets (avatar, nickname) and activating the profile.
@@ -52,7 +53,7 @@ export async function generateAndActivateUser(userId: string): Promise<void> {
         // 4. Update Profile to ACTIVE
         console.log('[assetService BREADCRUMB] 10. About to update profile to ACTIVE.');
         await withPrismaRetry(() =>
-          prisma.$transaction(async (tx) => {
+          prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const nextId = await getNextCitizenId(tx);
 
             await tx.profile.update({
@@ -71,6 +72,7 @@ export async function generateAndActivateUser(userId: string): Promise<void> {
           })
         );
         console.log('[assetService BREADCRUMB] 11. Profile updated successfully.');
+        await logProgress(userId, 'AVATAR_READY', 'Your avatar is ready!');
 
         console.log(`[assetService] ✅ Assets generated and profile activated for user ${userId}`);
 

@@ -84,6 +84,10 @@ Learn what is local emulator:
 get the qstach pay as you go it's the best way to go.
 
 
+the top things to do now: 
+Add rollback sequance to the app.
+Add centralized logging
+Add single page flow
 
 
 

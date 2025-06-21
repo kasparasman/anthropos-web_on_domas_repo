@@ -11,6 +11,7 @@ import { kickOffEmailVerification, pollForVerification } from '@/lib/auth/emailV
 import { getAuth } from 'firebase/auth';
 import { useSession } from 'next-auth/react';
 import type { RegistrationStatus } from '@prisma/client';
+import { useRegistrationProgress } from '@/lib/hooks/useRegistrationProgress';
 
 // --- UI Components ---
 import Input from '@/components/UI/input';
@@ -22,9 +23,9 @@ import GridWithRays from "@/components/GridWithRays";
 import benefitsStyles from "@/components/UI/benefits.module.css";
 import { Lock } from "@/components/UI/lock";
 import ProgressBarWithTimer from "@/components/UI/ProgressBarWithTimer";
-
+import * as firebase from 'firebase/auth';
 // --- Services & Config ---
-import { registerClient } from '../lib/firebase-client';
+import { registerClient, signInClient } from '../lib/firebase-client';
 import { checkFaceDuplicate } from '../lib/services/authApiService';
 import { uploadFileToStorage } from '../lib/services/fileUploadService';
 import { maleStyles, femaleStyles, StyleItem } from "@/lib/avatarStyles";
@@ -166,12 +167,14 @@ const RegistrationFlow = ({
     ...femaleStyles.map(style => ({ style, gender: 'female' as const })),
   ];
   const [currentDisplayAvatarIndex, setCurrentDisplayAvatarIndex] = useState(0);
+  // Show/hide password
+  const [showPassword, setShowPassword] = useState(false);
 
   // ───────── Resend-verification state ─────────
   const [resendAttemptsLeft, setResendAttemptsLeft] = useState(3);
   const [isCooldown, setIsCooldown] = useState(false);
 
-  const canResend = resendAttemptsLeft > 0 && !isCooldown && !isLoading;
+  const canResend = resendAttemptsLeft > 0 && !isCooldown;
 
   const handleResendVerificationEmail = async () => {
     if (!canResend) return;
@@ -214,9 +217,23 @@ const RegistrationFlow = ({
   /* ───────── Overlay when waiting for e-mail verification ───────── */
   const EmailOverlay = () => (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 text-center p-6">
-      <div className="space-y-4 max-w-xs">
-        <h2 className="text-2xl font-semibold text-main">Check your e-mail</h2>
-        <p className="text-sm text-white">We&apos;ve sent a verification link to {email}.<br/>Please confirm it to continue.</p>
+      <div className="space-y-4 max-w-xs bg-black/90 rounded-xl p-6 border border-main shadow-lg">
+        <h2 className="text-2xl font-semibold text-main mb-2">Check your e-mail</h2>
+        <ol className="text-sm text-white space-y-2 text-left list-decimal list-inside">
+          <li>
+            <span className="font-semibold">Open your e-mail inbox</span>
+          </li>
+          <li>
+            <span>Find the message from <span className="text-main font-semibold">Anthropos City</span></span>
+          </li>
+          <li>
+            <span>Click the <span className="text-main font-semibold">verification link</span> in the e-mail</span>
+          </li>
+          <li>
+            <span>Return to <span className="text-main font-semibold">this page</span> to finish registration</span>
+          </li>
+        </ol>
+        <div className="text-xs text-dim_smoke mt-2">You can keep this page open while you verify.</div>
         {resendAttemptsLeft > 0 && (
           <MainButton
             variant="outline"
@@ -346,13 +363,25 @@ const RegistrationFlow = ({
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
             disabled={isLoading || isFaceUnique === false}
           />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-            disabled={isLoading || isFaceUnique === false}
-          />
+          {/* Password input with show/hide toggle */}
+          <div className="relative w-full">
+            <Input
+              placeholder="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              disabled={isLoading || isFaceUnique === false}
+              className="pr-12" // space for eye button
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-3 flex items-center text-smoke/60 hover:text-main focus:outline-none"
+              tabIndex={-1}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
         </div>
 
         <PricingToggle plan={plan} onPlanChange={setPlan} disabled={isLoading || isFaceUnique === false} />
@@ -435,8 +464,8 @@ const RegistrationFlow = ({
                         </div>
                         */}
                         <div className="relative inset-0  flex flex-col items-center justify-center rounded-[16px] max-w-80 mx-auto mt-8">
-                          <p className="text-smoke text-center px-4 transition-opacity duration-1000 h-16" style={{ opacity: messageOpacity }}>
-                            {rotatingMessages[currentMessageIndex]}
+                          <p className="text-smoke text-center px-4 transition-opacity duration-1000 h-16">
+                            {progressMessage || rotatingMessages[currentMessageIndex]}
                           </p>
                         </div>
                       </div>
@@ -461,6 +490,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
     setIsLoading, setProgressMessage, setFinalPassport,
     setIsGenerated, setRegistrationInProgress, toast, setShowEmailOverlay
   } = props;
+  const [uid, setUid] = useState<string | null>(null);
 
   const stripe = useStripe();
   const elements = useElements();
@@ -498,7 +528,9 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
         if (statusData.registrationStatus === 'ACTIVE' || statusData.registrationStatus === 'PROFILE_COMPLETED' || statusData.registrationStatus === 'AVATAR_READY' || statusData.registrationStatus === 'SUBSCRIPTION_CREATED') {
           clearInterval(pollInterval);
           setProgressMessage('Logging you in...');
-          const signInResult = await signIn('credentials', { idToken, redirect: false });
+          // Always refresh the token before signIn
+          const freshIdToken = await refreshToken();
+          const signInResult = await signIn('credentials', { idToken: freshIdToken, redirect: false });
 
           if (signInResult?.error) {
             throw new Error(`Login failed after registration: ${signInResult.error}`);
@@ -520,6 +552,39 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
     pollingRef.current = pollInterval;
   };
+  async function refreshToken(): Promise<string> {
+    // 1. force refresh (may temporarily null-out currentUser)
+    await getAuth().currentUser?.reload().catch(() => {});
+  
+    // 2. wait until SDK has a live user again
+    const user = await new Promise<firebase.User>((resolve, reject) => {
+      const unsub = getAuth().onAuthStateChanged((u) => {
+        if (u) { unsub(); resolve(u); }
+      }, reject);
+      // safety timeout (2 s)
+      setTimeout(() => reject(new Error('No user after reload')), 2000);
+      signInClient(email, password);
+    });
+  
+    // 3. issue a guaranteed-fresh ID-token
+    return user.getIdToken(true);
+  }
+  
+  // Helper to robustly call setup-registration with token refresh
+  async function callSetupRegistration(body: any) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await fetch('/api/auth/setup-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.status !== 401) return res; // success or other error
+      body.idToken = await refreshToken();
+      await new Promise(r => setTimeout(r, 500 * 2 ** attempt));  // 0.5 / 1 / 2 s back-off
+
+    }
+    throw new Error('Could not obtain a fresh ID-token after 3 tries');
+  }
 
   const handleGeneratePassport = async () => {
     // Synchronous guard against double-clicks
@@ -568,6 +633,7 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
       // 2.1. Create Firebase account (still signed-in locally)
       const cred = await registerClient(email, password);
+      setUid(cred.user.uid);
 
       if (!cred.user.emailVerified) {
         // 2.2. Kick off e-mail verification flow (only if not already verified)
@@ -577,38 +643,42 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
 
         // 2.3. Wait (listener on Firestore) until user clicks the link
         await pollForVerification(cred.user);
+        idToken = await cred.user.getIdToken(true);         // fresh, not revoked
 
         // Hide the overlay once verified
         props.setShowEmailOverlay(false);
       } else {
         console.log('[Register] User already verified, skipping e-mail verification step.');
+        await cred.user.reload();
+        idToken = await cred.user.getIdToken(true); // true ⇒ force refresh
       }
-
-      // 2.4. Force-refresh the current user to pull in the new custom claim
-      await cred.user.reload();
-      idToken = await cred.user.getIdToken(true); // true ⇒ force refresh
 
       // 3. BACKEND ROUND-TRIP
       setProgressMessage('Submitting registration...');
-      const setupResponse = await fetch('/api/auth/setup-registration', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          plan: props.plan,
-          paymentMethodId: paymentMethod.id,
-          idToken,
-          faceUrl: uploadedFaceUrl,
-          styleId: selectedStyleId,
-          gender: props.gender,
-        }),
+      console.log('[Breadcrumb] Submitting registration: sending setup-registration request', {
+        email,
+        plan: props.plan,
+        paymentMethodId: paymentMethod.id,
+        faceUrl: uploadedFaceUrl,
+        styleId: selectedStyleId,
+        gender: props.gender,
       });
+      const setupBody = {
+        email,
+        plan: props.plan,
+        paymentMethodId: paymentMethod.id,
+        idToken,
+        faceUrl: uploadedFaceUrl,
+        styleId: selectedStyleId,
+        gender: props.gender,
+      };
+      const setupResponse = await callSetupRegistration(setupBody);
 
       if (!setupResponse.ok) {
         const errorData = await setupResponse.json();
+        console.log('[Breadcrumb] setup-registration failed', { status: setupResponse.status, errorData });
         throw new Error(errorData.message || "An error occurred during registration setup.");
       }
-
       const setupData = await setupResponse.json();
       if (!setupData.clientSecret) {
         throw new Error("Backend did not return a client secret for payment confirmation.");
@@ -640,7 +710,16 @@ const CheckoutAndFinalize = (props: CheckoutAndFinalizeProps) => {
       startPollingForStatus(setupData.userId, idToken);
 
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "An unknown error occurred.";
+      // Enhanced error diagnostics
+      console.error('[CheckoutAndFinalize] handleGeneratePassport error:', err);
+      const message = (() => {
+        if (err && typeof err === 'object') {
+          const anyErr = err as any;
+          if (anyErr.message) return anyErr.message as string;
+          if (anyErr.code) return `${anyErr.code}`;
+        }
+        return 'An unknown error occurred.';
+      })();
       submissionGuard.current = false; // Reset guard on failure
 
       // On error, hide the popup and show a toast
@@ -719,6 +798,19 @@ const Register2Page = () => {
   // ─── Polling utilities for resume flows ───────────────────────────────
   const pollingRef = React.useRef<NodeJS.Timeout | null>(null);
 
+  // Helper to robustly refresh the Firebase ID token (copied from CheckoutAndFinalize)
+  async function refreshToken(): Promise<string> {
+    await getAuth().currentUser?.reload().catch(() => {});
+    const user = await new Promise<firebase.User>((resolve, reject) => {
+      const unsub = getAuth().onAuthStateChanged((u) => {
+        if (u) { unsub(); resolve(u); }
+      }, reject);
+      setTimeout(() => reject(new Error('No user after reload')), 2000);
+      signInClient(email, password);
+    });
+    return user.getIdToken(true);
+  }
+
   const startPollingForStatus = React.useCallback((userId: string, idToken: string) => {
     if (pollingRef.current) clearInterval(pollingRef.current);
 
@@ -743,7 +835,13 @@ const Register2Page = () => {
           clearInterval(intervalId);
           pollingRef.current = null;
           try {
-            await signIn('credentials', { idToken, redirect: false });
+            // Always refresh the token before signIn
+            const freshIdToken = await refreshToken();
+            const signInResult = await signIn('credentials', {
+              idToken: freshIdToken,
+              redirect: false,
+            });
+            if (signInResult?.error) throw new Error(signInResult.error);
           } catch (e) {
             console.error('[Register] auto-login after polling failed', e);
           }

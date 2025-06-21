@@ -7,6 +7,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { generateAndActivateUser } from "@/lib/services/assetService";
 import { advanceRegState } from '@/lib/prisma/stateMachine';
 import type { RegistrationStatus } from '@prisma/client';
+import { logProgress } from '@/lib/progressServer';
 
 export const config = { api: { bodyParser: false } };
 
@@ -22,6 +23,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     await advanceRegState(userId, 'AVATAR_JOB_ENQUEUED' as RegistrationStatus);
     await generateAndActivateUser(userId);
     await advanceRegState(userId, 'AVATAR_READY' as RegistrationStatus);
+    await logProgress(userId, 'AVATAR_READY', 'Your avatar is ready!');
     res.status(200).json({ ok: true });
   } catch (error) {
     console.error(`[QStash Subscriber] Error processing job for userId ${userId}:`, error);

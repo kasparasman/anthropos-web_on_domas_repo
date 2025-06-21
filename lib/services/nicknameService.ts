@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, organization: process.env.OPENAI_ORGANIZATION, project: process.env.OPENAI_PROJECT });
 
 interface NicknameGenerationParams {
     avatarUrl: string;
@@ -26,28 +26,29 @@ async function getCandidates({ avatarUrl, gender, archetype, exclude = [] }: Nic
         Respond with a JSON array of 10 nickname strings only.
     `.trim();
 
-    const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo",
-        response_format: { type: "json_object" },
-        messages: [
+    const response = await openai.responses.create({
+        model: "gpt-4.1",
+        input: [
             {
                 role: "user",
                 content: [
-                    { type: "text", text: prompt },
+                    { type: "input_text", text: prompt },
                     {
-                        type: "image_url",
-                        image_url: {
-                            url: avatarUrl,
-                            detail: 'high',
-                        },
+                        type: "input_image",
+                        image_url: avatarUrl
                     },
                 ],
             },
         ],
+        text: {
+            format: {
+                type: "json_object",
+            },
+        },
     });
 
     try {
-        const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+        const result = JSON.parse(response.output_text);
         // The model might return {"nicknames": [...]}, so we check for that structure.
         const candidates = result.nicknames || result.candidates || (Array.isArray(result) ? result : []);
         

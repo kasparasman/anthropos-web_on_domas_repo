@@ -1,11 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Stripe } from 'stripe';
 import { createStripeClient } from '@/lib/stripe/factory';
-import { verifyIdToken } from '@/lib/firebase-admin';
+import { admin, verifyIdToken } from '@/lib/firebase-admin';
 import { prisma } from '@/lib/prisma';
 import { withPrismaRetry } from '@/lib/prisma/util';
 import { advanceRegState } from '@/lib/prisma/stateMachine';
 import type { RegistrationStatus } from '@prisma/client';
+import { logProgress } from '@/lib/progressServer';
 
 // Map plan names to Stripe Price IDs
 const PRICE_IDS: Record<string, string> = {
@@ -45,26 +46,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const stripe = createStripeClient();
 
+    let decodedToken: any;
+    let uid: string;
+    let email: string;
+try{
     try {
         // Step 0: Verify Firebase ID token
-        const decodedToken = await verifyIdToken(idToken);
-        const uid = decodedToken.uid;
+        decodedToken = await admin.auth().verifyIdToken(idToken, true);
+        uid = decodedToken.uid;
         // Prefer email from body, fallback to decodedToken
-        const email = bodyEmail || decodedToken.email;
-        if (!email) {
-            return res.status(400).json({ message: 'Missing required parameter: email' });
+        email = bodyEmail || decodedToken.email;
+    } catch (e: any) {
+        if (e.code === 'auth/id-token-revoked' ||
+            e.code === 'auth/user-token-expired') {
+            return res.status(401).json({ message: 'Token needs refresh' });
         }
-        
-        // Ensure profile row exists so Saga can update. Creates only if missing.
-        console.log('[setup-registration] Upserting profile with:', {
-            uid,
-            email,
-            gender,
-            tmpFaceUrl: faceUrl,
-            styleId,
-            plan,
-            paymentMethodId,
-        });
+        throw e;
+    }
+
+    if (!email) {
+        return res.status(400).json({ message: 'Missing required parameter: email' });
+    }
+    
+    // Ensure profile row exists so Saga can update. Creates only if missing.
+    console.log('[setup-registration] Upserting profile with:', {
+        uid,
+        email,
+        gender,
+        tmpFaceUrl: faceUrl,
+        styleId,
+        plan,
+        paymentMethodId,
+    });
+
         const profileRow = await prisma.profile.upsert({
             where: { id: uid },
             update: {
@@ -129,6 +143,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 message: 'EMAIL_NOT_VERIFIED',
             });
         }
+
+        // Log progress: EMAIL_VERIFIED step already done in CF, now log REGISTRATION_SUBMITTED
+        await logProgress(uid, 'REGISTRATION_SUBMITTED', 'Registration details submitted, creating payment method...');
 
         await advanceRegState(uid, 'EMAIL_VERIFIED' as RegistrationStatus);
 
@@ -288,7 +305,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         clientSecret: pi.client_secret!,
         userId: uid,
         });
-
+    
     } catch (error) {
         let message = 'An unknown error occurred.';
         let statusCode = 500;

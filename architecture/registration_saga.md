@@ -68,4 +68,5 @@ Front-end simply polls `/api/user/profile-status` and renders the correct UI for
 one point of pivot:
 
 
-The most important step in the registration process regarding ux is payment, it has to be mad 
+The most important step in the registration process regarding ux is payment, it has to be made sure to succeed. It cannot fail, for this the logic has to be safeguarded: 
+If a user makes a payment 

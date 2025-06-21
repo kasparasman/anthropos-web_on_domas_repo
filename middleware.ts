@@ -1,6 +1,7 @@
 import { withAuth } from 'next-auth/middleware'
 import { getToken } from 'next-auth/jwt'
 import { NextResponse, NextRequest } from 'next/server'
+import { logNextAuthStatus } from '@/lib/loggers/nextAuthLogger'
 
 export default withAuth({
   callbacks: {
@@ -17,6 +18,8 @@ export const config = {
 }
 
 export async function middleware(req: NextRequest) {
+  // Log NextAuth session status for every request
+  await logNextAuthStatus(req)
   const token = await getToken({ req });
   if (token?.banned) {
     // Clear the session cookie to sign out

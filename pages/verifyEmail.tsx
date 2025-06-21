@@ -92,10 +92,7 @@ export default function VerifyEmailPage() {
         // 3️⃣ Success UI / redirect
         console.log('[VerifyEmail] Verification successful, updating UI and scheduling redirect.');
         setStatus('success');
-        setMessage('Email verified! Redirecting…');
-        setTimeout(() => {
-          router.replace('/');
-        }, 2500);
+        setMessage('Email verified! You can now return to the registration page to continue.\n\nPlease go back to the registration tab or window and complete your registration.');
       } catch (err: unknown) {
         console.error('[VerifyEmail] verification failed', err);
         const e = err as { message?: string };
@@ -128,7 +125,7 @@ export default function VerifyEmailPage() {
         {status === 'success' && (
           <>
             <h1 className="text-2xl font-semibold text-main">Success!</h1>
-            <p className="text-sm text-neutral-300 max-w-sm">{message}</p>
+            <p className="text-sm text-neutral-300 max-w-sm whitespace-pre-line">{message}</p>
           </>
         )}
 

@@ -8,6 +8,7 @@ import { Client as QStash } from "@upstash/qstash";
 import { generateAndActivateUser } from '@/lib/services/assetService';
 import { advanceRegState } from '@/lib/prisma/stateMachine';
 import type { RegistrationStatus } from '@prisma/client';
+import { logProgress } from '@/lib/progressServer';
 
 const stripe = createStripeClient();
 const qstash = new QStash({
@@ -75,17 +76,16 @@ export async function handleSubscriptionChange(subscription: Stripe.Subscription
 
         const currentPeriodEnd = getPeriodEnd(subscription);
 
+        // Sync subscription metadata but leave status as PENDING_PAYMENT; invoice webhook will finish activation
         await withPrismaRetry(() => prisma.profile.update({
             where: { id: pendingProfile.id },
             data: {
-                status: 'SUBSCRIBED',
                 stripeSubscriptionId: subscription.id,
                 stripeCurrentPeriodEnd: currentPeriodEnd,
             },
         }));
 
-        // Continue to asset generation (idempotent)
-        await startAssetGeneration(pendingProfile.id);
+        console.log(`[Webhook] Subscription updated to active for ${pendingProfile.id} – awaiting invoice.payment_succeeded to continue.`);
 
         return; // done handling 'active'
     }
@@ -259,18 +259,18 @@ export async function handlePaymentIntentUpdate(paymentIntent: Stripe.PaymentInt
           prisma.profile.update({
             where: { id: profile.id },
             data: {
-              status: 'SUBSCRIBED',
+              // Keep status as PENDING_PAYMENT; invoice webhook will set SUBSCRIBED
               stripeSubscriptionId: subscriptionId,
-              stripeCurrentPeriodEnd: currentPeriodEnd,      // ← now set
+              stripeCurrentPeriodEnd: currentPeriodEnd,
               stripePaymentIntentId: paymentIntent.id,
               ...(resolvedInvoiceId ? { stripeInvoiceId: resolvedInvoiceId } : {}),
             },
           })
         );
 
-        console.log(`🚀 User ${profile.id} successfully subscribed. Setting status to GENERATING_ASSETS and triggering background job.`);
+        console.log(`🚀 User ${profile.id} successfully subscribed. Awaiting invoice webhook for asset generation.`);
         
-        await startAssetGeneration(profile.id);
+        await logProgress(profile.id, 'PAYMENT_SUCCEEDED', 'PaymentIntent succeeded; waiting for invoice event.');
           
     } else if (paymentIntent.status === 'requires_payment_method') { // This is the status for a failure
         const failureReason = paymentIntent.last_payment_error?.message || 'No specific reason provided.';
@@ -336,7 +336,20 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Pr
 
     // Find the pending profile for this customer.
     const profile = await withPrismaRetry(() => prisma.profile.findFirst({
-        where: { stripeCustomerId: customerId, status: 'PENDING_PAYMENT' },
+        where: {
+            stripeCustomerId: customerId,
+            registrationStatus: {
+                in: [
+                    'REGISTER_START',
+                    'EMAIL_SENT',
+                    'EMAIL_VERIFIED',
+                    'STRIPE_CUSTOMER_CREATED',
+                    'PAYMENT_METHOD_ATTACHED',
+                    'SUBSCRIPTION_CREATED',
+                    'PAYMENT_SUCCEEDED',
+                ],
+            },
+        },
     })) as Profile | null;
 
     if (!profile) {
@@ -371,6 +384,8 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Pr
     console.log(`🚀(invoice) User ${profile.id} now SUBSCRIBED – attempting asset generation.`);
 
     await startAssetGeneration(profile.id);
+
+    await logProgress(profile.id, 'PAYMENT_SUCCEEDED', 'Invoice payment succeeded; asset generation triggered.');
 }
 
 // -----------------------------------------------------------------------------
@@ -378,9 +393,15 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Pr
 // -----------------------------------------------------------------------------
 async function startAssetGeneration(profileId: string): Promise<void> {
     try {
-        await advanceRegState(profileId, 'AVATAR_JOB_ENQUEUED' as RegistrationStatus);
+        const res = await advanceRegState(profileId, 'AVATAR_JOB_ENQUEUED' as RegistrationStatus);
+        // If advanceRegState signals a no-op we know another worker already enqueued/ran the job.
+        if ((res as any).noop) {
+            console.log(`[Webhook] Asset generation already started for ${profileId}. Skipping duplicate.`);
+            return;
+        }
     } catch (err) {
-        if ((err as any).code === 'P2025' || (err as Error).message?.includes('noop')) {
+        // In case the helper is later changed to throw on duplicates we still guard.
+        if ((err as any).message?.includes('NOOP_TRANSITION')) {
             console.log(`[Webhook] Asset generation already started for ${profileId}. Skipping duplicate.`);
             return;
         }
@@ -399,6 +420,8 @@ async function startAssetGeneration(profileId: string): Promise<void> {
         });
         console.log(`[Webhook] ✅ QStash message published for user ${profileId}.`);
     }
+
+    await logProgress(profileId, 'AVATAR_JOB_ENQUEUED', 'Avatar generation job enqueued.');
 }
 
 // ----------------------------------------------------------------------------------

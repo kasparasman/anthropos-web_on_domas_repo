@@ -12,6 +12,7 @@ import {
   onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore';
+import { sendVerifyMail } from './sendVerifyMail';
 
 /**
  * Kick off the email-verification flow for a freshly-created Firebase user.
@@ -23,6 +24,8 @@ export async function kickOffEmailVerification(user: User) {
   //const db   = getFirestore();
   const auth = getAuth();
 
+  console.log('[emailVerification] kickOffEmailVerification: Starting for user', user.uid);
+
  /* // 1️⃣ Pre-create status doc so the first tab can listen
   await setDoc(
     doc(db, 'userVerificationStatus', user.uid),
@@ -31,12 +34,25 @@ export async function kickOffEmailVerification(user: User) {
   );
 */
   // 2️⃣ Send link
+  if (user.email) {
+    await sendVerifyMail(user.email);
+    // log progress
+    console.log('[emailVerification] kickOffEmailVerification: Email sent to', user.email);
+    const db = getFirestore();
+    await setDoc(
+      doc(db, 'registrationProgress', user.uid),
+      { step: 'EMAIL_SENT', message: 'Verification e-mail sent', ts: serverTimestamp() },
+      { merge: true },
+    );
+  }
+  /*
   await sendEmailVerification(user, {
     url: `${window.location.origin}/verifyEmail?mode=verifyEmail`,  // ← add mode
     handleCodeInApp: true   // <- false while emulating
 
-  });
+  });*/
   
+  console.log('[emailVerification] kickOffEmailVerification: Email sent to', user.email);
   // Note: we no longer sign out here to keep the session alive.
 }
 
@@ -72,17 +88,35 @@ export async function pollForVerification(
   intervalMs = 3_000,
   timeoutMs  = 30 * 60 * 1000
 ): Promise<void> {
-
   const deadline = Date.now() + timeoutMs;
 
   for (;;) {
-    // Force a fresh fetch of the user's record
-    await user.reload();
-    if (user.emailVerified) return;
+    try {
+      await user.reload();                // may throw user-token-expired
+    } catch (e: unknown) {
+      if ((e as any).code === 'auth/user-token-expired') {
+        // ID-token revoked → force refresh with the refresh token we still hold
+        await user.getIdToken(true);      // gets a brand-new ID-token
+        await user.reload();              // and a fresh user record
+      } else {
+        throw e;                          // any other error: fail fast
+      }
+    }
 
-    if (Date.now() > deadline)
+    if (user.emailVerified) {
+      // mark progress
+      const db = getFirestore();
+      await setDoc(
+        doc(db, 'registrationProgress', user.uid),
+        { step: 'EMAIL_VERIFIED', message: 'E-mail verified', ts: serverTimestamp() },
+        { merge: true },
+      );
+      return;       // 🚀 success
+    }
+
+    if (Date.now() > deadline) {
       throw new Error('EMAIL_VERIFICATION_TIMED_OUT');
-
+    }
     await new Promise(r => setTimeout(r, intervalMs));
   }
 }
